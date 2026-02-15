@@ -68,16 +68,6 @@ The API provides endpoints for:
 - Location information
 - User management
 
-## Usage
-
-Access the API at http://localhost:8000/api
-
-Example endpoints:
-- GET /api/routes
-- POST /api/fares/calculate
-- GET /api/locations
-- GET /api/schedules
-
 ## Contributing
 
 Contributions are welcome. Please follow the existing code style and create a pull request with your changes.
