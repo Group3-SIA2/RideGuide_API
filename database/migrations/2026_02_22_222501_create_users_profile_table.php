@@ -14,9 +14,6 @@ return new class extends Migration
         Schema::create('users_profile', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id')->notNull()->unique();
-            $table->string('first_name')->notNull();
-            $table->string('last_name')->notNull();
-            $table->string('middle_name')->nullable();
             $table->string('birthdate')->notNull();
             $table->string('gender')->notNull();
             $table->string('image')->nullable();
