@@ -16,9 +16,7 @@ return new class extends Migration
             $table->uuid('user_id')->notNull()->unique();
             $table->string('birthdate')->notNull();
             $table->string('gender')->notNull();
-            $table->string('image')->nullable();
-            $table->string('emergency_contact_name')->notNull();
-            $table->string('emergency_contact_number')->notNull();
+            $table->string('profile_image')->nullable();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
 
