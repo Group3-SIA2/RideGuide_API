@@ -23,9 +23,18 @@ class DatabaseSeeder extends Seeder
         $adminRole = Role::where('name', Role::ADMIN)->first();
 
         User::factory()->create([
-            'name'    => 'Admin User',
-            'email'   => 'admin@rideguide.com',
-            'role_id' => $adminRole->id,
+            'first_name'    => 'Admin',
+            'last_name'     => 'User',
+            'middle_name'   => 'A',
+            'email'         => 'admin@rideguide.com',
+            'role_id'       => $adminRole->id,
         ]);
+
+          if (! $adminRole) {
+            $adminRole = Role::firstOrCreate(
+                ['name' => $adminName],
+                ['description' => 'Administrator role']
+            );
+        }
     }
 }

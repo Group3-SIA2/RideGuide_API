@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('license_number')->notNull()->unique();
             $table->string('franchise_number')->notNull()->unique();
             $table->enum('verification_status', ['unverified', 'verified', 'rejected'])->notNull()->default('unverified');
+            $table->softDeletes();
+
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
 

@@ -420,7 +420,7 @@ class AuthController extends Controller
         Mail::to($user->email)->send(new OtpMail(
             otpCode:$code,
             type: $type,
-            userName: $user->name,
+            userName: $user->frist_name . ' ' . $user->last_name,
         ));
     }
 }
