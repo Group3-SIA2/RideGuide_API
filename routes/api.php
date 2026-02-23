@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DriverController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +19,17 @@ Route::controller(AuthController::class)->prefix('auth')->group(function (): voi
     Route::post('/resend-otp', 'resendOtp')->name('api.auth.resend-otp');
 });
 
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::controller(\App\Http\Controllers\Api\DriverController::class)
+        ->prefix('drivers')
+        ->group(function (): void {
+            Route::post('/create-profile', 'createProfile')->name('api.drivers.create-profile');
+            Route::get('/read-profile/{id}', 'readProfile')->name('api.drivers.read-profile');
+            Route::put('/update-profile/{id}', 'updateProfile')->name('api.drivers.update-profile');
+            Route::delete('/delete-profile/{id}', 'deleteProfile')->name('api.drivers.delete-profile');
+            Route::put('/restore-profile/{id}', 'restoreProfile')->name('api.drivers.restore-profile');
+        });
+});
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (Sanctum token required)
@@ -34,7 +46,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
             'data'    => [
                 'user' => [
                     'id'                => $request->user()->id,
-                    'name'              => $request->user()->name,
+                    'first_name'        => $request->user()->first_name,
+                    'last_name'         => $request->user()->last_name,
+                    'middle_name'       => $request->user()->middle_name,
                     'email'             => $request->user()->email,
                     'role'              => $request->user()->role->name,
                     'email_verified_at' => $request->user()->email_verified_at,
