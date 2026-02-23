@@ -25,7 +25,9 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'=> ['required', 'string', 'max:255'],
+            'first_name'=> ['required', 'string', 'max:255'],
+            'last_name'=> ['required', 'string', 'max:255'],
+            'middle_name'=> ['nullable', 'string', 'max:255'],
             'email'=> ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password'=> ['required', 'string', 'confirmed', Password::min(8)],
             'role'=> ['required', 'string', 'in:admin,driver,commuter'],
@@ -34,7 +36,9 @@ class AuthController extends Controller
         $role = Role::where('name', $validated['role'])->firstOrFail();
 
         $user = User::create([
-            'name'=> $validated['name'],
+            'first_name'=> $validated['first_name'],
+            'last_name'=> $validated['last_name'],
+            'middle_name'=> $validated['middle_name'] ?? null,
             'email'=> $validated['email'],
             'password'=> $validated['password'],
             'role_id' => $role->id,
@@ -49,7 +53,9 @@ class AuthController extends Controller
             'data'=> [
                 'user'=> [
                     'id'=> $user->id,
-                    'name'=> $user->name,
+                    'first_name'=> $user->first_name,
+                    'last_name'=> $user->last_name,
+                    'middle_name'=> $user->middle_name,
                     'email'=> $user->email,
                     'role'=> $role->name,
                 ],
@@ -185,7 +191,9 @@ class AuthController extends Controller
                 'data'=> [
                     'user'  => [
                         'id'=> $user->id,
-                        'name'=> $user->name,
+                        'first_name'=> $user->first_name,
+                        'last_name'=> $user->last_name,
+                        'middle_name'=> $user->middle_name,
                         'email'=> $user->email,
                         'role'=> $user->role->name,
                         'email_verified_at'=> $user->email_verified_at,
