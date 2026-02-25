@@ -12,9 +12,9 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
    
-    // DASHBOARD SUMMARY
+    // ADMIN DASHBOARD
    
-    public function index(Request $request): JsonResponse
+    public function adminDashboard(): JsonResponse
     {
         $user = auth()->user();
 
@@ -22,7 +22,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // Only admin can access dashboard
+        // Only admin can access
         if ($user->role->name !== 'admin') {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -41,19 +41,19 @@ class DashboardController extends Controller
                                  ->count();
         $deletedUsers      = User::onlyTrashed()->count();
 
-        //  Driver Profile Stats 
+        //  Driver Profile Stats
         $totalDriverProfiles   = Driverprofile::count();
         $verifiedDrivers       = Driverprofile::where('verification_status', 'verified')->count();
         $unverifiedDrivers     = Driverprofile::where('verification_status', 'unverified')->count();
         $rejectedDrivers       = Driverprofile::where('verification_status', 'rejected')->count();
         $deletedDriverProfiles = Driverprofile::onlyTrashed()->count();
 
-        //OTP Stats
+        // OTP Stats
         $totalOtpsToday = Otp::whereDate('created_at', today())->count();
         $expiredOtps    = Otp::where('expires_at', '<', now())->whereNull('used_at')->count();
         $usedOtps       = Otp::whereNotNull('used_at')->count();
 
-        //  Recent Registrations (last 5 users) 
+        // Recent Registrations (last 5 users)
         $recentUsers = User::with('role')
             ->latest()
             ->take(5)
@@ -67,7 +67,7 @@ class DashboardController extends Controller
                 'registered_at'  => $u->created_at->toDateTimeString(),
             ]);
 
-        //  Recent Driver Applications (last 5) 
+        //Recent Driver Applications (last 5)
         $recentDriverApplications = Driverprofile::with('user')
             ->latest()
             ->take(5)
@@ -112,6 +112,111 @@ class DashboardController extends Controller
                 ],
                 'recent_registrations'       => $recentUsers,
                 'recent_driver_applications' => $recentDriverApplications,
+            ],
+        ], 200);
+    }
+
+ 
+    // DRIVER DASHBOARD
+
+    public function driverDashboard(): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Only driver can access
+        if ($user->role->name !== 'driver') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        //  Driver Profile 
+        $driverProfile = Driverprofile::where('user_id', $user->id)->first();
+
+        if (! $driverProfile) {
+            return response()->json(['error' => 'Driver profile not found'], 404);
+        }
+
+        //  OTP Stats (for this driver) 
+        $totalOtpsToday = Otp::where('user_id', $user->id)
+                              ->whereDate('created_at', today())
+                              ->count();
+        $expiredOtps    = Otp::where('user_id', $user->id)
+                              ->where('expires_at', '<', now())
+                              ->whereNull('used_at')
+                              ->count();
+        $usedOtps       = Otp::where('user_id', $user->id)
+                              ->whereNotNull('used_at')
+                              ->count();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'profile' => [
+                    'id'                  => $driverProfile->id,
+                    'name'                => trim("{$user->first_name} {$user->middle_name} {$user->last_name}"),
+                    'email'               => $user->email,
+                    'email_verified'      => ! is_null($user->email_verified_at),
+                    'license_number'      => $driverProfile->license_number,
+                    'franchise_number'    => $driverProfile->franchise_number,
+                    'verification_status' => $driverProfile->verification_status,
+                    'member_since'        => $user->created_at->toDateTimeString(),
+                ],
+                'otps' => [
+                    'sent_today' => $totalOtpsToday,
+                    'expired'    => $expiredOtps,
+                    'used'       => $usedOtps,
+                ],
+            ],
+        ], 200);
+    }
+
+   
+    // USER (COMMUTER) DASHBOARD
+ 
+    public function userDashboard(): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Only commuter can access
+        if ($user->role->name !== 'commuter') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        //  OTP Stats (for this user) 
+        $totalOtpsToday = Otp::where('user_id', $user->id)
+                              ->whereDate('created_at', today())
+                              ->count();
+        $expiredOtps    = Otp::where('user_id', $user->id)
+                              ->where('expires_at', '<', now())
+                              ->whereNull('used_at')
+                              ->count();
+        $usedOtps       = Otp::where('user_id', $user->id)
+                              ->whereNotNull('used_at')
+                              ->count();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'profile' => [
+                    'id'             => $user->id,
+                    'name'           => trim("{$user->first_name} {$user->middle_name} {$user->last_name}"),
+                    'email'          => $user->email,
+                    'email_verified' => ! is_null($user->email_verified_at),
+                    'role'           => $user->role->name ?? 'N/A',
+                    'member_since'   => $user->created_at->toDateTimeString(),
+                ],
+                'otps' => [
+                    'sent_today' => $totalOtpsToday,
+                    'expired'    => $expiredOtps,
+                    'used'       => $usedOtps,
+                ],
             ],
         ], 200);
     }
