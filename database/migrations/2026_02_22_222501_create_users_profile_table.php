@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('birthdate')->notNull();
             $table->string('gender')->notNull();
             $table->string('profile_image')->nullable();
-
+            $table->softDeletes();
+            
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
 
             $table->timestamps();
