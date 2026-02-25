@@ -1,0 +1,120 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Driver_profile;
+use App\Models\Otp;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class DashboardController extends Controller
+{
+    /**
+     * Get dashboard summary statistics.
+     * Admin only.
+     *
+     * GET /api/dashboard
+     * Header: Authorization: Bearer {token}
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user || !$user->hasRole('admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Admin access only.',
+            ], 403);
+        }
+
+        //User Stats
+        $totalUsers        = User::count();
+        $totalAdmins       = User::whereHas('role', fn($q) => $q->where('name', 'admin'))->count();
+        $totalDrivers      = User::whereHas('role', fn($q) => $q->where('name', 'driver'))->count();
+        $totalCommuters    = User::whereHas('role', fn($q) => $q->where('name', 'commuter'))->count();
+        $verifiedUsers     = User::whereNotNull('email_verified_at')->count();
+        $unverifiedUsers   = User::whereNull('email_verified_at')->count();
+        $newUsersToday     = User::whereDate('created_at', today())->count();
+        $newUsersThisWeek  = User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
+        $newUsersThisMonth = User::whereMonth('created_at', now()->month)
+                                 ->whereYear('created_at', now()->year)
+                                 ->count();
+        $deletedUsers      = User::onlyTrashed()->count();
+
+        //Driver Profile Stats
+        $totalDriverProfiles    = Driver_profile::count();
+        $verifiedDrivers        = Driver_profile::where('verification_status', 'verified')->count();
+        $unverifiedDrivers      = Driver_profile::where('verification_status', 'unverified')->count();
+        $rejectedDrivers        = Driver_profile::where('verification_status', 'rejected')->count();
+        $deletedDriverProfiles  = Driver_profile::onlyTrashed()->count();
+
+        //OTP Stats
+        $totalOtpsToday   = Otp::whereDate('created_at', today())->count();
+        $expiredOtps      = Otp::where('expires_at', '<', now())->whereNull('used_at')->count();
+        $usedOtps         = Otp::whereNotNull('used_at')->count();
+
+        //Recent Registrations (last 5 users)
+        $recentUsers = User::with('role')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn($u) => [
+                'id'                => $u->id,
+                'name'              => trim("{$u->first_name} {$u->middle_name} {$u->last_name}"),
+                'email'             => $u->email,
+                'role'              => $u->role->name ?? 'N/A',
+                'email_verified' => !is_null($u->email_verified_at),,
+                'registered_at'     => $u->created_at->toDateTimeString(),
+            ]);
+
+        //Recent Driver Profile Applications (last 5)
+        $recentDriverApplications = Driver_profile::with('user')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn($d) => [
+                'id'                  => $d->id,
+                'driver_name'         => $d->user
+                                            ? trim("{$d->user->first_name} {$d->user->last_name}")
+                                            : 'N/A',
+                'license_number'      => $d->license_number,
+                'franchise_number'    => $d->franchise_number,
+                'verification_status' => $d->verification_status,
+                'applied_at'          => $d->created_at->toDateTimeString(),
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'users' => [
+                    'total'           => $totalUsers,
+                    'admins'          => $totalAdmins,
+                    'drivers'         => $totalDrivers,
+                    'commuters'       => $totalCommuters,
+                    'verified'        => $verifiedUsers,
+                    'unverified'      => $unverifiedUsers,
+                    'new_today'       => $newUsersToday,
+                    'new_this_week'   => $newUsersThisWeek,
+                    'new_this_month'  => $newUsersThisMonth,
+                    'deleted'         => $deletedUsers,
+                ],
+                'driver_profiles' => [
+                    'total'      => $totalDriverProfiles,
+                    'verified'   => $verifiedDrivers,
+                    'unverified' => $unverifiedDrivers,
+                    'rejected'   => $rejectedDrivers,
+                    'deleted'    => $deletedDriverProfiles,
+                ],
+                'otps' => [
+                    'sent_today' => $totalOtpsToday,
+                    'expired'    => $expiredOtps,
+                    'used'       => $usedOtps,
+                ],
+                'recent_registrations'       => $recentUsers,
+                'recent_driver_applications' => $recentDriverApplications,
+            ],
+        ], 200);
+    }
+}
