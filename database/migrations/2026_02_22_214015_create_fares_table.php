@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('fares', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('vehicle_id')->notNull();
+            $table->uuid('commuter_id')->notNull();
             $table->decimal('base_fare_4KM', 8, 2)->notNull();
             $table->decimal('per_km_rate', 8, 2)->notNull();
             $table->decimal('discounts', 8, 2)->default(0);
 
             $table->foreign('vehicle_id')->references('id')->on('vehicle_types')->onDelete('cascade');
+            $table->foreign('commuter_id')->references('id')->on('users')->onDelete('cascade');
 
             $table->timestamps();
         });
