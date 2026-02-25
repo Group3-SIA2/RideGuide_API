@@ -7,7 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
-use App\Models\Driver_profile as Driver;
+use App\Models\DriverProfile as Driver;
 use Illuminate\Validation\Rule;
 use App\Models\User;
 
