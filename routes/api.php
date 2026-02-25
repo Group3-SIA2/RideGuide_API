@@ -30,6 +30,18 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::put('/restore-profile/{id}', 'restoreProfile')->name('api.drivers.restore-profile');
         });
 });
+
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::controller(\App\Http\Controllers\Api\UserController::class)
+        ->prefix('users')
+        ->group(function (): void {
+            Route::post('/create-profile', 'addUserProfileCredentials')->name('api.users.create-profile');
+            Route::put('/update-profile/{id}', 'updateUserProfileCredentials')->name('api.users.update-profile');
+            Route::get('/read-profile/{id}', 'getUserProfileCredentials')->name('api.users.read-profile');
+            Route::delete('/delete-profile/{id}', 'deleteUserProfileCredentials')->name('api.users.delete-profile');
+            Route::put('/restore-profile/{id}', 'restoreUserProfileCredentials')->name('api.users.restore-profile');
+        });
+});
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (Sanctum token required)
