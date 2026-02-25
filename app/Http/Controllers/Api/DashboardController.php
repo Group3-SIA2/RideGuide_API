@@ -4,15 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Driverprofile;
-use App\Models\Otp;
+use App\Models\Feedback;
+use App\Models\Role;
+use App\Models\UserProfile;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-   
-    // ADMIN DASHBOARD
    
     public function adminDashboard(): JsonResponse
     {
@@ -27,91 +27,37 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        //  User Stats 
-        $totalUsers        = User::count();
-        $totalAdmins       = User::whereHas('role', fn($q) => $q->where('name', 'admin'))->count();
-        $totalDrivers      = User::whereHas('role', fn($q) => $q->where('name', 'driver'))->count();
-        $totalCommuters    = User::whereHas('role', fn($q) => $q->where('name', 'commuter'))->count();
-        $verifiedUsers     = User::whereNotNull('email_verified_at')->count();
-        $unverifiedUsers   = User::whereNull('email_verified_at')->count();
-        $newUsersToday     = User::whereDate('created_at', today())->count();
-        $newUsersThisWeek  = User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
-        $newUsersThisMonth = User::whereMonth('created_at', now()->month)
-                                 ->whereYear('created_at', now()->year)
-                                 ->count();
-        $deletedUsers      = User::onlyTrashed()->count();
+        // Total Users
+        $totalVerifiedUsers       = User::whereNotNull('email_verified_at')->count();
+        $totalAdmins      = User::whereHas('role', fn($q) => $q->where('name', 'admin'))->count();
+        $totalDrivers     = User::whereHas('role', fn($q) => $q->where('name', 'driver'))->count();
+        $totalCommuters   = User::whereHas('role', fn($q) => $q->where('name', 'commuter'))->count();
 
-        //  Driver Profile Stats
-        $totalDriverProfiles   = Driverprofile::count();
-        $verifiedDrivers       = Driverprofile::where('verification_status', 'verified')->count();
-        $unverifiedDrivers     = Driverprofile::where('verification_status', 'unverified')->count();
-        $rejectedDrivers       = Driverprofile::where('verification_status', 'rejected')->count();
-        $deletedDriverProfiles = Driverprofile::onlyTrashed()->count();
+        // Total Verified 
+        $totalDriverProfiles = Driverprofile::count();
+        $getAllDriverProfiles = Driverprofile::all();
 
-        // OTP Stats
-        $totalOtpsToday = Otp::whereDate('created_at', today())->count();
-        $expiredOtps    = Otp::where('expires_at', '<', now())->whereNull('used_at')->count();
-        $usedOtps       = Otp::whereNotNull('used_at')->count();
+        // get own credentials
+        $getCredentials = User::where('id', $user->id)->first();
+    
 
-        // Recent Registrations (last 5 users)
-        $recentUsers = User::with('role')
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(fn($u) => [
-                'id'             => $u->id,
-                'name'           => trim("{$u->first_name} {$u->middle_name} {$u->last_name}"),
-                'email'          => $u->email,
-                'role'           => $u->role->name ?? 'N/A',
-                'email_verified' => ! is_null($u->email_verified_at),
-                'registered_at'  => $u->created_at->toDateTimeString(),
-            ]);
+        // teerminals
+        // $totalTerminals = Terminals::count();
+        // $getAllTerminals = Terminals::all();
 
-        //Recent Driver Applications (last 5)
-        $recentDriverApplications = Driverprofile::with('user')
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(fn($d) => [
-                'id'                  => $d->id,
-                'driver_name'         => $d->user
-                                            ? trim("{$d->user->first_name} {$d->user->last_name}")
-                                            : 'N/A',
-                'license_number'      => $d->license_number,
-                'franchise_number'    => $d->franchise_number,
-                'verification_status' => $d->verification_status,
-                'applied_at'          => $d->created_at->toDateTimeString(),
-            ]);
+
+        
 
         return response()->json([
             'success' => true,
             'data'    => [
                 'users' => [
-                    'total'          => $totalUsers,
-                    'admins'         => $totalAdmins,
-                    'drivers'        => $totalDrivers,
-                    'commuters'      => $totalCommuters,
-                    'verified'       => $verifiedUsers,
-                    'unverified'     => $unverifiedUsers,
-                    'new_today'      => $newUsersToday,
-                    'new_this_week'  => $newUsersThisWeek,
-                    'new_this_month' => $newUsersThisMonth,
-                    'deleted'        => $deletedUsers,
+                    'total_verified_users' => $totalVerifiedUsers,
+                    'total_admins' => $totalAdmins,
+                    'total_drivers' => $totalDrivers,
+                    'total_commuters' => $totalCommuters,
                 ],
-                'driver_profiles' => [
-                    'total'      => $totalDriverProfiles,
-                    'verified'   => $verifiedDrivers,
-                    'unverified' => $unverifiedDrivers,
-                    'rejected'   => $rejectedDrivers,
-                    'deleted'    => $deletedDriverProfiles,
-                ],
-                'otps' => [
-                    'sent_today' => $totalOtpsToday,
-                    'expired'    => $expiredOtps,
-                    'used'       => $usedOtps,
-                ],
-                'recent_registrations'       => $recentUsers,
-                'recent_driver_applications' => $recentDriverApplications,
+                'admin_credentials' => $getCredentials,
             ],
         ], 200);
     }
@@ -139,36 +85,22 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
-        //  OTP Stats (for this driver) 
-        $totalOtpsToday = Otp::where('user_id', $user->id)
-                              ->whereDate('created_at', today())
-                              ->count();
-        $expiredOtps    = Otp::where('user_id', $user->id)
-                              ->where('expires_at', '<', now())
-                              ->whereNull('used_at')
-                              ->count();
-        $usedOtps       = Otp::where('user_id', $user->id)
-                              ->whereNotNull('used_at')
-                              ->count();
+        $getUser = User::where('id', $user->id)->first();
+        $getUserProfile = UserProfile::where('user_id', $user->id)->first();
+        $getDriversProfile = Driverprofile::where('user_id', $user->id)->first();
+        //$getFeedbacks = Feedback::where('driver_id', $driverProfile->id)->get();
+        //$getTerminals = Terminals::where('driver_id', $driverProfile->id)->get();
+        //$getDriverRoutes = DriverRoutes::where('driver_id', $driverProfile->id)->get();
+        //$getDriverVehiclesType = DriverVehicles::where('driver_id', $driverProfile->id)->get();
+        //$getDriverRouteTerminals = DriverRouteTerminals::where('driver_id', $driverProfile->id)->get();
+        //$getRouteStops = RouteStops::where('driver_id', $driverProfile->id)->get();
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'profile' => [
-                    'id'                  => $driverProfile->id,
-                    'name'                => trim("{$user->first_name} {$user->middle_name} {$user->last_name}"),
-                    'email'               => $user->email,
-                    'email_verified'      => ! is_null($user->email_verified_at),
-                    'license_number'      => $driverProfile->license_number,
-                    'franchise_number'    => $driverProfile->franchise_number,
-                    'verification_status' => $driverProfile->verification_status,
-                    'member_since'        => $user->created_at->toDateTimeString(),
-                ],
-                'otps' => [
-                    'sent_today' => $totalOtpsToday,
-                    'expired'    => $expiredOtps,
-                    'used'       => $usedOtps,
-                ],
+                'user' => $getUser,
+                'profile' => $getUserProfile,
+                'driver_profile' => $getDriversProfile,
             ],
         ], 200);
     }
@@ -176,7 +108,7 @@ class DashboardController extends Controller
    
     // USER (COMMUTER) DASHBOARD
  
-    public function userDashboard(): JsonResponse
+    public function commuterDashboard(): JsonResponse
     {
         $user = auth()->user();
 
@@ -189,34 +121,25 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        //  OTP Stats (for this user) 
-        $totalOtpsToday = Otp::where('user_id', $user->id)
-                              ->whereDate('created_at', today())
-                              ->count();
-        $expiredOtps    = Otp::where('user_id', $user->id)
-                              ->where('expires_at', '<', now())
-                              ->whereNull('used_at')
-                              ->count();
-        $usedOtps       = Otp::where('user_id', $user->id)
-                              ->whereNotNull('used_at')
-                              ->count();
+        $userProfile = UserProfile::where('user_id', $user->id)->first();
+        if (! $userProfile) {
+            return response()->json(['error' => 'User profile not found'], 404);
+        }
+        
+        $getUser = User::where('id', $user->id)->first();
+        $getUserProfile = UserProfile::where('user_id', $user->id)->first();
+        //$getAllTerminals = Terminals::all();
+        $getAllDriverProfiles = Driverprofile::all();
+        //$getAllFeedbacks = Feedback::all();
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'profile' => [
-                    'id'             => $user->id,
-                    'name'           => trim("{$user->first_name} {$user->middle_name} {$user->last_name}"),
-                    'email'          => $user->email,
-                    'email_verified' => ! is_null($user->email_verified_at),
-                    'role'           => $user->role->name ?? 'N/A',
-                    'member_since'   => $user->created_at->toDateTimeString(),
-                ],
-                'otps' => [
-                    'sent_today' => $totalOtpsToday,
-                    'expired'    => $expiredOtps,
-                    'used'       => $usedOtps,
-                ],
+                'profile' => $getUser,
+                'user_profile' => $getUserProfile,
+                //'terminals' => $getAllTerminals,
+                'drivers'   => $getAllDriverProfiles,
+                //'feedbacks' => $getAllFeedbacks,
             ],
         ], 200);
     }

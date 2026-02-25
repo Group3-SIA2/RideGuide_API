@@ -15,13 +15,20 @@ class UserController extends Controller
     {
         // Only allow users to add their own profile or admins to add any profile
         $user = auth()->user();
-        if (!$user || ($user->id !== $request->input('user_id') && !$user->hasRole('admin'))) {
+        if (!$user || ($user->id !== $request->user()->id && !$user->hasRole('admin'))) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. You can only add your own profile.',
             ], 403);
         }
-        //dd($user);
+
+        //block users from creating multiple profiles
+        if (UserProfile::where('user_id', $request->user()->id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You already have a profile. You can only have one profile.',
+            ], 400);
+        }
 
         $request->validate([
             'birthdate' => 'required|date',

@@ -22,10 +22,15 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
         
-        if ($driverProfile->user_id !== $user->id && $user->role->name !== 'admin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if ($user->role->name !== 'driver' || $user->role->name === 'admin') {
+            return response()->json(['error' => 'Unauthorized. Only drivers can create a profile.'], 403);
         }
-  
+        
+        // Check if the user already has a driver profile
+        if (Driver::where('user_id', $user->id)->exists()) {
+            return response()->json(['error' => 'You already have a driver profile.'], 400);
+        }
+
         $validatedData = $request->validate([
             'license_number' => ['required','string','max:255', Rule::unique('driver_profile','license_number')],
             'franchise_number' => ['required','string','max:255', Rule::unique('driver_profile','franchise_number')],

@@ -70,7 +70,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::controller(DashboardController::class)->prefix('dashboard')->group(function (): void {
         Route::get('/admin',  'adminDashboard')->name('api.dashboard.admin');
         Route::get('/driver', 'driverDashboard')->name('api.dashboard.driver');
-        Route::get('/user',   'userDashboard')->name('api.dashboard.user');
+        Route::get('/commuter',   'commuterDashboard')->name('api.dashboard.commuter');
     });
 
 });
