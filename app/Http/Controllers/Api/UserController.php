@@ -1,11 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Http\Controllers\Controller;
+use App\Models\UserProfile;
 
 class UserController extends Controller
 {
@@ -19,20 +21,17 @@ class UserController extends Controller
                 'message' => 'Unauthorized. You can only add your own profile.',
             ], 403);
         }
+        //dd($user);
 
         $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'first_name' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'last_name' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
             'birthdate' => 'required|date',
             'gender' => 'required|string|in:male,female,other',
             'profile_image' => 'nullable|image|max:2048',
         ]);
 
-        $userProfile = User_profile::create([
-            'user_id' => $request->input('user_id'),
-            'first_name' => $request->input('first_name'),
-            'last_name' => $request->input('last_name'),
+
+        $userProfile = UserProfile::create([
+            'user_id' => $request->user()->id,
             'birthdate' => $request->input('birthdate'),
             'gender' => $request->input('gender'),
             'profile_image' => $request->input('profile_image'),
@@ -57,16 +56,12 @@ class UserController extends Controller
         }
 
         $request->validate([
-            'first_name' => 'sometimes|required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'last_name' => 'sometimes|required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'phone_number' => 'sometimes|required|string|max:20|regex:/^\+?[0-9\s\-]+$/',
-            'address' => 'nullable|string|max:500|regex:/^[a-zA-Z0-9\s,.-]+$/',
             'birthdate' => 'sometimes|required|date',
             'gender' => 'sometimes|required|string|in:male,female,other',
             'profile_image' => 'nullable|image|max:2048',
         ]);
 
-        $userProfile = User_profile::find($id);
+        $userProfile = UserProfile::find($id);
 
         if (!$userProfile) {
             return response()->json([
@@ -75,10 +70,7 @@ class UserController extends Controller
             ], 404);
         }
 
-        $userProfile->update($request->only(['first_name', 
-                                            'last_name', 
-                                            'phone_number', 
-                                            'address', 
+        $userProfile->update($request->only([
                                             'birthdate', 
                                             'gender', 
                                             'profile_image']));
@@ -101,7 +93,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        $userProfile = User_profile::find($id);
+        $userProfile = UserProfile::find($id);
 
         if (!$userProfile) {
             return response()->json([
@@ -127,7 +119,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        $userProfile = User_profile::find($id);
+        $userProfile = UserProfile::find($id);
 
         if (!$userProfile) {
             return response()->json([
@@ -155,7 +147,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        $userProfile = User_profile::onlyTrashed()->find($id);
+        $userProfile = UserProfile::onlyTrashed()->find($id);
 
         if (!$userProfile) {
             return response()->json([
