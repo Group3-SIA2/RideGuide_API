@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Driver_profile;
+use App\Models\Driverprofile;
 use App\Models\Otp;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -11,25 +11,23 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    /**
-     * Get dashboard summary statistics.
-     * Admin only.
-     *
-     * GET /api/dashboard
-     * Header: Authorization: Bearer {token}
-     */
+   
+    // DASHBOARD SUMMARY
+   
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = auth()->user();
 
-        if (!$user || !$user->hasRole('admin')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Admin access only.',
-            ], 403);
+        if (! $user) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        //User Stats
+        // Only admin can access dashboard
+        if ($user->role->name !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        //  User Stats 
         $totalUsers        = User::count();
         $totalAdmins       = User::whereHas('role', fn($q) => $q->where('name', 'admin'))->count();
         $totalDrivers      = User::whereHas('role', fn($q) => $q->where('name', 'driver'))->count();
@@ -43,34 +41,34 @@ class DashboardController extends Controller
                                  ->count();
         $deletedUsers      = User::onlyTrashed()->count();
 
-        //Driver Profile Stats
-        $totalDriverProfiles    = Driver_profile::count();
-        $verifiedDrivers        = Driver_profile::where('verification_status', 'verified')->count();
-        $unverifiedDrivers      = Driver_profile::where('verification_status', 'unverified')->count();
-        $rejectedDrivers        = Driver_profile::where('verification_status', 'rejected')->count();
-        $deletedDriverProfiles  = Driver_profile::onlyTrashed()->count();
+        //  Driver Profile Stats 
+        $totalDriverProfiles   = Driverprofile::count();
+        $verifiedDrivers       = Driverprofile::where('verification_status', 'verified')->count();
+        $unverifiedDrivers     = Driverprofile::where('verification_status', 'unverified')->count();
+        $rejectedDrivers       = Driverprofile::where('verification_status', 'rejected')->count();
+        $deletedDriverProfiles = Driverprofile::onlyTrashed()->count();
 
         //OTP Stats
-        $totalOtpsToday   = Otp::whereDate('created_at', today())->count();
-        $expiredOtps      = Otp::where('expires_at', '<', now())->whereNull('used_at')->count();
-        $usedOtps         = Otp::whereNotNull('used_at')->count();
+        $totalOtpsToday = Otp::whereDate('created_at', today())->count();
+        $expiredOtps    = Otp::where('expires_at', '<', now())->whereNull('used_at')->count();
+        $usedOtps       = Otp::whereNotNull('used_at')->count();
 
-        //Recent Registrations (last 5 users)
+        //  Recent Registrations (last 5 users) 
         $recentUsers = User::with('role')
             ->latest()
             ->take(5)
             ->get()
             ->map(fn($u) => [
-                'id'                => $u->id,
-                'name'              => trim("{$u->first_name} {$u->middle_name} {$u->last_name}"),
-                'email'             => $u->email,
-                'role'              => $u->role->name ?? 'N/A',
-                'email_verified' => !is_null($u->email_verified_at),,
-                'registered_at'     => $u->created_at->toDateTimeString(),
+                'id'             => $u->id,
+                'name'           => trim("{$u->first_name} {$u->middle_name} {$u->last_name}"),
+                'email'          => $u->email,
+                'role'           => $u->role->name ?? 'N/A',
+                'email_verified' => ! is_null($u->email_verified_at),
+                'registered_at'  => $u->created_at->toDateTimeString(),
             ]);
 
-        //Recent Driver Profile Applications (last 5)
-        $recentDriverApplications = Driver_profile::with('user')
+        //  Recent Driver Applications (last 5) 
+        $recentDriverApplications = Driverprofile::with('user')
             ->latest()
             ->take(5)
             ->get()
@@ -87,18 +85,18 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'users' => [
-                    'total'           => $totalUsers,
-                    'admins'          => $totalAdmins,
-                    'drivers'         => $totalDrivers,
-                    'commuters'       => $totalCommuters,
-                    'verified'        => $verifiedUsers,
-                    'unverified'      => $unverifiedUsers,
-                    'new_today'       => $newUsersToday,
-                    'new_this_week'   => $newUsersThisWeek,
-                    'new_this_month'  => $newUsersThisMonth,
-                    'deleted'         => $deletedUsers,
+                    'total'          => $totalUsers,
+                    'admins'         => $totalAdmins,
+                    'drivers'        => $totalDrivers,
+                    'commuters'      => $totalCommuters,
+                    'verified'       => $verifiedUsers,
+                    'unverified'     => $unverifiedUsers,
+                    'new_today'      => $newUsersToday,
+                    'new_this_week'  => $newUsersThisWeek,
+                    'new_this_month' => $newUsersThisMonth,
+                    'deleted'        => $deletedUsers,
                 ],
                 'driver_profiles' => [
                     'total'      => $totalDriverProfiles,
