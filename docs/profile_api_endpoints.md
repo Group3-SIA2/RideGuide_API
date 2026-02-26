@@ -1,8 +1,8 @@
-# RideGuide User Profile API
+# RideGuide User & Profile API
 
 ## Overview
 
-The User Profile API allows authenticated users to manage their personal profiles (birthdate, gender, profile image). All endpoints are **protected** and require a valid Bearer Token obtained via login + 2FA OTP verification.
+The User & Profile API allows authenticated users to look up user accounts and manage personal profiles (birthdate, gender, profile image). All endpoints are **protected** and require a valid Bearer Token obtained via login + 2FA OTP verification.
 
 **Base URL**
 ```
@@ -29,15 +29,132 @@ Authorization: Bearer {your_token_here}
 
 | #  | Method   | Endpoint                              | Description              | Access                                |
 |----|----------|---------------------------------------|--------------------------|---------------------------------------|
-| 1  | `POST`   | `/api/users/create-profile`           | Create user profile      | Authenticated (own profile only)      |
-| 2  | `GET`    | `/api/users/read-profile/{id}`        | Get user profile         | Owner or Admin (non-admin targets)    |
-| 3  | `PUT`    | `/api/users/update-profile/{id}`      | Update user profile      | Owner or Admin (non-admin targets)    |
-| 4  | `DELETE` | `/api/users/delete-profile/{id}`      | Soft-delete profile      | Admin only (non-admin targets)        |
-| 5  | `PUT`    | `/api/users/restore-profile/{id}`     | Restore deleted profile  | Admin only (within 30-day window)     |
+| 1  | `GET`    | `/api/users`                          | List all users           | Admin (non-admin users) / Own only    |
+| 2  | `GET`    | `/api/users/{id}`                     | Get specific user        | Owner or Admin (non-admin targets)    |
+| 3  | `POST`   | `/api/users/create-profile`           | Create user profile      | Authenticated (own profile only)      |
+| 4  | `GET`    | `/api/users/read-profile/{id}`        | Get user profile         | Owner or Admin (non-admin targets)    |
+| 5  | `PUT`    | `/api/users/update-profile/{id}`      | Update user profile      | Owner or Admin (non-admin targets)    |
+| 6  | `DELETE` | `/api/users/delete-profile/{id}`      | Soft-delete profile      | Admin only (non-admin targets)        |
+| 7  | `PUT`    | `/api/users/restore-profile/{id}`     | Restore deleted profile  | Admin only (within 30-day window)     |
 
 ---
 
-## 1. Create User Profile
+## 1. Get All Users
+
+**GET** `https://rideguide.test/api/users`
+
+Returns a list of users. Admins see all **driver and commuter** accounts (not other admins). Drivers and commuters only see their own account. This is useful for retrieving user IDs before calling profile endpoints.
+
+No body is needed for this request.
+
+**Example**
+```
+GET https://rideguide.test/api/users
+```
+
+**Success Response — Admin (200)**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": "019c7a57-980d-715f-b7b6-67014c23b601",
+            "first_name": "Juan",
+            "last_name": "Dela Cruz",
+            "middle_name": "Santos",
+            "email": "juan@example.com",
+            "role": "commuter",
+            "email_verified_at": "2026-02-25T10:00:00.000000Z",
+            "created_at": "2026-02-25T09:00:00.000000Z",
+            "updated_at": "2026-02-25T09:00:00.000000Z"
+        },
+        {
+            "id": "019c7a58-112a-7def-9a3c-abcdef123456",
+            "first_name": "Maria",
+            "last_name": "Garcia",
+            "middle_name": null,
+            "email": "maria@example.com",
+            "role": "driver",
+            "email_verified_at": "2026-02-25T11:00:00.000000Z",
+            "created_at": "2026-02-25T10:30:00.000000Z",
+            "updated_at": "2026-02-25T10:30:00.000000Z"
+        }
+    ]
+}
+```
+
+**Success Response — Driver/Commuter (200)**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "id": "019c7a57-980d-715f-b7b6-67014c23b601",
+            "first_name": "Juan",
+            "last_name": "Dela Cruz",
+            "middle_name": "Santos",
+            "email": "juan@example.com",
+            "role": "commuter",
+            "email_verified_at": "2026-02-25T10:00:00.000000Z",
+            "created_at": "2026-02-25T09:00:00.000000Z",
+            "updated_at": "2026-02-25T09:00:00.000000Z"
+        }
+    ]
+}
+```
+
+---
+
+## 2. Get Specific User
+
+**GET** `https://rideguide.test/api/users/{id}`
+
+Returns a single user by ID. Admins can view any driver or commuter (not other admins). Drivers and commuters can only view themselves.
+
+No body is needed for this request. Replace `{id}` with the user UUID.
+
+**Example**
+```
+GET https://rideguide.test/api/users/019c7a57-980d-715f-b7b6-67014c23b601
+```
+
+**Success Response (200)**
+```json
+{
+    "success": true,
+    "data": {
+        "id": "019c7a57-980d-715f-b7b6-67014c23b601",
+        "first_name": "Juan",
+        "last_name": "Dela Cruz",
+        "middle_name": "Santos",
+        "email": "juan@example.com",
+        "role": "commuter",
+        "email_verified_at": "2026-02-25T10:00:00.000000Z",
+        "created_at": "2026-02-25T09:00:00.000000Z",
+        "updated_at": "2026-02-25T09:00:00.000000Z"
+    }
+}
+```
+
+**Error Response — Not Found (404)**
+```json
+{
+    "success": false,
+    "message": "User not found."
+}
+```
+
+**Error Response — Unauthorized (403)**
+```json
+{
+    "success": false,
+    "message": "Unauthorized. You can only view your own account."
+}
+```
+
+---
+
+## 3. Create User Profile
 
 **POST** `https://rideguide.test/api/users/create-profile`
 
@@ -104,7 +221,7 @@ profile_image    (optional — select a file)
 
 ---
 
-## 2. Read User Profile
+## 4. Read User Profile
 
 **GET** `https://rideguide.test/api/users/read-profile/{id}`
 
@@ -151,7 +268,7 @@ GET https://rideguide.test/api/users/read-profile/019c93de-1d75-713e-a51f-75fe61
 
 ---
 
-## 3. Update User Profile
+## 5. Update User Profile
 
 **PUT** `https://rideguide.test/api/users/update-profile/{id}`
 
@@ -214,7 +331,7 @@ PUT https://rideguide.test/api/users/update-profile/019c93de-1d75-713e-a51f-75fe
 
 ---
 
-## 4. Delete User Profile (Soft Delete)
+## 6. Delete User Profile (Soft Delete)
 
 **DELETE** `https://rideguide.test/api/users/delete-profile/{id}`
 
@@ -253,7 +370,7 @@ DELETE https://rideguide.test/api/users/delete-profile/019c93de-1d75-713e-a51f-7
 
 ---
 
-## 5. Restore User Profile
+## 7. Restore User Profile
 
 **PUT** `https://rideguide.test/api/users/restore-profile/{id}`
 
@@ -303,26 +420,28 @@ PUT https://rideguide.test/api/users/restore-profile/019c93de-1d75-713e-a51f-75f
 
 ## Postman Testing Workflow
 
-Follow these steps in order to test the user profile endpoints:
+Follow these steps in order to test the user and profile endpoints:
 
 1. **Login** — `POST /api/auth/login` with your account credentials.
 2. **Verify OTP** — `POST /api/auth/verify-otp` with type `login_2fa` to get your Bearer Token.
 3. **Set Token** — In Postman, go to **Authorization** → **Bearer Token** and paste the token.
-4. **Create Profile** — `POST /api/users/create-profile` with birthdate & gender.
-5. **Read Profile** — `GET /api/users/read-profile/{id}` using the profile ID from step 4.
-6. **Update Profile** — `PUT /api/users/update-profile/{id}` with fields to change.
-7. **Delete Profile** — `DELETE /api/users/delete-profile/{id}` (requires admin token).
-8. **Restore Profile** — `PUT /api/users/restore-profile/{id}` (requires admin token).
+4. **List Users** — `GET /api/users` to see available user IDs.
+5. **View User** — `GET /api/users/{id}` to view a specific user's details.
+6. **Create Profile** — `POST /api/users/create-profile` with birthdate & gender.
+7. **Read Profile** — `GET /api/users/read-profile/{id}` using the profile ID from step 6.
+8. **Update Profile** — `PUT /api/users/update-profile/{id}` with fields to change.
+9. **Delete Profile** — `DELETE /api/users/delete-profile/{id}` (requires admin token).
+10. **Restore Profile** — `PUT /api/users/restore-profile/{id}` (requires admin token).
 
 ---
 
 ## Roles & Access Reference
 
-| Role       | Create | Read                  | Update                | Delete                | Restore                      |
-|------------|--------|-----------------------|-----------------------|-----------------------|------------------------------|
-| `commuter` | ✅ Own | ✅ Own                | ✅ Own                | ❌                    | ❌                           |
-| `driver`   | ✅ Own | ✅ Own                | ✅ Own                | ❌                    | ❌                           |
-| `admin`    | ✅ Own | ✅ Own + Non-admin    | ✅ Own + Non-admin    | ✅ Non-admin only     | ✅ Non-admin (≤30 days)      |
+| Role       | List Users        | View User             | Create Profile | Read Profile          | Update Profile        | Delete Profile        | Restore Profile                |
+|------------|-------------------|-----------------------|----------------|-----------------------|-----------------------|-----------------------|--------------------------------|
+| `commuter` | Own only          | Own only              | ✅ Own         | ✅ Own                | ✅ Own                | ❌                    | ❌                             |
+| `driver`   | Own only          | Own only              | ✅ Own         | ✅ Own                | ✅ Own                | ❌                    | ❌                             |
+| `admin`    | All non-admin     | Own + Non-admin       | ✅ Own         | ✅ Own + Non-admin    | ✅ Own + Non-admin    | ✅ Non-admin only     | ✅ Non-admin (≤30 days)        |
 
 > **Data-Privacy Note:** Soft-deleted profiles are only restorable within a **30-day retention window**. After 30 days, the restore endpoint will reject the request. It is recommended to schedule a periodic job (`php artisan schedule:run`) to permanently purge (`forceDelete`) profiles that exceed this window, ensuring compliance with data-minimization principles (e.g. GDPR, DPA 2012).
 

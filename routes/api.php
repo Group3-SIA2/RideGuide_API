@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\UserProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,10 +29,10 @@ Route::controller(AuthController::class)->prefix('auth')->group(function (): voi
 */
 Route::middleware('auth:sanctum')->group(function (): void {
 
-    // ── Auth ─────────────────────────────────────
+    // Auth 
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
 
-    // ── Authenticated User Info ──────────────────
+    // Authenticated User Info
     Route::get('/user', function (Request $request) {
         return response()->json([
             'success' => true,
@@ -48,7 +50,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         ]);
     })->name('api.user');
 
-    // ── Driver Routes ────────────────────────────
+    // Driver Routes
     Route::controller(DriverController::class)->prefix('drivers')->group(function (): void {
         Route::post('/create-profile',       'createProfile')->name('api.drivers.create-profile');
         Route::get('/read-profile/{id}',     'readProfile')->name('api.drivers.read-profile');
@@ -57,8 +59,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::put('/restore-profile/{id}',  'restoreProfile')->name('api.drivers.restore-profile');
     });
 
-    // ── User Profile Routes ─────────────────────────
-    Route::controller(\App\Http\Controllers\Api\UserProfileController::class)->prefix('users')->group(function (): void {
+    // ── User Routes ─────────────────────────────
+    Route::controller(UserController::class)->prefix('users')->group(function (): void {
+        Route::get('/',       'index')->name('api.users.index');
+        Route::get('/{id}',   'show')->name('api.users.show');
+    });
+
+    // User Profile Routes 
+    Route::controller(UserProfileController::class)->prefix('users')->group(function (): void {
         Route::post('/create-profile',        'addUserProfileCredentials')->name('api.users.create-profile');
         Route::put('/update-profile/{id}',    'updateUserProfileCredentials')->name('api.users.update-profile');
         Route::get('/read-profile/{id}',      'getUserProfileCredentials')->name('api.users.read-profile');
