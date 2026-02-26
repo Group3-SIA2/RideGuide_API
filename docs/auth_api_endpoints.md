@@ -11,6 +11,20 @@ https://rideguide.test/api/
 
 ---
 
+## Authentication Flow
+
+### New User (First Time)
+```
+Register → Receive Email OTP → Verify OTP (email_verification) → Auto-Logged In → Create Profile
+```
+
+### Returning User (Subsequent Logins)
+```
+Login → Receive 2FA OTP → Verify OTP (login_2fa) → Logged In
+```
+
+---
+
 ## Headers
 
 For all requests, include these headers in Postman:
@@ -125,18 +139,18 @@ password    password123
 
 **POST** `https://rideguide.test/api/auth/verify-otp`
 
-Verifies an OTP for either email verification or 2FA login. A Bearer token is only returned when the type is `login_2fa`.
+Verifies an OTP for either email verification or 2FA login. A Bearer token is returned in **both** cases — email verification auto-logs the user in, and 2FA login completes the login process.
 
 In Postman, go to the **Body** tab, select **form-data**, and fill in:
 
-**For Email Verification:**
+**For Email Verification (after registration):**
 ```
 email    aslainiemaruhom19@gmail.com
 otp      123456
 type     email_verification
 ```
 
-**For 2FA Login:**
+**For 2FA Login (after login):**
 ```
 email    aslainiemaruhom19@gmail.com
 otp      654321
@@ -147,7 +161,20 @@ type     login_2fa
 ```json
 {
     "success": true,
-    "message": "Email verified successfully. You can now login."
+    "message": "Email verified successfully. You are now logged in.",
+    "data": {
+        "user": {
+            "id": "9f1a2b3c-...",
+            "first_name": "Aslainie",
+            "last_name": "Maruhom",
+            "middle_name": "Lampac",
+            "email": "aslainiemaruhom19@gmail.com",
+            "role": "commuter",
+            "email_verified_at": "2026-02-22T10:30:00.000000Z"
+        },
+        "token": "1|abc123xyz456...",
+        "token_type": "Bearer"
+    }
 }
 ```
 
@@ -330,21 +357,21 @@ Revokes the current Bearer Token, effectively logging the user out. No body is n
 
 ## OTP Types Reference
 
-`email_verification` is used after Register to verify your email address.
-
-`login_2fa` is used after Login to complete 2FA and receive your token.
-
-`password_reset` is used after Forgot Password to reset your password.
+| Type | Used When |
+|------|-----------|
+| `email_verification` | After Register — verifies email and auto-logs in |
+| `login_2fa` | After Login — completes 2FA and issues token |
+| `password_reset` | After Forgot Password — allows password reset |
 
 ---
 
 ## Roles Reference
 
-`admin` is for Administrator accounts.
-
-`driver` is for Driver accounts.
-
-`commuter` is for Commuter accounts.
+| Role | Description |
+|------|-------------|
+| `admin` | Administrator accounts |
+| `driver` | Driver accounts |
+| `commuter` | Commuter accounts |
 
 ---
 

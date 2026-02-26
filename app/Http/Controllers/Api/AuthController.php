@@ -167,14 +167,33 @@ class AuthController extends Controller
 
         $otp->markAsUsed();
 
-        // Handle email verification
+        // Handle email verification — verify email and auto-login
         if ($validated['type'] === 'email_verification') {
             $user->email_verified_at = now();
             $user->save();
 
+            // Revoke any existing tokens
+            $user->tokens()->delete();
+
+            // Auto-login: issue Sanctum token immediately after email verification
+            $token = $user->createToken('auth-token')->plainTextToken;
+
             return response()->json([
                 'success' => true,
-                'message' => 'Email verified successfully. You can now login.',
+                'message' => 'Email verified successfully. You are now logged in.',
+                'data'=> [
+                    'user' => [
+                        'id'=> $user->id,
+                        'first_name'=> $user->first_name,
+                        'last_name'=> $user->last_name,
+                        'middle_name'=> $user->middle_name,
+                        'email'=> $user->email,
+                        'role'=> $user->role->name,
+                        'email_verified_at'=> $user->email_verified_at,
+                    ],
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                ],
             ], 200);
         }
 
@@ -420,7 +439,7 @@ class AuthController extends Controller
         Mail::to($user->email)->send(new OtpMail(
             otpCode:$code,
             type: $type,
-            userName: $user->frist_name . ' ' . $user->last_name,
+            userName: $user->first_name . ' ' . $user->last_name,
         ));
     }
 }
