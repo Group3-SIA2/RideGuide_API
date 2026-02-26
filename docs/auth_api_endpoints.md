@@ -41,24 +41,28 @@ Creates a new user account and sends an email verification OTP to the provided e
 In Postman, go to the **Body** tab, select **form-data**, and fill in the following fields:
 
 ```
-name              Aslainie Maruhom
-email             aslainiemaruhom19@gmail.com
-password          password123
+first_name             Aslainie
+last_name              Maruhom
+middle_name            Lampac
+email                  aslainiemaruhom19@gmail.com
+password               password123
 password_confirmation  password123
-role              commuter
+role                   commuter
 ```
 
-Note: The role field accepts only `admin`, `driver`, or `commuter`.
+Note: The `middle_name` field is optional. The `role` field accepts only `admin`, `driver`, or `commuter`.
 
 **Success Response (201)**
 ```json
 {
     "success": true,
-    "message": "Registration successful. Please verify your email with the OTP sent to your email.",
+    "message": "Registration successful. Please check your email for the OTP to verify your account.",
     "data": {
         "user": {
             "id": "9f1a2b3c-...",
-            "name": "Aslainie Maruhom",
+            "first_name": "Aslainie",
+            "last_name": "Maruhom",
+            "middle_name": "Lampac",
             "email": "aslainiemaruhom19@gmail.com",
             "role": "commuter"
         }
@@ -99,6 +103,14 @@ password    password123
 }
 ```
 
+**Error Response — Email Not Verified (403)**
+```json
+{
+    "success": false,
+    "message": "Your email is not verified. A new verification OTP has been sent to your email."
+}
+```
+
 **Error Response — OTP Already Sent (429)**
 ```json
 {
@@ -135,7 +147,7 @@ type     login_2fa
 ```json
 {
     "success": true,
-    "message": "Email verified successfully. You can now log in."
+    "message": "Email verified successfully. You can now login."
 }
 ```
 
@@ -147,11 +159,15 @@ type     login_2fa
     "data": {
         "user": {
             "id": "9f1a2b3c-...",
-            "name": "Aslainie Maruhom",
+            "first_name": "Aslainie",
+            "last_name": "Maruhom",
+            "middle_name": "Lampac",
             "email": "aslainiemaruhom19@gmail.com",
-            "role": "commuter"
+            "role": "commuter",
+            "email_verified_at": "2026-02-22T10:30:00.000000Z"
         },
-        "token": "1|abc123xyz456..."
+        "token": "1|abc123xyz456...",
+        "token_type": "Bearer"
     }
 }
 ```
@@ -236,7 +252,7 @@ email    aslainiemaruhom19@gmail.com
 type     email_verification
 ```
 
-The type field accepts `email_verification`, `login_2fa`, or `password_reset`.
+The type field accepts `email_verification` or `password_reset`.
 
 **Success Response (200)**
 ```json
@@ -283,7 +299,9 @@ Returns the profile of the currently logged-in user. No body is needed for this 
     "data": {
         "user": {
             "id": "9f1a2b3c-...",
-            "name": "Aslainie Maruhom",
+            "first_name": "Aslainie",
+            "last_name": "Maruhom",
+            "middle_name": "Lampac",
             "email": "aslainiemaruhom19@gmail.com",
             "role": "commuter",
             "email_verified_at": "2026-02-22T10:30:00.000000Z"
