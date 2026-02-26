@@ -21,19 +21,19 @@ Content-Type: application/json
 Authorization: Bearer {your_token_here}
 ```
 
-> **Note:** Any authenticated user (commuter or driver) can create and manage their own profile. Admin users can read, update, delete, and restore any user profile.
+> **Note:** Any authenticated user (commuter, driver, or admin) can create and manage **their own** profile. Admin users can read, update, delete, and restore **driver/commuter** profiles only — admins **cannot** operate on other admin profiles. Soft-deleted profiles can only be restored within **30 days** of deletion for data-privacy compliance.
 
 ---
 
 ## Endpoints Summary
 
-| #  | Method   | Endpoint                              | Description              | Access           |
-|----|----------|---------------------------------------|--------------------------|------------------|
-| 1  | `POST`   | `/api/users/create-profile`           | Create user profile      | Authenticated    |
-| 2  | `GET`    | `/api/users/read-profile/{id}`        | Get user profile         | Owner or Admin   |
-| 3  | `PUT`    | `/api/users/update-profile/{id}`      | Update user profile      | Owner or Admin   |
-| 4  | `DELETE` | `/api/users/delete-profile/{id}`      | Soft-delete profile      | Admin only       |
-| 5  | `PUT`    | `/api/users/restore-profile/{id}`     | Restore deleted profile  | Admin only       |
+| #  | Method   | Endpoint                              | Description              | Access                                |
+|----|----------|---------------------------------------|--------------------------|---------------------------------------|
+| 1  | `POST`   | `/api/users/create-profile`           | Create user profile      | Authenticated (own profile only)      |
+| 2  | `GET`    | `/api/users/read-profile/{id}`        | Get user profile         | Owner or Admin (non-admin targets)    |
+| 3  | `PUT`    | `/api/users/update-profile/{id}`      | Update user profile      | Owner or Admin (non-admin targets)    |
+| 4  | `DELETE` | `/api/users/delete-profile/{id}`      | Soft-delete profile      | Admin only (non-admin targets)        |
+| 5  | `PUT`    | `/api/users/restore-profile/{id}`     | Restore deleted profile  | Admin only (within 30-day window)     |
 
 ---
 
@@ -318,11 +318,13 @@ Follow these steps in order to test the user profile endpoints:
 
 ## Roles & Access Reference
 
-| Role       | Create | Read       | Update     | Delete | Restore |
-|------------|--------|------------|------------|--------|---------|
-| `commuter` | ✅ Own | ✅ Own     | ✅ Own     | ❌     | ❌      |
-| `driver`   | ✅ Own | ✅ Own     | ✅ Own     | ❌     | ❌      |
-| `admin`    | ✅ Any | ✅ Any     | ✅ Any     | ✅ Any | ✅ Any  |
+| Role       | Create | Read                  | Update                | Delete                | Restore                      |
+|------------|--------|-----------------------|-----------------------|-----------------------|------------------------------|
+| `commuter` | ✅ Own | ✅ Own                | ✅ Own                | ❌                    | ❌                           |
+| `driver`   | ✅ Own | ✅ Own                | ✅ Own                | ❌                    | ❌                           |
+| `admin`    | ✅ Own | ✅ Own + Non-admin    | ✅ Own + Non-admin    | ✅ Non-admin only     | ✅ Non-admin (≤30 days)      |
+
+> **Data-Privacy Note:** Soft-deleted profiles are only restorable within a **30-day retention window**. After 30 days, the restore endpoint will reject the request. It is recommended to schedule a periodic job (`php artisan schedule:run`) to permanently purge (`forceDelete`) profiles that exceed this window, ensuring compliance with data-minimization principles (e.g. GDPR, DPA 2012).
 
 ---
 
