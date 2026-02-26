@@ -12,20 +12,18 @@ use Carbon\Carbon;
 class UserProfileController extends Controller
 {
     /*
-    |----------------------------------------------------------------------
     | Access-control matrix
-    |----------------------------------------------------------------------
+    |
     | Driver / Commuter : Create, Read, Update  → OWN profile only
     | Admin             : Create                → OWN profile only
     |                   : Read, Update, Delete  → Driver/Commuter profiles only (NOT other admins)
     |                   : Restore               → Driver/Commuter profiles deleted within 30 days
-    |----------------------------------------------------------------------
     */
 
     /** Retention window (days) – soft-deleted profiles older than this should not be restorable. */
     private const RESTORE_WINDOW_DAYS = 30;
 
-    // ─── Create ──────────────────────────────────────────────────────────
+    // Create
 
     public function addUserProfileCredentials(Request $request): JsonResponse
     {
@@ -61,7 +59,7 @@ class UserProfileController extends Controller
         ], 201);
     }
 
-    // ─── Read ────────────────────────────────────────────────────────────
+    // Read
 
     public function getUserProfileCredentials(string $id): JsonResponse
     {
@@ -102,7 +100,7 @@ class UserProfileController extends Controller
         ]);
     }
 
-    // ─── Update ──────────────────────────────────────────────────────────
+    // Update
 
     public function updateUserProfileCredentials(Request $request, string $id): JsonResponse
     {
@@ -158,7 +156,7 @@ class UserProfileController extends Controller
         ]);
     }
 
-    // ─── Delete (Admin only — driver/commuter profiles) ──────────────────
+    // Delete (Admin only — driver/commuter profiles)
 
     public function deleteUserProfileCredentials(string $id): JsonResponse
     {
@@ -197,7 +195,7 @@ class UserProfileController extends Controller
         ]);
     }
 
-    // ─── Restore (Admin only — within retention window) ──────────────────
+    // Restore (Admin only — within retention window) 
 
     public function restoreUserProfileCredentials(string $id): JsonResponse
     {
