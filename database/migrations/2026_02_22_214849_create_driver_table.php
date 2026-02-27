@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users_profile', function (Blueprint $table) {
+        Schema::create('driver', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id')->notNull()->unique();
-            $table->string('birthdate')->notNull();
-            $table->string('gender')->notNull();
-            $table->string('profile_image')->nullable();
+            $table->string('license_number')->notNull()->unique();
+            $table->string('franchise_number')->notNull()->unique();
+            $table->enum('verification_status', ['unverified', 'verified', 'rejected'])->notNull()->default('unverified');
             $table->softDeletes();
-            
+
+
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
 
             $table->timestamps();
@@ -30,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users_profile');
+        Schema::dropIfExists('driver');
     }
 };

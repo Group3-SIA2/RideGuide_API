@@ -16,12 +16,16 @@ return new class extends Migration
             $table->uuid('route_id')->notNull();
             $table->uuid('terminal_id')->notNull();
 
+            $table->integer('stop_order')->default(0)->notNull();
+            $table->enum('terminal_role', ['origin', 'waypoint', 'destination'])->default('waypoint');
+
             $table->foreign('route_id')->references('id')->on('routes')->onDelete('cascade');
             $table->foreign('terminal_id')->references('id')->on('terminals')->onDelete('cascade');
 
             $table->unique(['route_id', 'terminal_id']);
 
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

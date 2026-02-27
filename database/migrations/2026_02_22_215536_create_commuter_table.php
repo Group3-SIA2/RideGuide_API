@@ -11,18 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('driver_profile', function (Blueprint $table) {
+        Schema::create('commuter', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id')->notNull()->unique();
-            $table->string('license_number')->notNull()->unique();
-            $table->string('franchise_number')->notNull()->unique();
-            $table->enum('verification_status', ['unverified', 'verified', 'rejected'])->notNull()->default('unverified');
-            $table->softDeletes();
-
-
+            $table->enum('commuter_classification', ['regular', 'student', 'senior', 'PWD'])->notNull()->default('regular');
+                
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
 
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -31,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('driver_profile');
+        Schema::dropIfExists('commuter');
     }
 };

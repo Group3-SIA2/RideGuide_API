@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('latitude', 10, 8)->notNull();
             $table->decimal('longitude', 11, 8)->notNull();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -14,12 +14,14 @@ return new class extends Migration
         Schema::create('route_stops', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('route_id')->notNull();
+            $table->uuid('terminal_id')->nullable();
             $table->string('stop_name')->notNull();
             $table->decimal('latitude', 10, 8)->notNull();
             $table->decimal('longitude', 11, 8)->notNull();
             $table->integer('stop_order')->notNull();
 
             $table->foreign('route_id')->references('id')->on('routes')->onDelete('cascade');
+            $table->foreign('terminal_id')->references('id')->on('terminals')->onDelete('set null');
 
             $table->timestamps();
         });
