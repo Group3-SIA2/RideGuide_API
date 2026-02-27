@@ -11,7 +11,7 @@ class DriverProfile extends Model
 {
     use HasUuids, SoftDeletes;
     
-    protected $table = 'driver_profile';
+    protected $table = 'driver';
 
     protected $primaryKey = 'id';
     public $incrementing = false;

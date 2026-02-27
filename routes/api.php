@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\UserProfileController;
+use App\Http\Controllers\Api\CommuterController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -65,13 +65,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/{id}',   'show')->name('api.users.show');
     });
 
-    // User Profile Routes 
-    Route::controller(UserProfileController::class)->prefix('users')->group(function (): void {
-        Route::post('/create-profile',        'addUserProfileCredentials')->name('api.users.create-profile');
-        Route::put('/update-profile/{id}',    'updateUserProfileCredentials')->name('api.users.update-profile');
-        Route::get('/read-profile/{id}',      'getUserProfileCredentials')->name('api.users.read-profile');
-        Route::delete('/delete-profile/{id}', 'deleteUserProfileCredentials')->name('api.users.delete-profile');
-        Route::put('/restore-profile/{id}',   'restoreUserProfileCredentials')->name('api.users.restore-profile');
+    // Commuter Routes
+    Route::controller(CommuterController::class)->prefix('commuter')->group(function (): void {
+        Route::post('/add-commuter',        'addCommuter')->name('api.commuter.create-profile');
+        Route::put('/update-commuter/{id}',    'updateCommuterClassification')->name('api.commuter.update-profile');
+        Route::get('/read-commuter/{id}',      'getCommuter')->name('api.commuter.read-profile');
+        Route::delete('/delete-commuter/{id}', 'deleteCommuter')->name('api.commuter.delete-profile');
+        Route::put('/restore-commuter/{id}',   'restoreCommuter')->name('api.commuter.restore-profile');
     });
 
     //Dashboard Routes 

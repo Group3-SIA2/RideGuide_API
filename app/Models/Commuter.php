@@ -7,17 +7,15 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use app\Models\User;
 
-class UserProfile extends Model
+class Commuter extends Model
 {
     use HasUuids, SoftDeletes;
 
-    protected $table = 'users_profile';
+    protected $table = 'commuter';
 
     protected $fillable = [
         'user_id',
-        'birthdate',
-        'gender',
-        'profile_image',
+        'commuter_classification',
     ];
 
     public function user()
