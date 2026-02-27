@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->foreignUuid('role_id')->after('id')->constrained('roles')->onDelete('restrict')->nullable()->default('commuter');
+        Schema::create('commuter_classification_types', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('classification_name')->notNull()->unique();
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -21,9 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign(['role_id']);
-            $table->dropColumn('role_id');
-        });
+        Schema::dropIfExists('commuter_classification_types');
     }
 };

@@ -16,7 +16,6 @@ return new class extends Migration
             $table->uuid('driver_id')->notNull();
             $table->uuid('route_id')->notNull();
             $table->enum('status', ['active', 'inactive'])->notNull()->default('active');
-
             $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
             $table->foreign('route_id')->references('id')->on('routes')->onDelete('cascade');
 

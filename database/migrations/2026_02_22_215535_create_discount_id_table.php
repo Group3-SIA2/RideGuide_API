@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('commuter', function (Blueprint $table) {
+        Schema::create('discount_id', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id')->notNull()->unique();
-            $table->uuid('discount_id')->nullable();
-                
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('discount_id')->references('id')->on('discount_id')->onDelete('set null');
+            $table->string('ID_number')->notNull()->unique();
+            $table->string('ID_image_path')->notNull();
+            $table->uuid('classification_type_id')->nullable();
+
+            $table->foreign('classification_type_id')->references('id')->on('commuter_classification_types')->onDelete('set null');
 
             $table->timestamps();
             $table->softDeletes();
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('commuter');
+        Schema::dropIfExists('discount_id');
     }
 };
