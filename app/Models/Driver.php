@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use app\Models\User;
 
-class DriverProfile extends Model
+class Driver extends Model
 {
     use HasUuids, SoftDeletes;
     

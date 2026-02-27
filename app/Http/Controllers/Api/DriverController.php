@@ -7,7 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
-use App\Models\DriverProfile as Driver;
+use App\Models\Driver;
 use Illuminate\Validation\Rule;
 use App\Models\User;
 
@@ -23,42 +23,41 @@ class DriverController extends Controller
         }
         
         if ($user->role->name !== 'driver' || $user->role->name === 'admin') {
-            return response()->json(['error' => 'Unauthorized. Only drivers can create a profile.'], 403);
+            return response()->json(['error' => 'Unauthorized.'], 403);
         }
         
         // Check if the user already has a driver profile
         if (Driver::where('user_id', $user->id)->exists()) {
             return response()->json(['error' => 'You already have a driver profile.'], 400);
         }
-
+        
         $validatedData = $request->validate([
-            'license_number' => ['required','string','max:255', Rule::unique('driver_profile','license_number')],
-            'franchise_number' => ['required','string','max:255', Rule::unique('driver_profile','franchise_number')],
-            'verification_status' => ['required','in:verified,unverified,rejected'],
+            'license_number' => ['required','string','max:255', Rule::unique('driver','license_number')],
+            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number')]
         ]);
 
-        $driverProfile = Driver::create([
+        $driver = Driver::create([
             'user_id' => $request->user()->id,
             'license_number' => $validatedData['license_number'],
             'franchise_number' => $validatedData['franchise_number'],
-            'verification_status' => $validatedData['verification_status'],
+            'verification_status' => 'unverified', // default lng only admin can edit or set this
         ]);
 
         return response()->json(['message' => 'Driver profile created successfully', 
-                                 'driver_profile' => $driverProfile], 201);
+                                 'driver_profile' => $driver], 201);
     }
 
     public function readProfile($id): JsonResponse
     {
-        $driverProfile = Driver::find($id);
+        $driver = Driver::find($id);
 
         // Debugging: Check if the driver profile is being retrieved correctly
         //$driverProfile = Driver::where('id', $id)->first();
         // $driverProfile = Driver::where('id', $id)->first();
 
-        // dd($driverProfile);
+        // dd($driver);
 
-        if (! $driverProfile) {
+        if (! $driver) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
@@ -67,18 +66,18 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        if ($driverProfile->user_id !== $user->id && $user->role->name !== 'admin') {
+        if ($driver->user_id !== $user->id && $user->role->name !== 'admin') {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        return response()->json(['driver_profile' => $driverProfile], 200);
+        return response()->json(['driver_profile' => $driver], 200);
     }
 
     public function updateProfile(Request $request, $id): JsonResponse
     {
-        $driverProfile = Driver::find($id);
+        $driver = Driver::find($id);
 
-        if (!$driverProfile) {
+        if (!$driver) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
@@ -87,28 +86,45 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // Admin or owner lungs
-        if ($driverProfile->user_id !== auth()->id() && auth()->user()->role->name !== 'admin') {
+        if ($driver->user_id !== auth()->id() && auth()->user()->role->name !== 'admin') {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
+        // Admin can update all data including verification status, driver can only update franchise number
+        if($user->role->name === 'admin') {
+            $validatedData = $request->validate([
+                'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id)],
+                'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id)],
+                'verification_status' => ['sometimes', Rule::in(['unverified', 'verified', 'rejected'])],
+            ]);
+        } else {
+            $disallowedFields = array_intersect(
+                array_keys($request->all()),
+                ['license_number', 'verification_status']
+            );
 
-        $validatedData = $request->validate([
-            'license_number' => ['sometimes','string','max:255', Rule::unique('driver_profile','license_number')->ignore($driverProfile->id)],
-            'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver_profile','franchise_number')->ignore($driverProfile->id)],
-            'verification_status' => ['sometimes','in:verified,unverified,rejected'],
-        ]);
+            if (!empty($disallowedFields)) {
+                return response()->json([
+                    'error' => 'You can only update your franchise_number.',
+                    'disallowed_fields' => array_values($disallowedFields),
+                ], 403);
+            }
+            
+            $validatedData = $request->validate([
+                'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id)],
+            ]);
+        }
 
-        $driverProfile->update($validatedData);
+        $driver->update($validatedData);
 
         return response()->json(['message' => 'Driver profile updated successfully', 
-                                 'driver_profile' => $driverProfile], 200);
+                                 'driver_profile' => $driver], 200);
     }
 
     public function deleteProfile($id): JsonResponse
     {
-        $driverProfile = Driver::find($id);
+        $driver = Driver::find($id);
 
-        if (!$driverProfile) {
+        if (!$driver) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
@@ -117,16 +133,16 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $driverProfile->delete();
+        $driver->delete();
 
         return response()->json(['message' => 'Driver profile deleted successfully'], 200);
     }
 
     public function restoreProfile($id): JsonResponse
     {
-        $driverProfile = Driver::withTrashed()->find($id);
+        $driver = Driver::withTrashed()->find($id);
 
-        if (! $driverProfile) {
+        if (! $driver) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
@@ -140,11 +156,11 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $driverProfile->restore();
+        $driver->restore();
 
         return response()->json([
             'message' => 'Driver profile restored successfully',
-            'driver_profile' => $driverProfile
+            'driver_profile' => $driver
         ], 200);
     }
 }
