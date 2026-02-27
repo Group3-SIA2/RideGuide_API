@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
+use Illuminate\Support\Str;
 
 class SetUpController extends Controller
 {
@@ -27,9 +28,9 @@ class SetUpController extends Controller
         }
 
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'last_name' => 'required|string|max:255|regex:/^[a-zA-Z\s]+$/',
-            'middle_name' => 'nullable|string|max:255|regex:/^[a-zA-Z\s]+$/',
+            'first_name' => 'required|string|max:255|regex:/^[\p{L}\s]+$/u',
+            'last_name' => 'required|string|max:255|regex:/^[\p{L}\s]+$/u',
+            'middle_name' => 'nullable|string|max:255|regex:/^[\p{L}\s]+$/u',
             'role' => 'required|string|in:admin,driver,commuter',
         ]);
 

@@ -29,7 +29,7 @@ class CommuterController extends Controller
         }
 
         $request->validate([
-            'commuter_classification' => 'required|string|in:regular,student,senior,PWD',
+            'commuter_classification' => 'required|string|in:regular,student,senior,PWD|regex:/^[a-zA-Z\s]+$/',
         ]);
 
         $commuter = Commuter::create([
@@ -103,7 +103,7 @@ class CommuterController extends Controller
         }
 
         $request->validate([
-            'commuter_classification' => 'sometimes|string|in:regular,student,senior,PWD',
+            'commuter_classification' => 'sometimes|string|in:regular,student,senior,PWD|regex:/^[a-zA-Z\s]+$/',
         ]);
 
         $data = $request->only(['commuter_classification']);

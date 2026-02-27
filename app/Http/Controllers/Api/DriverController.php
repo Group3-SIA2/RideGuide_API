@@ -32,8 +32,8 @@ class DriverController extends Controller
         }
         
         $validatedData = $request->validate([
-            'license_number' => ['required','string','max:255', Rule::unique('driver','license_number')],
-            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number')]
+            'license_number' => ['required','string','max:255', Rule::unique('driver','license_number'), 'regex:/^[A-Za-z0-9\s]+$/'],
+            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number'), 'regex:/^[A-Za-z0-9\s]+$/']
         ]);
 
         $driver = Driver::create([
@@ -92,8 +92,8 @@ class DriverController extends Controller
         // Admin can update all data including verification status, driver can only update franchise number
         if($user->role->name === 'admin') {
             $validatedData = $request->validate([
-                'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id)],
-                'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id)],
+                'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
+                'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
                 'verification_status' => ['sometimes', Rule::in(['unverified', 'verified', 'rejected'])],
             ]);
         } else {
@@ -108,7 +108,7 @@ class DriverController extends Controller
                     'disallowed_fields' => array_values($disallowedFields),
                 ], 403);
             }
-            
+
             $validatedData = $request->validate([
                 'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id)],
             ]);
