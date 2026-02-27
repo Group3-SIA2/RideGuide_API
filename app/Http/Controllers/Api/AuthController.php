@@ -25,12 +25,12 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'first_name'=> ['required', 'string', 'max:255'],
-            'last_name'=> ['required', 'string', 'max:255'],
+            'first_name'=> ['nullable', 'string', 'max:255'],
+            'last_name'=> ['nullable', 'string', 'max:255'],
             'middle_name'=> ['nullable', 'string', 'max:255'],
             'email'=> ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password'=> ['required', 'string', 'confirmed', Password::min(8)],
-            'role'=> ['required', 'string', 'in:admin,driver,commuter'],
+            'role'=> ['nullable', 'string', 'in:admin,driver,commuter'],
         ]);
 
         $role = Role::where('name', $validated['role'])->firstOrFail();
