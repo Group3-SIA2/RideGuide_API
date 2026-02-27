@@ -102,14 +102,12 @@ class CommuterController extends Controller
 
         $profileOwner = $commuter->user;
 
-        // Commuter on their own profile can update classification
-        if (!$user->hasRole('commuter')) {
-            if ($commuter->user_id !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized. You can only update your own profile.',
-                ], 403);
-            }
+        // Commuter on their own profile can update classification also admin
+        if (!$user->hasRole('admin') && !($user->hasRole('commuter') && $commuter->user_id === $user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only Admin or the owning Commuter can update this profile.',
+            ], 403);
         }
 
         $request->validate([
@@ -131,16 +129,16 @@ class CommuterController extends Controller
         ]);
     }
 
-    // Delete (Admin only — driver/commuter profiles)
+    // Delete (Admin only — commuter profiles)
 
     public function deleteCommuter(string $id): JsonResponse
     {
         $user = auth()->user();
 
-        if (!$user->hasRole('commuter')) {
+        if (!$user->hasRole('admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. Only commuters can delete their own profiles.',
+                'message' => 'Unauthorized. Only admins can delete commuter profiles.',
             ], 403);
         }
 
@@ -151,15 +149,6 @@ class CommuterController extends Controller
                 'success' => false,
                 'message' => 'Commuter not found.',
             ], 404);
-        }
-
-        // Commuter profiles can only delete by commuter themselves
-        $profileOwner = $commuter->user;
-        if ($profileOwner && $profileOwner->hasRole('admin') && $profileOwner->id !== $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. You cannot delete another admin\'s profile.',
-            ], 403);
         }
 
         $commuter->delete();
