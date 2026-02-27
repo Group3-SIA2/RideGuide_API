@@ -32,24 +32,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // Auth 
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
 
-    // Authenticated User Info
-    Route::get('/user', function (Request $request) {
-        return response()->json([
-            'success' => true,
-            'data'    => [
-                'user' => [
-                    'id'                => $request->user()->id,
-                    'first_name'        => $request->user()->first_name,
-                    'last_name'         => $request->user()->last_name,
-                    'middle_name'       => $request->user()->middle_name,
-                    'email'             => $request->user()->email,
-                    'role'              => $request->user()->role->name,
-                    'email_verified_at' => $request->user()->email_verified_at,
-                ],
-            ],
-        ]);
-    })->name('api.user');
-
     // Driver Routes
     Route::controller(DriverController::class)->prefix('drivers')->group(function (): void {
         Route::post('/create-profile',       'createProfile')->name('api.drivers.create-profile');
@@ -59,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::put('/restore-profile/{id}',  'restoreProfile')->name('api.drivers.restore-profile');
     });
 
-    // ── User Routes ─────────────────────────────
+    // User Routes 
     Route::controller(UserController::class)->prefix('users')->group(function (): void {
         Route::get('/',       'index')->name('api.users.index');
         Route::get('/{id}',   'show')->name('api.users.show');
