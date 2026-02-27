@@ -61,7 +61,7 @@ class CommuterController extends Controller
 
         $profileOwner = $commuter->user;
 
-        // Driver / Commuter → can only view their own profile
+        // Commuter can only view their own profile and admin can view all commuter profiles
         if (!$user->hasRole('admin')) {
             if ($commuter->user_id !== $user->id) {
                 return response()->json([
@@ -69,15 +69,7 @@ class CommuterController extends Controller
                     'message' => 'Unauthorized. You can only view your own profile.',
                 ], 403);
             }
-        } else {
-            // Admin → can view driver/commuter profiles, NOT other admin profiles
-            if ($profileOwner && $profileOwner->hasRole('admin') && $profileOwner->id !== $user->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized. You cannot view another admin\'s profile.',
-                ], 403);
-            }
-        }
+        } 
 
         return response()->json([
             'success' => true,
