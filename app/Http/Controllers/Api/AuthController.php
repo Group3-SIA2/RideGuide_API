@@ -25,23 +25,14 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'first_name'=> ['required', 'string', 'max:255'],
-            'last_name'=> ['required', 'string', 'max:255'],
-            'middle_name'=> ['nullable', 'string', 'max:255'],
             'email'=> ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password'=> ['required', 'string', 'confirmed', Password::min(8)],
-            'role'=> ['required', 'string', 'in:admin,driver,commuter'],
         ]);
 
-        $role = Role::where('name', $validated['role'])->firstOrFail();
-
         $user = User::create([
-            'first_name'=> $validated['first_name'],
-            'last_name'=> $validated['last_name'],
-            'middle_name'=> $validated['middle_name'] ?? null,
             'email'=> $validated['email'],
             'password'=> $validated['password'],
-            'role_id' => $role->id,
+            'role_id'=> null,
         ]);
 
         // Generate and send email verification OTP
@@ -53,11 +44,7 @@ class AuthController extends Controller
             'data'=> [
                 'user'=> [
                     'id'=> $user->id,
-                    'first_name'=> $user->first_name,
-                    'last_name'=> $user->last_name,
-                    'middle_name'=> $user->middle_name,
                     'email'=> $user->email,
-                    'role'=> $role->name,
                 ],
             ],
         ], 201);
@@ -184,11 +171,7 @@ class AuthController extends Controller
                 'data'=> [
                     'user' => [
                         'id'=> $user->id,
-                        'first_name'=> $user->first_name,
-                        'last_name'=> $user->last_name,
-                        'middle_name'=> $user->middle_name,
                         'email'=> $user->email,
-                        'role'=> $user->role->name,
                         'email_verified_at'=> $user->email_verified_at,
                     ],
                     'token' => $token,
@@ -210,11 +193,7 @@ class AuthController extends Controller
                 'data'=> [
                     'user'  => [
                         'id'=> $user->id,
-                        'first_name'=> $user->first_name,
-                        'last_name'=> $user->last_name,
-                        'middle_name'=> $user->middle_name,
                         'email'=> $user->email,
-                        'role'=> $user->role->name,
                         'email_verified_at'=> $user->email_verified_at,
                     ],
                     'token' => $token,
@@ -439,7 +418,7 @@ class AuthController extends Controller
         Mail::to($user->email)->send(new OtpMail(
             otpCode:$code,
             type: $type,
-            userName: $user->first_name . ' ' . $user->last_name,
+            recipientEmail: $user->email,
         ));
     }
 }

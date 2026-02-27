@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Driverprofile;
+use App\Models\Driver;
 use App\Models\Feedback;
 use App\Models\Role;
-use App\Models\UserProfile;
+use App\Models\Commuter;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,8 +34,8 @@ class DashboardController extends Controller
         $totalCommuters   = User::whereHas('role', fn($q) => $q->where('name', 'commuter'))->count();
 
         // Total Verified 
-        $totalDriverProfiles = Driverprofile::count();
-        $getAllDriverProfiles = Driverprofile::all();
+        $totalDriverProfiles = Driver::count();
+        $getAllDriverProfiles = Driver::all();
 
         // get own credentials
         $getCredentials = User::where('id', $user->id)->first();
@@ -79,15 +79,15 @@ class DashboardController extends Controller
         }
 
         //  Driver Profile 
-        $driverProfile = Driverprofile::where('user_id', $user->id)->first();
+        $driverProfile = Driver::where('user_id', $user->id)->first();
 
         if (! $driverProfile) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
         $getUser = User::where('id', $user->id)->first();
-        $getUserProfile = UserProfile::where('user_id', $user->id)->first();
-        $getDriversProfile = Driverprofile::where('user_id', $user->id)->first();
+        $getUserClassification = Commuter::where('user_id', $user->id)->first();
+        $getDriversProfile = Driver::where('user_id', $user->id)->first();
         //$getFeedbacks = Feedback::where('driver_id', $driverProfile->id)->get();
         //$getTerminals = Terminals::where('driver_id', $driverProfile->id)->get();
         //$getDriverRoutes = DriverRoutes::where('driver_id', $driverProfile->id)->get();
@@ -99,7 +99,7 @@ class DashboardController extends Controller
             'success' => true,
             'data'    => [
                 'user' => $getUser,
-                'profile' => $getUserProfile,
+                'classification' => $getUserClassification,
                 'driver_profile' => $getDriversProfile,
             ],
         ], 200);

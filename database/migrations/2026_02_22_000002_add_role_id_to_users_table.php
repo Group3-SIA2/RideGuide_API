@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignUuid('role_id')->after('id')->constrained('roles')->onDelete('restrict')->nullable()->default('commuter');
+            $table->uuid('role_id')->nullable();
+            $table->foreign('role_id')->references('id')->on('roles')->onDelete('set null');
         });
     }
 

@@ -140,15 +140,15 @@
             @if($type === 'email_verification')
                 <div class="badge">Email Verification</div>
                 <h2>Verify your email</h2>
-                <p class="subtitle">Hi <strong>{{ $userName }}</strong>, use the code below to verify your email address.</p>
+                <p class="subtitle">Hi <strong>{{ $recipientEmail }}</strong>, use the code below to verify your email address.</p>
             @elseif($type === 'login_2fa')
                 <div class="badge">Login Verification</div>
                 <h2>Complete your login</h2>
-                <p class="subtitle">Hi <strong>{{ $userName }}</strong>, use the code below to finish signing in to your account.</p>
+                <p class="subtitle">Hi <strong>{{ $recipientEmail }}</strong>, use the code below to finish signing in to your account.</p>
             @elseif($type === 'password_reset')
                 <div class="badge">Password Reset</div>
                 <h2>Reset your password</h2>
-                <p class="subtitle">Hi <strong>{{ $userName }}</strong>, use the code below to reset your account password.</p>
+                <p class="subtitle">Hi <strong>{{ $recipientEmail }}</strong>, use the code below to reset your account password.</p>
             @endif
 
             <div class="otp-block">

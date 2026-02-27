@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CommuterController;
+use App\Http\Controllers\Api\SetUpController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -61,6 +62,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/admin',  'adminDashboard')->name('api.dashboard.admin');
         Route::get('/driver', 'driverDashboard')->name('api.dashboard.driver');
         Route::get('/commuter',   'commuterDashboard')->name('api.dashboard.commuter');
+    });
+
+    //SetUp Routes
+    Route::controller(SetUpController::class)->prefix('setup')->group(function (): void {
+        Route::post('/setup-users', 'setUpUsers')->name('api.setup.setUpUsers');
     });
 
 });
