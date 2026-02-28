@@ -25,7 +25,7 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email'=> ['required', 'string', 'email:rfc,filter', 'max:255', 'unique:users,email'],
             'password'=> ['required', 'string', Password::min(8)],
         ]);
 
@@ -59,7 +59,7 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email'],
+            'email'=> ['required', 'string', 'email:rfc,filter'],
             'password' => ['required', 'string'],
         ]);
 
@@ -122,7 +122,7 @@ class AuthController extends Controller
     public function verifyOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email'],
+            'email'=> ['required', 'string', 'email:rfc,filter'],
             'otp'=> ['required', 'string', 'size:6'],
             'type'=> ['required', 'string', 'in:email_verification,login_2fa'],
         ]);
@@ -233,7 +233,7 @@ class AuthController extends Controller
     public function forgotPassword(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string', 'email:rfc,filter'],
         ]);
 
         $user = User::where('email', $validated['email'])->first();
@@ -276,7 +276,7 @@ class AuthController extends Controller
     public function resetPassword(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email'],
+            'email'=> ['required', 'string', 'email:rfc,filter'],
             'otp'=> ['required', 'string', 'size:6'],
             'password'=> ['required', 'string', 'confirmed', Password::min(8)],
         ]);
@@ -344,7 +344,7 @@ class AuthController extends Controller
     public function resendOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email'],
+            'email'=> ['required', 'string', 'email:rfc,filter'],
             'type'=> ['required', 'string', 'in:email_verification,password_reset'],
         ]);
 
