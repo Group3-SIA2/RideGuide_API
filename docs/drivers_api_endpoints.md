@@ -1,8 +1,8 @@
-# RideGuide Driver Profile API
+# RideGuide Driver API
 
 ## Overview
 
-The Driver Profile API allows authenticated **driver** users to manage their driver profiles. All endpoints are **protected** and require a valid Bearer Token obtained via login + 2FA OTP verification.
+The Driver API allows authenticated **driver** users to manage their driver profiles. All endpoints are **protected** and require a valid Bearer Token obtained via login + 2FA OTP verification.
 
 **Base URL**
 ```
@@ -41,23 +41,25 @@ Authorization: Bearer {your_token_here}
 
 **POST** `https://rideguide.test/api/drivers/create-profile`
 
-Creates a new driver profile for the authenticated user. Each driver can only have **one** profile.
+Creates a new driver profile for the authenticated user. Each driver can only have **one** profile. The `verification_status` is automatically set to `unverified` — only an admin can change it later via the update endpoint.
 
-In Postman, go to the **Body** tab, select **form-data**, and fill in:
+In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
 
-```
-license_number        D01-00-000001
-franchise_number      1984516156
-verification_status   unverified
+```json
+{
+    "license_number": "D01 00 000001",
+    "franchise_number": "1984516156"
+}
 ```
 
 **Field Rules**
 
-| Field                 | Type   | Required | Rules                                               |
-|-----------------------|--------|----------|-----------------------------------------------------|
-| `license_number`      | string | Yes      | Max 255 chars, must be unique                        |
-| `franchise_number`    | string | Yes      | Max 255 chars, must be unique                        |
-| `verification_status` | string | Yes      | Must be one of: `verified`, `unverified`, `rejected` |
+| Field              | Type   | Required | Rules                                                              |
+|--------------------|--------|----------|--------------------------------------------------------------------|
+| `license_number`   | string | Yes      | Max 255 chars, unique, alphanumeric and spaces only                |
+| `franchise_number` | string | Yes      | Max 255 chars, unique, alphanumeric and spaces only                |
+
+> **Note:** Both fields only accept letters, numbers, and spaces (regex: `^[A-Za-z0-9\s]+$`). The `verification_status` is **not** a user input — it defaults to `unverified`.
 
 **Success Response (201)**
 ```json
@@ -66,7 +68,7 @@ verification_status   unverified
     "driver_profile": {
         "id": "9f1a2b3c-...",
         "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "license_number": "D01-00-000001",
+        "license_number": "D01 00 000001",
         "franchise_number": "1984516156",
         "verification_status": "unverified",
         "created_at": "2026-02-25T10:00:00.000000Z",
@@ -78,7 +80,7 @@ verification_status   unverified
 **Error Response — Not a Driver (403)**
 ```json
 {
-    "error": "Unauthorized. Only drivers can create a profile."
+    "error": "Unauthorized."
 }
 ```
 
@@ -149,25 +151,43 @@ GET https://rideguide.test/api/drivers/read-profile/019c93de-1d75-713e-a51f-75fe
 
 **PUT** `https://rideguide.test/api/drivers/update-profile/{id}`
 
-Updates an existing driver profile. Only the profile owner or an admin can update it. All fields are optional (send only the ones you want to change).
+Updates an existing driver profile. **Drivers** can only update their own `franchise_number`. **Admins** can update all fields including `license_number`, `franchise_number`, and `verification_status`. All fields are optional (send only the ones you want to change).
+
+### As Admin
 
 In Postman, go to the **Body** tab, select **raw** → **JSON**, and provide the fields to update:
 
 ```json
 {
-    "license_number": "D01-00-000002",
+    "license_number": "D01 00 000002",
     "franchise_number": "9876543210",
     "verification_status": "verified"
 }
 ```
 
-**Field Rules**
+**Field Rules (Admin)**
 
-| Field                 | Type   | Required | Rules                                                                    |
-|-----------------------|--------|----------|--------------------------------------------------------------------------|
-| `license_number`      | string | No       | Max 255 chars, must be unique (ignores current profile)                  |
-| `franchise_number`    | string | No       | Max 255 chars, must be unique (ignores current profile)                  |
-| `verification_status` | string | No       | Must be one of: `verified`, `unverified`, `rejected`                     |
+| Field                 | Type   | Required | Rules                                                                                  |
+|-----------------------|--------|----------|----------------------------------------------------------------------------------------|
+| `license_number`      | string | No       | Max 255 chars, unique (ignores current profile), alphanumeric and spaces only           |
+| `franchise_number`    | string | No       | Max 255 chars, unique (ignores current profile), alphanumeric and spaces only           |
+| `verification_status` | string | No       | Must be one of: `verified`, `unverified`, `rejected`                                   |
+
+### As Driver (Owner)
+
+Drivers can **only** update `franchise_number`. Attempting to update `license_number` or `verification_status` will return a 403 error.
+
+```json
+{
+    "franchise_number": "9876543210"
+}
+```
+
+**Field Rules (Driver)**
+
+| Field              | Type   | Required | Rules                                                     |
+|--------------------|--------|----------|-----------------------------------------------------------|
+| `franchise_number` | string | No       | Max 255 chars, unique (ignores current profile)            |
 
 **Example**
 ```
@@ -181,7 +201,7 @@ PUT https://rideguide.test/api/drivers/update-profile/019c93de-1d75-713e-a51f-75
     "driver_profile": {
         "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
         "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "license_number": "D01-00-000002",
+        "license_number": "D01 00 000002",
         "franchise_number": "9876543210",
         "verification_status": "verified",
         "created_at": "2026-02-25T10:00:00.000000Z",
@@ -201,6 +221,14 @@ PUT https://rideguide.test/api/drivers/update-profile/019c93de-1d75-713e-a51f-75
 ```json
 {
     "error": "Unauthorized"
+}
+```
+
+**Error Response — Driver Trying to Update Disallowed Fields (403)**
+```json
+{
+    "error": "You can only update your franchise_number.",
+    "disallowed_fields": ["license_number", "verification_status"]
 }
 ```
 
@@ -289,26 +317,27 @@ PUT https://rideguide.test/api/drivers/restore-profile/019c93de-1d75-713e-a51f-7
 
 ## Postman Testing Workflow
 
-Follow these steps in order to test the driver profile endpoints:
+Follow these steps in order to test the driver endpoints:
 
 1. **Login** — `POST /api/auth/login` with your driver account credentials.
 2. **Verify OTP** — `POST /api/auth/verify-otp` with type `login_2fa` to get your Bearer Token.
 3. **Set Token** — In Postman, go to **Authorization** → **Bearer Token** and paste the token.
-4. **Create Profile** — `POST /api/drivers/create-profile` with license & franchise numbers.
+4. **Create Profile** — `POST /api/drivers/create-profile` with `license_number` & `franchise_number` (verification_status is auto-set to `unverified`).
 5. **Read Profile** — `GET /api/drivers/read-profile/{id}` using the profile ID from step 4.
-6. **Update Profile** — `PUT /api/drivers/update-profile/{id}` with fields to change.
-7. **Delete Profile** — `DELETE /api/drivers/delete-profile/{id}` (requires admin token).
-8. **Restore Profile** — `PUT /api/drivers/restore-profile/{id}` (requires admin token).
+6. **Update Profile (as Driver)** — `PUT /api/drivers/update-profile/{id}` with `franchise_number` only.
+7. **Update Profile (as Admin)** — `PUT /api/drivers/update-profile/{id}` with any fields including `verification_status`.
+8. **Delete Profile** — `DELETE /api/drivers/delete-profile/{id}` (requires admin token).
+9. **Restore Profile** — `PUT /api/drivers/restore-profile/{id}` (requires admin token).
 
 ---
 
 ## Roles & Access Reference
 
-| Role       | Create | Read       | Update     | Delete | Restore |
-|------------|--------|------------|------------|--------|---------|
-| `driver`   | ✅ Own | ✅ Own     | ✅ Own     | ❌     | ❌      |
-| `admin`    | ❌     | ✅ Any     | ✅ Any     | ✅ Any | ✅ Any  |
-| `commuter` | ❌     | ❌         | ❌         | ❌     | ❌      |
+| Role       | Create | Read       | Update                        | Delete | Restore |
+|------------|--------|------------|-------------------------------|--------|---------|
+| `driver`   | ✅ Own | ✅ Own     | ✅ Own (`franchise_number` only) | ❌     | ❌      |
+| `admin`    | ❌     | ✅ Any     | ✅ Any (all fields)            | ✅ Any | ✅ Any  |
+| `commuter` | ❌     | ❌         | ❌                             | ❌     | ❌      |
 
 ---
 
