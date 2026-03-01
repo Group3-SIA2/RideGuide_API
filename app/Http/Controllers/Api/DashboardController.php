@@ -121,25 +121,21 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $userProfile = UserProfile::where('user_id', $user->id)->first();
-        if (! $userProfile) {
+        $commuterProfile = Commuter::with('user', 'discount.classificationType')
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $commuterProfile) {
             return response()->json(['error' => 'User profile not found'], 404);
         }
-        
-        $getUser = User::where('id', $user->id)->first();
-        $getUserProfile = UserProfile::where('user_id', $user->id)->first();
-        //$getAllTerminals = Terminals::all();
-        $getAllDriverProfiles = Driverprofile::all();
-        //$getAllFeedbacks = Feedback::all();
+
+        $getUser = User::with('role')->find($user->id);
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'profile' => $getUser,
-                'user_profile' => $getUserProfile,
-                //'terminals' => $getAllTerminals,
-                'drivers'   => $getAllDriverProfiles,
-                //'feedbacks' => $getAllFeedbacks,
+                'user'             => $getUser,
+                'commuter_profile' => $commuterProfile,
             ],
         ], 200);
     }
