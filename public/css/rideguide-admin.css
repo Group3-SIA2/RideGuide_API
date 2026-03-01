@@ -1,0 +1,524 @@
+/* ════════════════════════════════════════════════════════
+   RideGuide Admin — Global Theme
+   Inter font + deep navy sidebar + light/dark content
+   ════════════════════════════════════════════════════════ */
+
+/* ── Google Font ───────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── CSS Variables — Light Mode ────────────────────────── */
+:root {
+    --rg-font:            'Inter', sans-serif;
+
+    /* Sidebar (stays dark in both modes) */
+    --rg-sidebar-bg:      #0d1b36;
+    --rg-sidebar-brand:   #091527;
+    --rg-sidebar-text:    rgba(255,255,255,0.72);
+    --rg-sidebar-active:  rgba(255,255,255,0.12);
+    --rg-sidebar-border:  rgba(255,255,255,0.07);
+
+    /* Content */
+    --rg-bg:              #eef2f7;
+    --rg-card:            #ffffff;
+    --rg-card-border:     #e4eaf3;
+    --rg-card-shadow:     0 1px 3px rgba(0,0,0,0.06);
+
+    /* Topbar */
+    --rg-topnav-bg:       #ffffff;
+    --rg-topnav-border:   #e4eaf3;
+    --rg-topnav-shadow:   0 1px 4px rgba(0,0,0,0.06);
+
+    /* Typography */
+    --rg-text:            #1a202c;
+    --rg-text-muted:      #64748b;
+    --rg-text-subtle:     #94a3b8;
+
+    /* Table */
+    --rg-table-head:      #f8fafc;
+    --rg-table-border:    #f1f5f9;
+    --rg-table-hover:     #f5f8ff;
+
+    /* Accent */
+    --rg-accent:          #248AFF;
+    --rg-accent-light:    #dbeeff;
+    --rg-accent-dim:      rgba(36,138,255,0.12);
+}
+
+/* ── CSS Variables — Dark Mode ──────────────────────────── */
+body.dark-mode {
+    --rg-bg:              #0d1117;
+    --rg-card:            #161b2e;
+    --rg-card-border:     #1e293b;
+    --rg-card-shadow:     0 1px 6px rgba(0,0,0,0.35);
+
+    --rg-topnav-bg:       #111827;
+    --rg-topnav-border:   #1e293b;
+    --rg-topnav-shadow:   0 1px 6px rgba(0,0,0,0.3);
+
+    --rg-text:            #f1f5f9;
+    --rg-text-muted:      #94a3b8;
+    --rg-text-subtle:     #475569;
+
+    --rg-table-head:      #131c30;
+    --rg-table-border:    #1e293b;
+    --rg-table-hover:     #182641;
+
+    --rg-accent:          #60a5fa;
+    --rg-accent-light:    #1e3a5f;
+    --rg-accent-dim:      rgba(96,165,250,0.12);
+}
+
+/* ── Base Font ─────────────────────────────────────────── */
+body,
+.wrapper,
+.content-wrapper,
+.main-sidebar,
+.main-header,
+h1, h2, h3, h4, h5, h6,
+p, span, a, td, th,
+label, input, button, select, textarea,
+.nav-link, .brand-text, .nav-header {
+    font-family: var(--rg-font) !important;
+}
+
+/* ── Smooth Transitions ─────────────────────────────────── */
+body,
+.content-wrapper,
+.main-header.navbar,
+.rg-stat-card,
+.rg-card,
+.rg-table thead tr,
+.rg-table tbody td {
+    transition: background 0.25s ease, border-color 0.25s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ── Sidebar ────────────────────────────────────────────── */
+.main-sidebar {
+    background: var(--rg-sidebar-bg) !important;
+    border-right: 1px solid var(--rg-sidebar-border) !important;
+}
+.brand-link {
+    background: var(--rg-sidebar-brand) !important;
+    border-bottom: 1px solid var(--rg-sidebar-border) !important;
+}
+.brand-link:hover {
+    background: var(--rg-sidebar-brand) !important;
+}
+.brand-link .brand-image {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-right: 10px;
+    margin-top: -2px;
+}
+.brand-text {
+    color: #fff !important;
+    font-weight: 700 !important;
+    font-size: 1.15rem !important;
+    letter-spacing: -0.3px;
+}
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
+    color: var(--rg-sidebar-text) !important;
+    border-radius: 8px;
+    margin: 1px 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
+    background: var(--rg-sidebar-active) !important;
+    color: #fff !important;
+}
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link .nav-icon {
+    color: rgba(255,255,255,0.5) !important;
+}
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active .nav-icon {
+    color: var(--rg-accent) !important;
+}
+.nav-header {
+    color: rgba(255,255,255,0.3) !important;
+    font-size: 0.65rem !important;
+    letter-spacing: 1px !important;
+    padding: 12px 16px 4px !important;
+}
+
+/* ── Topbar ─────────────────────────────────────────────── */
+.main-header.navbar {
+    background: var(--rg-topnav-bg) !important;
+    border-bottom: 1px solid var(--rg-topnav-border) !important;
+    box-shadow: var(--rg-topnav-shadow) !important;
+}
+.navbar-nav .nav-link,
+.main-header .navbar-nav .nav-link {
+    color: var(--rg-text-muted) !important;
+}
+.main-header .navbar-nav .nav-link:hover {
+    color: var(--rg-text) !important;
+}
+
+/* Dark mode toggle button */
+.dark-mode-toggle,
+[data-lte-toggle="sidebar-collapse"],
+.main-header button {
+    color: var(--rg-text-muted) !important;
+}
+
+/* ── Content Wrapper ────────────────────────────────────── */
+.content-wrapper {
+    background: var(--rg-bg) !important;
+    padding: 20px 28px !important;
+}
+.content-header {
+    padding: 28px 28px 8px 28px !important;
+    background: transparent !important;
+}
+
+/* ── Page Header ────────────────────────────────────────── */
+.rg-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 8px;
+}
+.rg-page-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--rg-text);
+    margin: 0 0 4px;
+    line-height: 1.2;
+}
+.rg-page-subtitle {
+    font-size: 0.8rem;
+    color: var(--rg-text-muted);
+    margin: 0;
+}
+.rg-badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--rg-accent);
+    background: var(--rg-accent-light);
+    padding: 5px 14px;
+    border-radius: 20px;
+}
+
+/* ── Stat Cards ─────────────────────────────────────────── */
+.rg-stat-card {
+    background: var(--rg-card);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    border: 1px solid var(--rg-card-border);
+    box-shadow: var(--rg-card-shadow);
+}
+.rg-stat-card:hover {
+    box-shadow: 0 4px 16px var(--rg-accent-dim);
+    border-color: var(--rg-accent-light);
+}
+.rg-stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: var(--rg-accent-light) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.3rem;
+}
+.rg-stat-icon i {
+    color: var(--rg-accent) !important;
+}
+.rg-stat-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--rg-text-subtle);
+    margin: 0 0 6px;
+}
+.rg-stat-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--rg-text);
+    margin: 0;
+    line-height: 1.15;
+}
+.rg-stat-sub {
+    font-size: 0.7rem;
+    color: var(--rg-text-subtle);
+    margin-top: 6px;
+    display: block;
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+.rg-card {
+    background: var(--rg-card);
+    border-radius: 12px;
+    border: 1px solid var(--rg-card-border);
+    box-shadow: var(--rg-card-shadow);
+    overflow: hidden;
+}
+.rg-card-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--rg-table-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--rg-card);
+}
+.rg-card-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--rg-accent);
+    display: inline-block;
+    margin-right: 8px;
+}
+.rg-card-title {
+    font-size: 0.845rem;
+    font-weight: 600;
+    color: var(--rg-text);
+    margin: 0;
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+.rg-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.rg-table thead tr {
+    background: var(--rg-table-head);
+}
+.rg-table thead th {
+    padding: 10px 20px;
+    font-size: 0.64rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--rg-text-subtle);
+    border-bottom: 1px solid var(--rg-table-border);
+    white-space: nowrap;
+}
+.rg-table tbody tr {
+    border-bottom: 1px solid var(--rg-table-border);
+    transition: background 0.12s ease;
+}
+.rg-table tbody tr:last-child { border-bottom: none; }
+.rg-table tbody tr:hover { background: var(--rg-table-hover); }
+.rg-table tbody td {
+    padding: 13px 20px;
+    vertical-align: middle;
+    font-size: 0.845rem;
+    color: var(--rg-text);
+    background: transparent;
+}
+.rg-td-index {
+    color: var(--rg-text-subtle) !important;
+    font-size: 0.75rem !important;
+    width: 36px;
+}
+.rg-td-muted { color: var(--rg-text-muted) !important; }
+
+/* ── User Cell ──────────────────────────────────────────── */
+.rg-user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.rg-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--rg-accent-light);
+    color: var(--rg-accent);
+    font-size: 0.68rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+}
+.rg-user-name {
+    font-size: 0.845rem;
+    font-weight: 500;
+    color: var(--rg-text);
+}
+
+/* ── Badges ─────────────────────────────────────────────── */
+.rg-role-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--rg-accent-light);
+    color: var(--rg-accent);
+}
+.rg-status-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+.rg-status-active  { background: rgba(16,185,129,0.15); color: #10b981; }
+.rg-status-pending { background: rgba(245,158,11,0.15);  color: #f59e0b; }
+
+/* Dark mode badge adjustments */
+body.dark-mode .rg-status-active  { background: rgba(16,185,129,0.18); }
+body.dark-mode .rg-status-pending { background: rgba(245,158,11,0.18); }
+
+/* ── Empty State ────────────────────────────────────────── */
+.rg-empty {
+    text-align: center;
+    color: var(--rg-text-subtle) !important;
+    font-size: 0.845rem !important;
+    padding: 40px 20px !important;
+}
+
+/* ── Pagination Footer ──────────────────────────────────── */
+.rg-card-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--rg-table-border);
+    display: flex;
+    justify-content: flex-end;
+}
+.rg-card-footer .pagination {
+    margin: 0;
+}
+.rg-card-footer .page-link {
+    font-size: 0.78rem;
+    font-family: var(--rg-font) !important;
+    color: var(--rg-text-muted);
+    background: var(--rg-card);
+    border-color: var(--rg-card-border);
+    padding: 5px 12px;
+}
+.rg-card-footer .page-item.active .page-link {
+    background: var(--rg-accent);
+    border-color: var(--rg-accent);
+    color: #fff;
+}
+.rg-card-footer .page-link:hover {
+    background: var(--rg-table-hover);
+    color: var(--rg-accent);
+}
+
+/* ── Sidebar search input ───────────────────────────────── */
+.sidebar .form-control {
+    background: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+    color: rgba(255,255,255,0.8) !important;
+    border-radius: 8px !important;
+}
+.sidebar .form-control::placeholder { color: rgba(255,255,255,0.35) !important; }
+
+/* ── AdminLTE default card overrides (dark mode) ───────── */
+body.dark-mode .card {
+    background: var(--rg-card) !important;
+    border-color: var(--rg-card-border) !important;
+    color: var(--rg-text) !important;
+}
+body.dark-mode .card-header,
+body.dark-mode .card-footer {
+    background: var(--rg-table-head) !important;
+    border-color: var(--rg-table-border) !important;
+}
+body.dark-mode .dropdown-menu {
+    background: var(--rg-card) !important;
+    border-color: var(--rg-card-border) !important;
+}
+body.dark-mode .dropdown-item {
+    color: var(--rg-text) !important;
+}
+body.dark-mode .dropdown-item:hover {
+    background: var(--rg-table-hover) !important;
+}
+
+/* ── Search / Filter Bar ── */
+.rg-table tbody {
+    transition: opacity 0.18s ease;
+}
+
+.rg-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.rg-filter-bar .rg-search-input,
+.rg-filter-bar .rg-filter-select {
+    background: var(--rg-bg);
+    color: var(--rg-text);
+    border: 1px solid var(--rg-card-border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    height: 34px;
+}
+.rg-filter-bar .rg-search-input {
+    flex: 1;
+    min-width: 180px;
+}
+.rg-filter-bar .rg-filter-select {
+    min-width: 140px;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+}
+.rg-filter-bar .rg-search-input:focus,
+.rg-filter-bar .rg-filter-select:focus {
+    outline: none;
+    border-color: var(--rg-primary);
+    box-shadow: 0 0 0 2px rgba(36, 138, 255, 0.15);
+}
+.rg-filter-bar .rg-search-input::placeholder {
+    color: var(--rg-text-subtle);
+    opacity: 0.7;
+}
+.rg-filter-bar .rg-btn-search {
+    background: var(--rg-primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 0.82rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.2s;
+}
+.rg-filter-bar .rg-btn-search:hover {
+    background: #1a6fd4;
+}
+.rg-filter-bar .rg-btn-clear {
+    background: transparent;
+    color: var(--rg-text-subtle);
+    border: 1px solid var(--rg-card-border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.82rem;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    height: 34px;
+    transition: color 0.2s, border-color 0.2s;
+}
+.rg-filter-bar .rg-btn-clear:hover {
+    color: var(--rg-text);
+    border-color: var(--rg-text-subtle);
+}

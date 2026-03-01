@@ -64,11 +64,11 @@ return [
     */
 
     'logo' => '<b>Ride</b>Guide',
-    'logo_img' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-    'logo_img_class' => 'brand-image img-circle elevation-3',
+    'logo_img' => 'img/rideguide_logo.svg',
+    'logo_img_class' => 'brand-image',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => 'Admin Logo',
+    'logo_img_alt' => 'RideGuide Logo',
 
     /*
     |--------------------------------------------------------------------------
@@ -84,13 +84,13 @@ return [
     */
 
     'auth_logo' => [
-        'enabled' => false,
+        'enabled' => true,
         'img' => [
-            'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-            'alt' => 'Auth Logo',
+            'path' => 'img/rideguide_logo.svg',
+            'alt' => 'RideGuide Logo',
             'class' => '',
-            'width' => 50,
-            'height' => 50,
+            'width' => 60,
+            'height' => 60,
         ],
     ],
 
@@ -196,7 +196,7 @@ return [
     'classes_content_wrapper' => '',
     'classes_content_header' => '',
     'classes_content' => '',
-    'classes_sidebar' => 'sidebar-dark-primary elevation-4',
+    'classes_sidebar' => 'sidebar-dark-primary elevation-2',
     'classes_sidebar_nav' => '',
     'classes_topnav' => 'navbar-white navbar-light',
     'classes_topnav_nav' => 'navbar-expand',
@@ -256,14 +256,14 @@ return [
     |
     */
 
-    'use_route_url' => false,
-    'dashboard_url' => 'home',
+    'use_route_url' => true,
+    'dashboard_url' => 'admin.dashboard',
     'logout_url' => 'logout',
     'login_url' => 'login',
     'register_url' => 'register',
-    'password_reset_url' => 'password/reset',
-    'password_email_url' => 'password/email',
-    'profile_url' => false,
+    'password_reset_url' => 'password.request',
+    'password_email_url' => 'password.email',
+    'profile_url' => 'admin.profile.index',
     'disable_darkmode_routes' => false,
 
     /*
@@ -306,6 +306,10 @@ return [
             'topnav_right' => true,
         ],
         [
+            'type' => 'darkmode-widget',
+            'topnav_right' => true,
+        ],
+        [
             'type' => 'fullscreen-widget',
             'topnav_right' => true,
         ],
@@ -315,82 +319,49 @@ return [
             'type' => 'sidebar-menu-search',
             'text' => 'search',
         ],
+
+        // Main Navigation
+        ['header' => 'MAIN NAVIGATION'],
         [
-            'text' => 'blog',
-            'url' => 'admin/blog',
-            'can' => 'manage-blog',
+            'text'        => 'Dashboard',
+            'route'       => 'admin.dashboard',
+            'icon'        => 'fas fa-fw fa-tachometer-alt',
+            'active'      => ['admin/dashboard'],
+        ],
+
+        // Users
+        ['header' => 'USERS LISTS'],
+        [
+            'text'   => 'All Users',
+            'route'  => 'admin.users.index',
+            'icon'   => 'fas fa-fw fa-users',
+            'active' => ['admin/users*'],
         ],
         [
-            'text' => 'pages',
-            'url' => 'admin/pages',
-            'icon' => 'far fa-fw fa-file',
-            'label' => 4,
-            'label_color' => 'success',
-        ],
-        ['header' => 'account_settings'],
-        [
-            'text' => 'profile',
-            'url' => 'admin/settings',
-            'icon' => 'fas fa-fw fa-user',
+            'text'   => 'Commuters',
+            'route'  => 'admin.commuters.index',
+            'icon'   => 'fas fa-fw fa-user-friends',
+            'active' => ['admin/commuters*'],
         ],
         [
-            'text' => 'change_password',
-            'url' => 'admin/settings',
-            'icon' => 'fas fa-fw fa-lock',
+            'text'   => 'Drivers',
+            'route'  => 'admin.drivers.index',
+            'icon'   => 'fas fa-fw fa-id-card',
+            'active' => ['admin/drivers*'],
+        ],
+
+        // System
+        ['header' => 'ACCOUNT'],
+        [
+            'text'   => 'Profile',
+            'route'  => 'admin.profile.index',
+            'icon'   => 'fas fa-fw fa-user-circle',
+            'active' => ['admin/profile*'],
         ],
         [
-            'text' => 'multilevel',
-            'icon' => 'fas fa-fw fa-share',
-            'submenu' => [
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                ],
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                    'submenu' => [
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                        ],
-                        [
-                            'text' => 'level_two',
-                            'url' => '#',
-                            'submenu' => [
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                                [
-                                    'text' => 'level_three',
-                                    'url' => '#',
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-                [
-                    'text' => 'level_one',
-                    'url' => '#',
-                ],
-            ],
-        ],
-        ['header' => 'labels'],
-        [
-            'text' => 'important',
-            'icon_color' => 'red',
-            'url' => '#',
-        ],
-        [
-            'text' => 'warning',
-            'icon_color' => 'yellow',
-            'url' => '#',
-        ],
-        [
-            'text' => 'information',
-            'icon_color' => 'cyan',
-            'url' => '#',
+            'text'   => 'Logout',
+            'route'  => 'admin.logout.confirm',
+            'icon'   => 'fas fa-fw fa-sign-out-alt',
         ],
     ],
 
@@ -429,6 +400,16 @@ return [
     */
 
     'plugins' => [
+        'RideGuideTheme' => [
+            'active' => true,
+            'files' => [
+                [
+                    'type'     => 'css',
+                    'asset'    => true,
+                    'location' => 'css/rideguide-admin.css',
+                ],
+            ],
+        ],
         'Datatables' => [
             'active' => false,
             'files' => [
