@@ -44,7 +44,7 @@ class CommuterController extends Controller
         }
 
         $validated = $request->validate([
-            'classification_name' => ['required', 'string', Rule::in(['Regular', 'Student', 'Senior', 'PWD'])],
+            'classification_name' => ['required', 'string', Rule::in(['Regular', 'Student', 'Senior Citizen', 'PWD'])],
             'ID_number'           => ['nullable', 'required_unless:classification_name,Regular', 'string', 'max:255', 'unique:discounts,ID_number','regex:/^[0-9\s]+$/'],
             'ID_image'            => ['nullable', 'required_unless:classification_name,Regular', 'image', 'max:2048',],
         ],);
@@ -150,7 +150,7 @@ class CommuterController extends Controller
         }
 
         $validated = $request->validate([
-            'classification_name' => ['sometimes', 'string', Rule::in(['Regular', 'Student', 'Senior', 'PWD'])],
+            'classification_name' => ['sometimes', 'string', Rule::in(['Regular', 'Student', 'Senior Citizen', 'PWD'])],
             'ID_number'           => ['nullable', 'string', 'max:255','unique:discounts,ID_number','regex:/^[0-9\s]+$/'],
             'ID_image'            => ['nullable', 'image', 'max:2048'],
         ]);
