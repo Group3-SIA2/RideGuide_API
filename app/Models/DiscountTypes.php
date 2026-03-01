@@ -13,4 +13,8 @@ class DiscountTypes extends Model
     protected $table = 'commuter_classification_types';
 
     protected $primaryKey = 'id';
+
+    protected $fillable = [
+        'classification_name',
+    ];
 }

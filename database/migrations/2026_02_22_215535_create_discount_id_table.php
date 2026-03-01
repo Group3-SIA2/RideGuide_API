@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('discount_id', function (Blueprint $table) {
+        Schema::create('discounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('ID_number')->notNull()->unique();
             $table->string('ID_image_path')->notNull();

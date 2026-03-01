@@ -5,7 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use app\Models\User;
+use App\Models\User;
+use App\Models\Discount;
 
 class Commuter extends Model
 {
@@ -15,11 +16,16 @@ class Commuter extends Model
 
     protected $fillable = [
         'user_id',
-        'commuter_classification',
+        'discount_id',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+    
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class, 'discount_id');
     }
 }

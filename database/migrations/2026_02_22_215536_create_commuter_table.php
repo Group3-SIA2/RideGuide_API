@@ -17,7 +17,7 @@ return new class extends Migration
             $table->uuid('discount_id')->nullable();
                 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('discount_id')->references('id')->on('discount_id')->onDelete('set null');
+            $table->foreign('discount_id')->references('id')->on('discounts')->onDelete('set null');
 
             $table->timestamps();
             $table->softDeletes();
