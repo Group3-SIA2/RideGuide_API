@@ -17,6 +17,10 @@ class RoleSeeder extends Seeder
     {
         $roles = [
             [
+                'name'        => Role::SUPER_ADMIN,
+                'description' => 'Super administrator with unrestricted access.',
+            ],
+            [
                 'name'        => Role::ADMIN,
                 'description' => 'System administrator with full access.',
             ],
