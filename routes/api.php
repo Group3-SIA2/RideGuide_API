@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CommuterController;
 use App\Http\Controllers\Api\SetUpController;
+use App\Http\Controllers\Api\SearchController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -69,4 +70,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/setup-users', 'setUpUsers')->name('api.setup.setUpUsers');
     });
 
+    // Search Routes
+    Route::controller(SearchController::class)
+        ->prefix('search')
+        ->group(function (): void {
+            Route::get('/drivers',   'searchDrivers')->name('api.search.drivers');
+            Route::get('/commuters', 'searchCommuters')->name('api.search.commuters');
+        });
 });
