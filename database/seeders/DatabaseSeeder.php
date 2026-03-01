@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
     {
         // Seed roles first (Admin, Driver, Commuter)
         $this->call(RoleSeeder::class);
+        $this->call(DiscountTypesSeeder::class);
 
         // Create a test admin user
         $adminRole = Role::where('name', Role::ADMIN)->first();
