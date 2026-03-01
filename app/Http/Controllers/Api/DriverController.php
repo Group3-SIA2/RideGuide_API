@@ -43,8 +43,10 @@ class DriverController extends Controller
             'verification_status' => 'unverified', // default lng only admin can edit or set this
         ]);
 
-        return response()->json(['message' => 'Driver profile created successfully', 
-                                 'driver_profile' => $driver], 201);
+        return response()->json([
+            'message' => 'Driver profile created successfully',
+            'driver_profile' => $this->formatDriver($driver->loadMissing('user')),
+        ], 201);
     }
 
     public function readProfile($id): JsonResponse
@@ -70,7 +72,9 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        return response()->json(['driver_profile' => $driver], 200);
+        return response()->json([
+            'driver_profile' => $this->formatDriver($driver->loadMissing('user')),
+        ], 200);
     }
 
     public function updateProfile(Request $request, $id): JsonResponse
@@ -116,8 +120,10 @@ class DriverController extends Controller
 
         $driver->update($validatedData);
 
-        return response()->json(['message' => 'Driver profile updated successfully', 
-                                 'driver_profile' => $driver], 200);
+        return response()->json([
+            'message' => 'Driver profile updated successfully',
+            'driver_profile' => $this->formatDriver($driver->fresh()->loadMissing('user')),
+        ], 200);
     }
 
     public function deleteProfile($id): JsonResponse
@@ -135,7 +141,10 @@ class DriverController extends Controller
 
         $driver->delete();
 
-        return response()->json(['message' => 'Driver profile deleted successfully'], 200);
+        return response()->json([
+            'message' => 'Driver profile deleted successfully',
+            'driver_profile' => $this->formatDriver($driver->fresh()->loadMissing('user')),
+        ], 200);
     }
 
     public function restoreProfile($id): JsonResponse
@@ -160,7 +169,28 @@ class DriverController extends Controller
 
         return response()->json([
             'message' => 'Driver profile restored successfully',
-            'driver_profile' => $driver
+            'driver_profile' => $this->formatDriver($driver->fresh()->loadMissing('user')),
         ], 200);
+    }
+
+    private function formatDriver(Driver $driver): array
+    {
+        return [
+            'id'                  => $driver->id,
+            'user_id'             => $driver->user_id,
+            'user'                => $driver->user ? [
+                'id'          => $driver->user->id,
+                'first_name'  => $driver->user->first_name,
+                'last_name'   => $driver->user->last_name,
+                'middle_name' => $driver->user->middle_name,
+                'email'       => $driver->user->email,
+            ] : null,
+            'license_number'      => $driver->license_number,
+            'franchise_number'    => $driver->franchise_number,
+            'verification_status' => $driver->verification_status,
+            'created_at'          => $driver->created_at,
+            'updated_at'          => $driver->updated_at,
+            'deleted_at'          => $driver->deleted_at,
+        ];
     }
 }

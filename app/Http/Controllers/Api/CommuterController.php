@@ -346,6 +346,7 @@ class CommuterController extends Controller
                 'id'         => $commuter->user->id,
                 'first_name' => $commuter->user->first_name,
                 'last_name'  => $commuter->user->last_name,
+                'middle_name' => $commuter->user->middle_name,
                 'email'      => $commuter->user->email,
             ] : null,
             'classification_name' => $commuter->discount?->classificationType?->classification_name ?? 'Regular',
