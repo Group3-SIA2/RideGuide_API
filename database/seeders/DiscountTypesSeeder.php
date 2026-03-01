@@ -21,7 +21,9 @@ class DiscountTypesSeeder extends Seeder
         ];
 
         foreach ($discountTypes as $type) {
-            \App\Models\DiscountTypes::create($type);
+            \App\Models\DiscountTypes::firstOrCreate(
+                ['classification_name' => $type['classification_name']]
+            );
         }
     }
 }

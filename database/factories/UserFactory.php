@@ -57,6 +57,16 @@ class UserFactory extends Factory
     }
 
     /**
+     * Assign super_admin role to the user.
+     */
+    public function superAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role_id' => Role::where('name', Role::SUPER_ADMIN)->first()?->id,
+        ]);
+    }
+
+    /**
      * Assign driver role to the user.
      */
     public function driver(): static
