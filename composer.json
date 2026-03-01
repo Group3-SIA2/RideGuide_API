@@ -10,9 +10,11 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "jeroennoten/laravel-adminlte": "*",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "laravel/ui": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
