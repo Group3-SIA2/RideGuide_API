@@ -32,8 +32,8 @@ class DriverController extends Controller
         }
         
         $validatedData = $request->validate([
-            'license_number' => ['required','string','max:255', Rule::unique('driver','license_number'), 'regex:/^[A-Za-z0-9\s]+$/'],
-            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number'), 'regex:/^[A-Za-z0-9\s]+$/']
+            'license_number' => ['required','string','max:255', Rule::unique('driver','license_number'), 'regex:/^[A-Z]\d{2}-\d{2}-\d+$/'],
+            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number'), 'regex:/^[A-Z]{2}-\d{4}-\d+$/']
         ]);
 
         $driver = Driver::create([
@@ -96,8 +96,8 @@ class DriverController extends Controller
         // Admin can update all data including verification status, driver can only update franchise number
         if($user->role->name === 'admin') {
             $validatedData = $request->validate([
-                'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
-                'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
+                'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id), 'regex:/^[A-Z]\d{2}-\d{2}-\d+$/'],
+                'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id), 'regex:/^[A-Z]{2}-\d{4}-\d+$/'],
                 'verification_status' => ['sometimes', Rule::in(['unverified', 'verified', 'rejected'])],
             ]);
         } else {

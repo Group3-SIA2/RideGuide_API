@@ -73,6 +73,20 @@
             </div>
         </div>
 
+        {{-- Super Admins --}}
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="rg-stat-card">
+                <div class="rg-stat-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="rg-stat-body">
+                    <p class="rg-stat-label">Super Admins</p>
+                    <h3 class="rg-stat-value">{{ number_format($totalSuperAdmins) }}</h3>
+                    <span class="rg-stat-sub">Panel super administrators</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     {{-- Recent Users --}}
