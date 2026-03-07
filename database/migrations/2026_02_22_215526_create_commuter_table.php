@@ -16,10 +16,6 @@ return new class extends Migration
             $table->uuid('user_id')->notNull()->unique();
             $table->uuid('discount_id')->nullable();
             $table->uuid('emergency_contact_id')->nullable();
-            $table->string('address')->nullable();
-            $table->string('contact_number')->nullable();
-            $table->date("birthdate")->notnull();;
-            $table->string('profile_picture')->nullable();
                 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('emergency_contact_id')->references('id')->on('emergency_contact')->onDelete('set null');

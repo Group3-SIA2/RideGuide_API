@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('vehicle', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->uuid('driver_id')->notNull();
             $table->uuid('vehicle_type_id')->notNull();
             $table->uuid('plate_number_id')->notNull();
 
             $table->softDeletes();
             $table->timestamps();
 
+            $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
             $table->foreign('vehicle_type_id')->references('id')->on('vehicle_types')->onDelete('cascade');
             $table->foreign('plate_number_id')->references('id')->on('plate_number')->onDelete('cascade');
         });

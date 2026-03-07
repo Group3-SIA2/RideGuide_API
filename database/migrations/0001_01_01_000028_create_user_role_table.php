@@ -14,9 +14,11 @@ return new class extends Migration
         Schema::create('user_role', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('role_id')->notNull();
+            $table->uuid('user_id')->notNull();
             $table->timestamps();
 
             $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
