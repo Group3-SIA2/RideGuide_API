@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CommuterController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\LogoutController;
+use App\Http\Controllers\Admin\OrganizationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,8 +37,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard',  [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/users',      [UserController::class,      'index'])->name('users.index');
         Route::get('/commuters',  [CommuterController::class,  'index'])->name('commuters.index');
-        Route::get('/drivers',    [DriverController::class,    'index'])->name('drivers.index');
-        Route::get('/profile',    [ProfileController::class,   'index'])->name('profile.index');
+        Route::get('/drivers',         [DriverController::class,       'index'])->name('drivers.index');
+        Route::get('/organizations',   [OrganizationController::class, 'index'])->name('organizations.index');
+        Route::get('/profile',         [ProfileController::class,      'index'])->name('profile.index');
         Route::get('/logout',     [LogoutController::class,    'confirm'])->name('logout.confirm');
         Route::post('/logout',    [LogoutController::class,    'logout'])->name('logout');
     });

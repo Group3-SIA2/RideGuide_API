@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CommuterController;
 use App\Http\Controllers\Api\SetUpController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\OrganizationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -77,4 +78,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('/drivers',   'searchDrivers')->name('api.search.drivers');
             Route::get('/commuters', 'searchCommuters')->name('api.search.commuters');
         });
+
+    // Organization Routes
+    Route::controller(OrganizationController::class)->prefix('organizations')->group(function (): void {
+        Route::get('/',            'index')->name('api.organizations.index');
+        Route::get('/{id}',        'show')->name('api.organizations.show');
+        Route::post('/',           'store')->name('api.organizations.store');
+        Route::put('/{id}',        'update')->name('api.organizations.update');
+        Route::delete('/{id}',     'destroy')->name('api.organizations.destroy');
+        Route::put('/{id}/restore','restore')->name('api.organizations.restore');
+    });
 });

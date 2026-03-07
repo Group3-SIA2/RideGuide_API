@@ -41,6 +41,7 @@
                                     <th>#</th>
                                     <th>Name</th>
                                     <th>Email</th>
+                                    <th>Organization</th>
                                     <th>License No.</th>
                                     <th>Franchise No.</th>
                                     <th>Verification</th>
@@ -62,6 +63,7 @@
                                         </div>
                                     </td>
                                     <td class="rg-td-muted">{{ $driver->user->email ?? '—' }}</td>
+                                    <td class="rg-td-muted">{{ $driver->organization->name ?? '—' }}</td>
                                     <td class="rg-td-muted">{{ $driver->license_number ?? '—' }}</td>
                                     <td class="rg-td-muted">{{ $driver->franchise_number ?? '—' }}</td>
                                     <td>
@@ -76,7 +78,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="7" class="rg-empty">No drivers found.</td>
+                                    <td colspan="8" class="rg-empty">No drivers found.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
