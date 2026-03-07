@@ -17,11 +17,12 @@ return new class extends Migration
             $table->string('license_number')->notNull()->unique();
             $table->string('franchise_number')->notNull()->unique();
             $table->enum('verification_status', ['unverified', 'verified', 'rejected'])->notNull()->default('unverified');
+            $table->uuid('vehicle_id')->notNull();
             $table->softDeletes();
 
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-
+            $table->foreign('vehicle_id')->references('id')->on('vehicle')->onDelete('cascade');
             $table->timestamps();
         });
     }
