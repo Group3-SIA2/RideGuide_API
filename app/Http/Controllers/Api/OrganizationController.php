@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreOrganizationRequest;
 use App\Models\Organization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,8 +12,9 @@ use Illuminate\Validation\Rule;
 class OrganizationController extends Controller
 {
     /**
-     * List all active organizations.
+     * List active organizations (paginated).
      * GET /api/organizations
+     * Access: Any authenticated user.
      */
     public function index(Request $request): JsonResponse
     {
@@ -30,7 +32,8 @@ class OrganizationController extends Controller
             $query->where('type', $type);
         }
 
-        $organizations = $query->orderBy('name')->get();
+        $perPage       = min((int) $request->input('per_page', 20), 100);
+        $organizations = $query->orderBy('name')->paginate($perPage);
 
         return response()->json([
             'success' => true,
@@ -41,10 +44,18 @@ class OrganizationController extends Controller
     /**
      * Show a single organization.
      * GET /api/organizations/{id}
+     * Access: Any authenticated user; non-admins only see active organizations.
      */
     public function show(string $id): JsonResponse
     {
-        $organization = Organization::withCount('drivers')->find($id);
+        $user  = auth()->user();
+        $query = Organization::withCount('drivers');
+
+        if (!in_array($user->role->name, ['admin', 'super_admin'])) {
+            $query->where('status', 'active');
+        }
+
+        $organization = $query->find($id);
 
         if (!$organization) {
             return response()->json([
@@ -60,24 +71,34 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Create a new organization (admin only).
+     * Create a new organization.
      * POST /api/organizations
+     * Access: admin/super_admin (any org), organization role (one org per user).
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreOrganizationRequest $request): JsonResponse
     {
+        $this->authorize('create', Organization::class);
+
         $user = auth()->user();
-        if (!$user || !in_array($user->role->name, ['admin', 'super_admin'])) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
+
+        // Organization-role users are limited to one organization.
+        if ($user->role->name === 'organization') {
+            if (Organization::where('owner_user_id', $user->id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You already have a registered organization.',
+                ], 409);
+            }
         }
 
-        $validated = $request->validate([
-            'name'           => ['required', 'string', 'max:255', 'unique:organizations,name'],
-            'type'           => ['required', 'string', 'max:100'],
-            'address'        => ['nullable', 'string', 'max:500'],
-            'contact_number' => ['nullable', 'string', 'max:20'],
-        ]);
+        $data = $request->validated();
 
-        $organization = Organization::create($validated);
+        // Automatically assign ownership when an organization-role user creates.
+        if ($user->role->name === 'organization') {
+            $data['owner_user_id'] = $user->id;
+        }
+
+        $organization = Organization::create($data);
 
         return response()->json([
             'success' => true,
@@ -87,17 +108,15 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Update an organization (admin only).
+     * Update an organization (partial update supported).
      * PUT /api/organizations/{id}
+     * Access: admin/super_admin (any), organization role (own org only).
+     *         Organization-role users cannot change status.
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        $user = auth()->user();
-        if (!$user || !in_array($user->role->name, ['admin', 'super_admin'])) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
-
         $organization = Organization::find($id);
+
         if (!$organization) {
             return response()->json([
                 'success' => false,
@@ -105,13 +124,21 @@ class OrganizationController extends Controller
             ], 404);
         }
 
+        $this->authorize('update', $organization);
+
         $validated = $request->validate([
             'name'           => ['sometimes', 'string', 'max:255', Rule::unique('organizations', 'name')->ignore($organization->id)],
             'type'           => ['sometimes', 'string', 'max:100'],
+            'description'    => ['nullable', 'string', 'max:1000'],
             'address'        => ['nullable', 'string', 'max:500'],
             'contact_number' => ['nullable', 'string', 'max:20'],
             'status'         => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
+
+        // Organization-role users cannot toggle their own status.
+        if (auth()->user()->role->name === 'organization') {
+            unset($validated['status']);
+        }
 
         $organization->update($validated);
 
@@ -123,23 +150,22 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Soft-delete an organization (admin only).
+     * Soft-delete an organization.
      * DELETE /api/organizations/{id}
+     * Access: admin/super_admin (any), organization role (own org only).
      */
     public function destroy(string $id): JsonResponse
     {
-        $user = auth()->user();
-        if (!$user || !in_array($user->role->name, ['admin', 'super_admin'])) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
-
         $organization = Organization::find($id);
+
         if (!$organization) {
             return response()->json([
                 'success' => false,
                 'message' => 'Organization not found.',
             ], 404);
         }
+
+        $this->authorize('delete', $organization);
 
         $organization->delete();
 
@@ -150,23 +176,22 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Restore a soft-deleted organization (admin only).
+     * Restore a soft-deleted organization.
      * PUT /api/organizations/{id}/restore
+     * Access: admin/super_admin only.
      */
     public function restore(string $id): JsonResponse
     {
-        $user = auth()->user();
-        if (!$user || !in_array($user->role->name, ['admin', 'super_admin'])) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
-
         $organization = Organization::withTrashed()->find($id);
+
         if (!$organization) {
             return response()->json([
                 'success' => false,
                 'message' => 'Organization not found.',
             ], 404);
         }
+
+        $this->authorize('restore', $organization);
 
         $organization->restore();
 
