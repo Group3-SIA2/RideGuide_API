@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('trip_passengers', function (Blueprint $table) {
+        Schema::create('passenger_stops', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('commuter_id')->notNull();
+            $table->uuid('waypoint_id')->notNull();
             $table->timestamps();
 
-            $table->foreign('commuter_id')->references('id')->on('commuter')->onDelete('cascade');
+            $table->foreign('waypoint_id')->references('id')->on('waypoint')->onDelete('cascade');
         });
     }
 
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('trip_passengers');
+        Schema::dropIfExists('passenger_stops');
     }
 };

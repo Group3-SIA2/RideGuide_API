@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pasenger_stops', function (Blueprint $table) {
+        Schema::create('passenger_start', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('trip_id')->notNull();
             $table->uuid('waypoint_id')->notNull();
-            $table->decimal('fare', 8, 2)->notNull(); // I calculate ang trip and waypoint tapos store dri
+
             $table->timestamps();
 
-            $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');
             $table->foreign('waypoint_id')->references('id')->on('waypoint')->onDelete('cascade');
         });
     }
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pasenger_stops');
+        Schema::dropIfExists('passenger_start');
     }
 };

@@ -14,13 +14,9 @@ return new class extends Migration
         Schema::create('trips', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('driver_id')->notNull();
-            $table->uuid('trip_passenger_id')->notNull();
-            $table->string('latitude')->notNull();
-            $table->string('longitude')->notNull();
             $table->timestamps();
 
             $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
-            $table->foreign('trip_passenger_id')->references('id')->on('trip_passengers')->onDelete('cascade');
         });
     }
 
