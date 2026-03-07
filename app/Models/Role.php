@@ -11,10 +11,11 @@ class Role extends Model
 {
     use HasFactory, HasUuids;
 
-    const SUPER_ADMIN = 'super_admin';
-    const ADMIN       = 'admin';
-    const DRIVER      = 'driver';
-    const COMMUTER    = 'commuter';
+    const SUPER_ADMIN  = 'super_admin';
+    const ADMIN        = 'admin';
+    const DRIVER       = 'driver';
+    const COMMUTER     = 'commuter';
+    const ORGANIZATION = 'organization';
 
     /**
      * The attributes that are mass assignable.

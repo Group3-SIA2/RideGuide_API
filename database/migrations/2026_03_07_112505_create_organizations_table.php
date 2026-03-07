@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('organizations', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name')->unique();
-            $table->string('type');                        // e.g. TODA, PODA, etc.
+            $table->string('type'); 
+            $table->text('description')->nullable();                       
             $table->string('address')->nullable();
             $table->string('contact_number')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');

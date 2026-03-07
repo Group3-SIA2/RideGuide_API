@@ -32,6 +32,10 @@ class RoleSeeder extends Seeder
                 'name'        => Role::COMMUTER,
                 'description' => 'Commuter who books rides.',
             ],
+            [
+                'name'        => Role::ORGANIZATION,
+                'description' => 'Transport organization manager (e.g. TODA, MODA).',
+            ],
         ];
 
         foreach ($roles as $role) {
