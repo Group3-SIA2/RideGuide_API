@@ -522,3 +522,114 @@ body.dark-mode .dropdown-item:hover {
     color: var(--rg-text);
     border-color: var(--rg-text-subtle);
 }
+
+/* ══════════════════════════════════════════════════════════
+   Buttons — standalone
+   ══════════════════════════════════════════════════════════ */
+.rg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 0.84rem;
+    font-family: var(--rg-font);
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+.rg-btn:focus { outline: none; }
+.rg-btn-primary { background: var(--rg-accent); color: #fff; }
+.rg-btn-primary:hover,
+.rg-btn-primary:focus { background: #1a6fd4; color: #fff; }
+.rg-btn-secondary {
+    background: transparent;
+    color: var(--rg-text-subtle);
+    border-color: var(--rg-card-border);
+}
+.rg-btn-secondary:hover { color: var(--rg-text); border-color: var(--rg-text-subtle); }
+.rg-btn-danger { background: #e53e3e; color: #fff; }
+.rg-btn-danger:hover { background: #c53030; color: #fff; }
+.rg-btn-sm { padding: 5px 11px; font-size: 0.78rem; }
+
+/* ══════════════════════════════════════════════════════════
+   Form Controls
+   ══════════════════════════════════════════════════════════ */
+.rg-form-group { margin-bottom: 1.25rem; }
+.rg-form-label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--rg-text);
+    margin-bottom: 0.4rem;
+}
+.rg-required { color: #e53e3e; margin-left: 2px; }
+.rg-form-control {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--rg-bg);
+    color: var(--rg-text);
+    border: 1px solid var(--rg-card-border);
+    border-radius: 6px;
+    font-size: 0.84rem;
+    font-family: var(--rg-font);
+    line-height: 1.5;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.rg-form-control:focus {
+    outline: none;
+    border-color: var(--rg-accent);
+    box-shadow: 0 0 0 3px var(--rg-accent-dim);
+}
+.rg-form-control::placeholder { color: var(--rg-text-subtle); opacity: 0.75; }
+.rg-form-control.is-invalid { border-color: #e53e3e; }
+textarea.rg-form-control { resize: vertical; min-height: 90px; }
+.rg-form-error { font-size: 0.78rem; color: #e53e3e; margin-top: 0.3rem; }
+.rg-form-hint  { font-size: 0.78rem; color: var(--rg-text-subtle); margin-top: 0.3rem; }
+.rg-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rg-card-border);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Alert messages
+   ══════════════════════════════════════════════════════════ */
+.rg-alert {
+    padding: 10px 16px;
+    border-radius: 7px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.rg-alert-success {
+    background: rgba(34, 197, 94, 0.12);
+    color: #15803d;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+}
+body.dark-mode .rg-alert-success {
+    background: rgba(34, 197, 94, 0.08);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.2);
+}
+.rg-alert-danger {
+    background: rgba(229, 62, 62, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(229, 62, 62, 0.2);
+}
+body.dark-mode .rg-alert-danger {
+    background: rgba(229, 62, 62, 0.08);
+    color: #f87171;
+    border-color: rgba(229, 62, 62, 0.2);
+}
+
