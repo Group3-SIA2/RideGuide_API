@@ -33,14 +33,10 @@ class DriverController extends Controller
         }
         
         $validatedData = $request->validate([
-<<<<<<< HEAD
             'license_number' => ['required','string','max:255', Rule::unique('driver','license_number'), 'regex:/^[A-Za-z0-9\s]+$/'],
             'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number'), 'regex:/^[A-Za-z0-9\s]+$/'],
             'organization_id' => ['nullable','string','exists:organizations,id'],
-=======
-            'license_number' => ['required','string','max:255', Rule::unique('driver','license_number'), 'regex:/^[A-Z]\d{2}-\d{2}-\d+$/'],
-            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number'), 'regex:/^[A-Z]{2}-\d{4}-\d+$/']
->>>>>>> f7369f40b71dd1bcf98dd844b774c922baad49de
+
         ]);
 
         $driver = Driver::create([
