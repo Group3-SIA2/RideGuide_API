@@ -17,6 +17,7 @@ return new class extends Migration
             $table->uuid('trip_passenger_id')->notNull();
             $table->timestamps();
 
+            $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
             $table->foreign('trip_passenger_id')->references('id')->on('trip_passengers')->onDelete('cascade');
         });
     }
