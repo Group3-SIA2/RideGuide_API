@@ -2,7 +2,11 @@
 
 ## Overview
 
-The Organizations API allows users to browse driver organizations such as **TODA** (Tricycle Operators and Drivers Association), **PODA** (Pedicab Operators and Drivers Association), and **MODA** (Motorcycle Operators and Drivers Association) operating in General Santos City. Read operations are open to all authenticated users; write operations (create, update, delete, restore) are **admin-only**.
+The Organizations API allows users to browse and manage driver organizations — **TODA** (Tricycle Operators and Drivers Association) and **MODA** (Motorcycle Operators and Drivers Association) — operating in General Santos City. Read operations are open to all authenticated users. Write operations follow role-based access control:
+
+- `admin` / `super_admin` — full access to all organizations
+- `organization` — can create **one** organization (auto-assigned as owner), update/delete **their own** organization only; cannot change `status`
+- All other roles — read-only access
 
 **Base URL**
 ```
@@ -21,20 +25,20 @@ Content-Type: application/json
 Authorization: Bearer {your_token_here}
 ```
 
-> **Note:** A valid Bearer Token is required for all endpoints. Tokens are obtained after completing the login + 2FA OTP flow. Only `admin` and `super_admin` roles can create, update, delete, or restore organizations.
+> **Note:** A valid Bearer Token is required for all endpoints. Tokens are obtained after completing the login + 2FA OTP flow.
 
 ---
 
 ## Endpoints Summary
 
-| #  | Method   | Endpoint                            | Description                     | Access        |
-|----|----------|-------------------------------------|---------------------------------|---------------|
-| 1  | `GET`    | `/api/organizations`                | List all active organizations   | Authenticated |
-| 2  | `GET`    | `/api/organizations/{id}`           | Get a single organization       | Authenticated |
-| 3  | `POST`   | `/api/organizations`                | Create a new organization       | Admin only    |
-| 4  | `PUT`    | `/api/organizations/{id}`           | Update an organization          | Admin only    |
-| 5  | `DELETE` | `/api/organizations/{id}`           | Soft-delete an organization     | Admin only    |
-| 6  | `PUT`    | `/api/organizations/{id}/restore`   | Restore a deleted organization  | Admin only    |
+| #  | Method   | Endpoint                            | Description                       | Access                                    |
+|----|----------|-------------------------------------|-----------------------------------|-------------------------------------------|
+| 1  | `GET`    | `/api/organizations`                | List active organizations         | Any authenticated user                    |
+| 2  | `GET`    | `/api/organizations/{id}`           | Get a single organization         | Any authenticated user                    |
+| 3  | `POST`   | `/api/organizations`                | Create a new organization         | `admin`, `super_admin`, `organization`    |
+| 4  | `PUT`    | `/api/organizations/{id}`           | Update an organization            | `admin`, `super_admin` (any); `organization` (own only) |
+| 5  | `DELETE` | `/api/organizations/{id}`           | Soft-delete an organization       | `admin`, `super_admin` (any); `organization` (own only) |
+| 6  | `PUT`    | `/api/organizations/{id}/restore`   | Restore a soft-deleted org        | `admin`, `super_admin` only               |
 
 ---
 
@@ -42,14 +46,15 @@ Authorization: Bearer {your_token_here}
 
 **GET** `https://rideguide.test/api/organizations`
 
-Returns all **active** organizations. Supports optional query parameters for searching and filtering.
+Returns **active** organizations in paginated form, ordered by name. Supports optional search and type filtering.
 
 **Query Parameters (all optional)**
 
-| Parameter | Type   | Description                                      |
-|-----------|--------|--------------------------------------------------|
-| `search`  | string | Search by name, type, or address                 |
-| `type`    | string | Filter by type e.g. `TODA`, `PODA`, `MODA`      |
+| Parameter  | Type    | Default | Description                                           |
+|------------|---------|---------|-------------------------------------------------------|
+| `search`   | string  | —       | Search by organization name, type, or address         |
+| `type`     | string  | —       | Filter by type — `TODA` or `MODA`                     |
+| `per_page` | integer | `20`    | Number of results per page. Maximum: `100`            |
 
 **Example Request (no filters)**
 
@@ -57,28 +62,44 @@ Returns all **active** organizations. Supports optional query parameters for sea
 GET https://rideguide.test/api/organizations
 ```
 
-**Example Request (with filters)**
+**Example Request (with filters and pagination)**
 
 ```
-GET https://rideguide.test/api/organizations?type=TODA&search=lagao
+GET https://rideguide.test/api/organizations?type=TODA&search=lagao&per_page=10
 ```
 
 **Success Response (200)**
 ```json
 {
     "success": true,
-    "data": [
-        {
-            "id": "019f2a3b-1c2d-7e4f-a5b6-c7d8e9f01234",
-            "name": "TODA - Lagao Terminal",
-            "type": "TODA",
-            "address": "Lagao, General Santos City",
-            "contact_number": null,
-            "status": "active",
-            "created_at": "2026-03-07T11:25:05.000000Z",
-            "updated_at": "2026-03-07T11:25:05.000000Z"
+    "data": {
+        "current_page": 1,
+        "data": [
+            {
+                "id": "019f2a3b-1c2d-7e4f-a5b6-c7d8e9f01234",
+                "name": "TODA - Lagao Terminal",
+                "type": "TODA",
+                "description": "Primary short-distance transport association operating motorized tricycles.",
+                "address": "Lagao, General Santos City",
+                "contact_number": null,
+                "status": "active",
+                "owner_user_id": null,
+                "created_at": "2026-03-07T11:25:05.000000Z",
+                "updated_at": "2026-03-07T11:25:05.000000Z"
+            }
+        ],
+        "from": 1,
+        "last_page": 2,
+        "per_page": 20,
+        "to": 20,
+        "total": 25,
+        "links": {
+            "first": "https://rideguide.test/api/organizations?page=1",
+            "last": "https://rideguide.test/api/organizations?page=2",
+            "prev": null,
+            "next": "https://rideguide.test/api/organizations?page=2"
         }
-    ]
+    }
 }
 ```
 
@@ -89,6 +110,8 @@ GET https://rideguide.test/api/organizations?type=TODA&search=lagao
 **GET** `https://rideguide.test/api/organizations/{id}`
 
 Returns a single organization by its UUID, including a count of how many drivers are linked to it.
+
+> **Access note:** `admin` / `super_admin` users can retrieve any organization regardless of status. All other roles only see organizations with `status: active`. An inactive organization returns `404` for non-admin callers.
 
 **Example Request**
 
@@ -104,9 +127,11 @@ GET https://rideguide.test/api/organizations/019f2a3b-1c2d-7e4f-a5b6-c7d8e9f0123
         "id": "019f2a3b-1c2d-7e4f-a5b6-c7d8e9f01234",
         "name": "TODA - Lagao Terminal",
         "type": "TODA",
+        "description": "Primary short-distance transport association operating motorized tricycles.",
         "address": "Lagao, General Santos City",
         "contact_number": null,
         "status": "active",
+        "owner_user_id": null,
         "drivers_count": 5,
         "created_at": "2026-03-07T11:25:05.000000Z",
         "updated_at": "2026-03-07T11:25:05.000000Z"
@@ -128,7 +153,11 @@ GET https://rideguide.test/api/organizations/019f2a3b-1c2d-7e4f-a5b6-c7d8e9f0123
 
 **POST** `https://rideguide.test/api/organizations`
 
-Creates a new organization. Requires `admin` or `super_admin` role.
+Creates a new organization. Requires `admin`, `super_admin`, or `organization` role.
+
+**Role-specific behaviour:**
+- **`organization` role** — `owner_user_id` is automatically set to the caller's user ID. Limited to **one organization per user** — sending a second create request returns `409`.
+- **`admin` / `super_admin`** — organization is created without an owner (`owner_user_id: null`). No one-per-user limit applies.
 
 In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
 
@@ -136,6 +165,7 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
 {
     "name": "TODA - New Terminal",
     "type": "TODA",
+    "description": "Primary short-distance transport association in GenSan operating motorized tricycles. Coordinates route compliance and supports the PUV Modernization Program (PUVMP).",
     "address": "Purok 5, Brgy. San Isidro, General Santos City",
     "contact_number": "0912-345-6789"
 }
@@ -143,14 +173,15 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
 
 **Field Rules**
 
-| Field            | Type   | Required | Rules                                              |
-|------------------|--------|----------|----------------------------------------------------|
-| `name`           | string | Yes      | Max 255 chars, must be unique across organizations |
-| `type`           | string | Yes      | Max 100 chars (e.g. `TODA`, `PODA`, `MODA`)        |
-| `address`        | string | No       | Max 500 chars                                      |
-| `contact_number` | string | No       | Max 20 chars                                       |
+| Field            | Type   | Required | Rules                                               |
+|------------------|--------|----------|-----------------------------------------------------|
+| `name`           | string | Yes      | Max 255 chars, must be unique across organizations  |
+| `type`           | string | Yes      | Max 100 chars — `TODA` or `MODA`                    |
+| `description`    | string | No       | Max 1000 chars                                      |
+| `address`        | string | No       | Max 500 chars                                       |
+| `contact_number` | string | No       | Max 20 chars                                        |
 
-> **Note:** The `status` field is not accepted on creation — it always defaults to `active`. Use the Update endpoint to change it later.
+> **Note:** `status` and `owner_user_id` are not accepted on creation. Status always defaults to `active`. `owner_user_id` is set automatically for `organization`-role users.
 
 **Success Response (201)**
 ```json
@@ -161,9 +192,11 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
         "id": "019f3c4d-5e6f-7890-1a2b-c3d4e5f67890",
         "name": "TODA - New Terminal",
         "type": "TODA",
+        "description": "Primary short-distance transport association in GenSan.",
         "address": "Purok 5, Brgy. San Isidro, General Santos City",
         "contact_number": "0912-345-6789",
         "status": "active",
+        "owner_user_id": "01a2b3c4-d5e6-7890-f1a2-b3c4d5e6f789",
         "created_at": "2026-03-07T12:00:00.000000Z",
         "updated_at": "2026-03-07T12:00:00.000000Z"
     }
@@ -180,10 +213,18 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
 }
 ```
 
+**Error Response — Already Has Organization (409)** *(organization role only)*
+```json
+{
+    "success": false,
+    "message": "You already have a registered organization."
+}
+```
+
 **Error Response — Unauthorized (403)**
 ```json
 {
-    "error": "Unauthorized."
+    "message": "This action is unauthorized."
 }
 ```
 
@@ -193,7 +234,11 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
 
 **PUT** `https://rideguide.test/api/organizations/{id}`
 
-Updates an existing organization. All fields are optional — only send what you want to change. Requires `admin` or `super_admin` role.
+Partially updates an organization. All fields are optional — send only what you want to change.
+
+**Role-specific behaviour:**
+- **`admin` / `super_admin`** — can update any organization, including changing `status`.
+- **`organization` role** — can only update **their own** organization (`owner_user_id` must match the caller). The `status` field is **ignored** even if sent — only admins can activate/deactivate organizations.
 
 In Postman, go to the **Body** tab, select **raw** → **JSON**:
 
@@ -207,13 +252,14 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**:
 
 **Field Rules**
 
-| Field            | Type   | Required | Rules                                                             |
-|------------------|--------|----------|-------------------------------------------------------------------|
-| `name`           | string | No       | Max 255 chars, must be unique (ignores self)                      |
-| `type`           | string | No       | Max 100 chars                                                     |
-| `address`        | string | No       | Max 500 chars, nullable                                           |
-| `contact_number` | string | No       | Max 20 chars, nullable                                            |
-| `status`         | string | No       | Must be `active` or `inactive`                                    |
+| Field            | Type   | Required | Rules                                                |
+|------------------|--------|----------|------------------------------------------------------|
+| `name`           | string | No       | Max 255 chars, must be unique (ignores current record) |
+| `type`           | string | No       | Max 100 chars — `TODA` or `MODA`                     |
+| `description`    | string | No       | Max 1000 chars, nullable                             |
+| `address`        | string | No       | Max 500 chars, nullable                              |
+| `contact_number` | string | No       | Max 20 chars, nullable                               |
+| `status`         | string | No       | `active` or `inactive` — **admin/super_admin only**  |
 
 **Success Response (200)**
 ```json
@@ -224,9 +270,11 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**:
         "id": "019f3c4d-5e6f-7890-1a2b-c3d4e5f67890",
         "name": "TODA - New Terminal (Updated)",
         "type": "TODA",
+        "description": "Primary short-distance transport association in GenSan.",
         "address": "Purok 5, Brgy. San Isidro, General Santos City",
         "contact_number": "0998-765-4321",
         "status": "inactive",
+        "owner_user_id": "01a2b3c4-d5e6-7890-f1a2-b3c4d5e6f789",
         "created_at": "2026-03-07T12:00:00.000000Z",
         "updated_at": "2026-03-07T12:30:00.000000Z"
     }
@@ -247,7 +295,11 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**:
 
 **DELETE** `https://rideguide.test/api/organizations/{id}`
 
-Soft-deletes an organization. The record is **not** permanently removed and can be restored. Drivers linked to this organization will have their `organization_id` set to `null`. Requires `admin` or `super_admin` role.
+Soft-deletes an organization. The record is **not** permanently removed and can be restored. Soft-deleted organizations no longer appear in the public listing or show endpoints.
+
+**Role-specific behaviour:**
+- **`admin` / `super_admin`** — can delete any organization.
+- **`organization` role** — can only delete **their own** organization.
 
 **Example Request**
 
@@ -353,13 +405,12 @@ When reading a driver profile, the response now includes an `organization` objec
 
 ## Organization Types Reference
 
-The following organization types are used in General Santos City:
+The following organization types operate in General Santos City:
 
-| Type   | Full Name                                          | Description                                      |
-|--------|----------------------------------------------------|--------------------------------------------------|
-| `TODA` | Tricycle Operators and Drivers Association         | Tricycle (motorized three-wheeler) operators     |
-| `PODA` | Pedicab Operators and Drivers Association          | Pedicab (non-motorized, pedal-driven) operators  |
-| `MODA` | Motorcycle Operators and Drivers Association       | Motorcycle-for-hire / habal-habal operators      |
+| Type   | Full Name                                              | Description                                        |
+|--------|--------------------------------------------------------|----------------------------------------------------|
+| `TODA` | Tricycle Operators and Drivers Association             | Tricycle (motorized three-wheeler) operators       |
+| `MODA` | Motorcycle/Motorized Operators and Drivers Association | Motorcycle-for-hire (habal-habal) operators        |
 
 ---
 
@@ -379,8 +430,6 @@ The following organizations are pre-loaded via `OrganizationSeeder`:
 | TODA - Bula Terminal                | TODA   | Bula                            |
 | TODA - San Isidro Terminal          | TODA   | San Isidro                      |
 | TODA - Fatima Terminal              | TODA   | Fatima                          |
-| PODA - KCC Mall Terminal            | PODA   | KCC Mall                        |
-| PODA - Gaisano Mall Terminal        | PODA   | Gaisano Mall                    |
 | MODA - Makar Wharf Terminal         | MODA   | Makar Wharf                     |
 | MODA - Fishport Terminal            | MODA   | General Santos Fish Port Complex|
 
@@ -388,11 +437,12 @@ The following organizations are pre-loaded via `OrganizationSeeder`:
 
 ## Error Reference
 
-| HTTP Status | Meaning                                                            |
-|-------------|--------------------------------------------------------------------|
-| `200`       | Request succeeded                                                  |
-| `201`       | Resource created successfully                                      |
-| `403`       | Forbidden — caller does not have admin/super_admin role            |
-| `404`       | Organization not found (or already permanently removed)            |
-| `422`       | Validation failed — see `errors` object for field-level details    |
-| `401`       | Unauthenticated — missing or invalid Bearer Token                  |
+| HTTP Status | Meaning                                                                           |
+|-------------|-----------------------------------------------------------------------------------|
+| `200`       | Request succeeded                                                                 |
+| `201`       | Resource created successfully                                                     |
+| `403`       | Forbidden — caller lacks permission (wrong role, or not the owner)                |
+| `404`       | Organization not found (deleted, inactive for non-admins, or invalid ID)          |
+| `409`       | Conflict — `organization`-role user already has a registered organization         |
+| `422`       | Validation failed — see `errors` object for field-level details                   |
+| `401`       | Unauthenticated — missing or invalid Bearer Token                                 |
