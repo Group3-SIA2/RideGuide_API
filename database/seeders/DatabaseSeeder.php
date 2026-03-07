@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         // Seed roles first
         $this->call(RoleSeeder::class);
         $this->call(DiscountTypesSeeder::class);
+        $this->call(OrganizationSeeder::class);
 
         $superAdminRole = Role::where('name', Role::SUPER_ADMIN)->first();
         $adminRole      = Role::where('name', Role::ADMIN)->first();

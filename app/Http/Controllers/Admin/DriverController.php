@@ -15,7 +15,7 @@ class DriverController extends Controller
 
     public function index(Request $request)
     {
-        $query = Driver::with('user');
+        $query = Driver::with('user', 'organization');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {

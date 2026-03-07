@@ -349,6 +349,12 @@ return [
             'icon'   => 'fas fa-fw fa-id-card',
             'active' => ['admin/drivers*'],
         ],
+        [
+            'text'   => 'Organizations',
+            'route'  => 'admin.organizations.index',
+            'icon'   => 'fas fa-fw fa-building',
+            'active' => ['admin/organizations*'],
+        ],
 
         // System
         ['header' => 'ACCOUNT'],

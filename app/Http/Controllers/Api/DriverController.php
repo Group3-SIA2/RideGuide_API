@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
+use App\Models\Organization;
 use Illuminate\Validation\Rule;
 use App\Models\User;
 
@@ -33,7 +34,8 @@ class DriverController extends Controller
         
         $validatedData = $request->validate([
             'license_number' => ['required','string','max:255', Rule::unique('driver','license_number'), 'regex:/^[A-Za-z0-9\s]+$/'],
-            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number'), 'regex:/^[A-Za-z0-9\s]+$/']
+            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number'), 'regex:/^[A-Za-z0-9\s]+$/'],
+            'organization_id' => ['nullable','string','exists:organizations,id'],
         ]);
 
         $driver = Driver::create([
@@ -99,6 +101,7 @@ class DriverController extends Controller
                 'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
                 'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
                 'verification_status' => ['sometimes', Rule::in(['unverified', 'verified', 'rejected'])],
+                'organization_id' => ['nullable','string','exists:organizations,id'],
             ]);
         } else {
             $disallowedFields = array_intersect(
@@ -187,6 +190,11 @@ class DriverController extends Controller
             ] : null,
             'license_number'      => $driver->license_number,
             'franchise_number'    => $driver->franchise_number,
+            'organization'        => $driver->organization ? [
+                'id'   => $driver->organization->id,
+                'name' => $driver->organization->name,
+                'type' => $driver->organization->type,
+            ] : null,
             'verification_status' => $driver->verification_status,
             'created_at'          => $driver->created_at,
             'updated_at'          => $driver->updated_at,

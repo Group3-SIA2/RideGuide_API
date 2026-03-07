@@ -21,11 +21,17 @@ class Driver extends Model
         'user_id',
         'license_number',
         'franchise_number',
+        'organization_id',
         'verification_status',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function organization()
+    {
+        return $this->belongsTo(\App\Models\Organization::class, 'organization_id');
     }
 }
