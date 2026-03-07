@@ -11,9 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vehicle_types', function (Blueprint $table) {
+        Schema::create('license_number', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('vehicle_type')->notNull();
+            $table->string('license_number')->notNull();
+            $table->uuid('vehicle_id')->notNull();
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->foreign('vehicle_id')->references('id')->on('vehicles')->onDelete('cascade');
         });
     }
 
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vehicle_types');
+        Schema::dropIfExists('license_number');
     }
 };
