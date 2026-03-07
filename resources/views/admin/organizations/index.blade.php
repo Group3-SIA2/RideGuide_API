@@ -6,13 +6,24 @@
     <div class="rg-page-header">
         <div>
             <h4 class="rg-page-title">Organizations</h4>
-            <p class="rg-page-subtitle">Manage TODA, PODA, and other driver organizations.</p>
+            <p class="rg-page-subtitle">Manage TODA, MODA, and other driver organizations.</p>
         </div>
-        <span class="rg-badge" id="rg-total">{{ $organizations->total() }} total</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="rg-badge" id="rg-total">{{ $organizations->total() }} total</span>
+            <a href="{{ route('admin.organizations.create') }}" class="rg-btn rg-btn-primary rg-btn-sm">
+                <i class="fas fa-plus"></i> Add Organization
+            </a>
+        </div>
     </div>
 @stop
 
 @section('content')
+
+    @if(session('success'))
+    <div class="rg-alert rg-alert-success mb-3">
+        <i class="fas fa-check-circle"></i> {{ session('success') }}
+    </div>
+    @endif
 
     <div class="row">
         <div class="col-12">
@@ -34,6 +45,7 @@
                             <option value="">All Statuses</option>
                             <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                            <option value="deleted" {{ request('status') === 'deleted' ? 'selected' : '' }}>🗑 Deleted</option>
                         </select>
                         <button type="submit" class="rg-btn-search"><i class="fas fa-search"></i> Search</button>
                         <button type="button" id="rg-clear" class="rg-btn-clear">Clear</button>
@@ -47,14 +59,16 @@
                                     <th>#</th>
                                     <th>Name</th>
                                     <th>Type</th>
+                                    <th>Description</th>
                                     <th>Address</th>
                                     <th>Contact</th>
                                     <th>Drivers</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="rg-table-body">
-                                @include('admin.organizations._rows')
+                                @include('admin.organizations._rows', ['showDeleted' => $showDeleted])
                             </tbody>
                         </table>
                     </div>

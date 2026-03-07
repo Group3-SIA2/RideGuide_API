@@ -38,7 +38,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/users',      [UserController::class,      'index'])->name('users.index');
         Route::get('/commuters',  [CommuterController::class,  'index'])->name('commuters.index');
         Route::get('/drivers',         [DriverController::class,       'index'])->name('drivers.index');
-        Route::get('/organizations',   [OrganizationController::class, 'index'])->name('organizations.index');
+        Route::get('/organizations',              [OrganizationController::class, 'index'])->name('organizations.index');
+        Route::get('/organizations/create',         [OrganizationController::class, 'create'])->name('organizations.create');
+        Route::post('/organizations',               [OrganizationController::class, 'store'])->name('organizations.store');
+        Route::get('/organizations/{id}/edit',      [OrganizationController::class, 'edit'])->name('organizations.edit');
+        Route::put('/organizations/{id}',           [OrganizationController::class, 'update'])->name('organizations.update');
+        Route::delete('/organizations/{id}',        [OrganizationController::class, 'destroy'])->name('organizations.destroy');
+        Route::post('/organizations/{id}/restore',  [OrganizationController::class, 'restore'])->name('organizations.restore');
         Route::get('/profile',         [ProfileController::class,      'index'])->name('profile.index');
         Route::get('/logout',     [LogoutController::class,    'confirm'])->name('logout.confirm');
         Route::post('/logout',    [LogoutController::class,    'logout'])->name('logout');
