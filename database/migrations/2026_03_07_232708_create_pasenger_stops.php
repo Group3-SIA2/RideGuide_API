@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('trip_id')->notNull();
             $table->uuid('waypoint_id')->notNull();
+            $table->decimal('fare', 8, 2)->notNull(); // I calculate ang trip and waypoint tapos store dri
             $table->timestamps();
 
             $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');
