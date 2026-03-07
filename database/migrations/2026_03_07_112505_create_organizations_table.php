@@ -20,10 +20,12 @@ return new class extends Migration
             $table->string('contact_number')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->uuid('fare_rate_id')->notNull();
+            $table->uuid('terminal_id')->notNull();
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('fare_rate_id')->references('id')->on('fare_rate')->onDelete('cascade');
+            $table->foreign('terminal_id')->references('id')->on('terminals')->onDelete('cascade');
         });
     }
 

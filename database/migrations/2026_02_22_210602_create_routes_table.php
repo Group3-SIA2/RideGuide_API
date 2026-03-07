@@ -18,9 +18,6 @@ return new class extends Migration
             $table->uuid('origin_terminal_id')->notNull();
             $table->uuid('destination_terminal_id')->notNull();
             $table->string('status', 20)->notNull();
-            $table->uuid('create_by')->notNull();
-
-            $table->foreign('create_by')->references('id')->on('users')->onDelete('cascade');
 
             $table->foreign('origin_terminal_id')->references('id')->on('terminals')->onDelete('cascade');
             $table->foreign('destination_terminal_id')->references('id')->on('route_stops')->onDelete('cascade');

@@ -20,7 +20,6 @@ return new class extends Migration
             $table->decimal('longitude', 11, 8)->notNull();
             $table->integer('stop_order')->notNull();
 
-            $table->foreign('route_id')->references('id')->on('routes')->onDelete('cascade');
             $table->foreign('terminal_id')->references('id')->on('terminals')->onDelete('set null');
 
             $table->timestamps();
