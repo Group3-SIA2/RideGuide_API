@@ -11,16 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('driver_route', function (Blueprint $table) {
+        Schema::create('drv__assign__term', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('driver_id')->notNull();
-            $table->uuid('route_id')->notNull();
-            $table->enum('status', ['active', 'inactive'])->notNull()->default('active');
-            $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
-            $table->foreign('route_id')->references('id')->on('routes')->onDelete('cascade');
-
+            $table->uuid('terminal_id')->notNull();
             $table->timestamps();
-            $table->softDeletes();
+
+            $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
+            $table->foreign('terminal_id')->references('id')->on('terminals')->onDelete('cascade');
         });
     }
 
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('driver_route');
+        Schema::dropIfExists('drv__assign__term');
     }
 };

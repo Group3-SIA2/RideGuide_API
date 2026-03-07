@@ -13,18 +13,16 @@ return new class extends Migration
     {
         Schema::create('feedback', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('driver_id')->notNull();
             $table->uuid('commuter_id')->notNull();
-            $table->uuid('route_id')->notNull();
+            $table->uuid('trip_id')->notNull();
             $table->integer('rating')->notNull()->check('rating >= 1 AND rating <= 5');
             $table->text('comment')->nullable();
             $table->string('image')->nullable();
             $table->string('video')->nullable();
             $table->timestamps();
 
-            $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
             $table->foreign('commuter_id')->references('id')->on('commuter')->onDelete('cascade');
-            $table->foreign('route_id')->references('id')->on('routes')->onDelete('cascade');
+            $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');
         });
     }
 
