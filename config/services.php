@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'iprogsms' => [
+        'api_token' => env('IPROGSMS_API_KEY'),
+        'url'       => 'https://www.iprogsms.com/api/v1/otp',
+    ],
+
 ];

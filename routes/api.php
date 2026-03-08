@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\PhoneController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CommuterController;
 use App\Http\Controllers\Api\SetUpController;
@@ -23,12 +24,14 @@ Route::controller(AuthController::class)->prefix('auth')->group(function (): voi
     Route::post('/forgot-password', 'forgotPassword')->name('api.auth.forgot-password');
     Route::post('/reset-password',  'resetPassword')->name('api.auth.reset-password');
     Route::post('/resend-otp',      'resendOtp')->name('api.auth.resend-otp');
+});
 
-    // Phone number authentication (Philippine format: 09XXXXXXXXX | +639XXXXXXXXX)
-    Route::post('/register-phone',   'registerWithPhone')->name('api.auth.register-phone');
-    Route::post('/login-phone',      'loginWithPhone')->name('api.auth.login-phone');
-    Route::post('/verify-otp-phone', 'verifyOtpPhone')->name('api.auth.verify-otp-phone');
-    Route::post('/resend-otp-phone', 'resendOtpPhone')->name('api.auth.resend-otp-phone');
+// Phone Number Authentication — iProgSMS (Philippine format: 09XXXXXXXXX | +639XXXXXXXXX)
+Route::controller(PhoneController::class)->prefix('auth/phone')->group(function (): void {
+    Route::post('/register',   'register')->name('api.auth.phone.register');
+    Route::post('/login',      'login')->name('api.auth.phone.login');
+    Route::post('/verify-otp', 'verifyOtp')->name('api.auth.phone.verify-otp');
+    Route::post('/resend-otp', 'resendOtp')->name('api.auth.phone.resend-otp');
 });
 
 /*
