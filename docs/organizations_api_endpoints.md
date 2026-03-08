@@ -159,16 +159,14 @@ Creates a new organization. Requires `admin`, `super_admin`, or `organization` r
 - **`organization` role** — `owner_user_id` is automatically set to the caller's user ID. Limited to **one organization per user** — sending a second create request returns `409`.
 - **`admin` / `super_admin`** — organization is created without an owner (`owner_user_id: null`). No one-per-user limit applies.
 
-In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
+In Postman, go to the **Body** tab, select **form-data**, and fill in:
 
-```json
-{
-    "name": "TODA - New Terminal",
-    "type": "TODA",
-    "description": "Primary short-distance transport association in GenSan operating motorized tricycles. Coordinates route compliance and supports the PUV Modernization Program (PUVMP).",
-    "address": "Purok 5, Brgy. San Isidro, General Santos City",
-    "contact_number": "0912-345-6789"
-}
+```
+name            TODA - New Terminal
+type            TODA
+description     Primary short-distance transport association in GenSan operating motorized tricycles. Coordinates route compliance and supports the PUV Modernization Program (PUVMP).
+address         Purok 5, Brgy. San Isidro, General Santos City
+contact_number  0912-345-6789
 ```
 
 **Field Rules**
@@ -240,14 +238,12 @@ Partially updates an organization. All fields are optional — send only what yo
 - **`admin` / `super_admin`** — can update any organization, including changing `status`.
 - **`organization` role** — can only update **their own** organization (`owner_user_id` must match the caller). The `status` field is **ignored** even if sent — only admins can activate/deactivate organizations.
 
-In Postman, go to the **Body** tab, select **raw** → **JSON**:
+In Postman, go to the **Body** tab, select **form-data**, and fill in:
 
-```json
-{
-    "name": "TODA - New Terminal (Updated)",
-    "contact_number": "0998-765-4321",
-    "status": "inactive"
-}
+```
+name            TODA - New Terminal (Updated)
+contact_number  0998-765-4321
+status          inactive
 ```
 
 **Field Rules**
@@ -371,17 +367,17 @@ No request body is needed.
 
 ## Linking a Driver to an Organization
 
-When creating or updating a driver profile, pass the `organization_id` (UUID of the organization) in the request body:
+When creating or updating a driver profile, pass the `organization_id` (UUID of the organization) in the request body.
 
-```json
-{
-    "license_number": "D01 00 000001",
-    "franchise_number": "1984516156",
-    "organization_id": "019f2a3b-1c2d-7e4f-a5b6-c7d8e9f01234"
-}
+In Postman, go to the **Body** tab, select **form-data**, and fill in:
+
+```
+license_number   D01 00 000001
+franchise_number 1984516156
+organization_id  019f2a3b-1c2d-7e4f-a5b6-c7d8e9f01234
 ```
 
-The organization must exist and be **active** for the validation to pass. Omit the field or set it to `null` to unlink a driver from any organization.
+The organization must exist and be **active** for the validation to pass. Omit the field or leave it blank to unlink a driver from any organization.
 
 When reading a driver profile, the response now includes an `organization` object:
 

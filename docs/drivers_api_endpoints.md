@@ -43,13 +43,11 @@ Authorization: Bearer {your_token_here}
 
 Creates a new driver profile for the authenticated user. Each driver can only have **one** profile. The `verification_status` is automatically set to `unverified` — only an admin can change it later via the update endpoint.
 
-In Postman, go to the **Body** tab, select **raw** → **JSON**, and fill in:
+In Postman, go to the **Body** tab, select **form-data**, and fill in:
 
-```json
-{
-    "license_number": "D01 00 000001",
-    "franchise_number": "1984516156"
-}
+```
+license_number    D01 00 000001
+franchise_number  1984516156
 ```
 
 **Field Rules**
@@ -155,14 +153,12 @@ Updates an existing driver profile. **Drivers** can only update their own `franc
 
 ### As Admin
 
-In Postman, go to the **Body** tab, select **raw** → **JSON**, and provide the fields to update:
+In Postman, go to the **Body** tab, select **form-data**, and fill in the fields to update:
 
-```json
-{
-    "license_number": "D01 00 000002",
-    "franchise_number": "9876543210",
-    "verification_status": "verified"
-}
+```
+license_number       D01 00 000002
+franchise_number     9876543210
+verification_status  verified
 ```
 
 **Field Rules (Admin)**
@@ -177,10 +173,10 @@ In Postman, go to the **Body** tab, select **raw** → **JSON**, and provide the
 
 Drivers can **only** update `franchise_number`. Attempting to update `license_number` or `verification_status` will return a 403 error.
 
-```json
-{
-    "franchise_number": "9876543210"
-}
+In Postman, go to the **Body** tab, select **form-data**, and fill in:
+
+```
+franchise_number  9876543210
 ```
 
 **Field Rules (Driver)**
