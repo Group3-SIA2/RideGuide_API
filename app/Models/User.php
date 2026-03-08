@@ -26,6 +26,7 @@ class User extends Authenticatable
         'last_name',
         'middle_name',
         'email',
+        'phone_number',
         'password',
     ];
 
@@ -48,6 +49,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -84,5 +86,13 @@ class User extends Authenticatable
     public function isEmailVerified(): bool
     {
         return !is_null($this->email_verified_at);
+    }
+
+    /**
+     * Check if the user's phone number is verified.
+     */
+    public function isPhoneVerified(): bool
+    {
+        return !is_null($this->phone_verified_at);
     }
 }

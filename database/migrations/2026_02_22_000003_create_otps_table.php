@@ -15,7 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
             $table->string('code', 6);
-            $table->enum('type', ['email_verification', 'login_2fa', 'password_reset']);
+            $table->enum('type', ['email_verification', 'login_2fa', 'password_reset', 'phone_verification']);
             $table->timestamp('expires_at');
             $table->timestamp('used_at')->nullable();
             $table->timestamps();

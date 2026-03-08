@@ -18,8 +18,10 @@ return new class extends Migration
             $table->string('middle_name')->nullable();
             $table->date("birthdate")->notnull();
             $table->string('profile_picture')->nullable();
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
+            $table->string('phone_number', 15)->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
+            $table->timestamp('phone_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();

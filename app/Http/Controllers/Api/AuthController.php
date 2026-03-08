@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
@@ -419,5 +420,301 @@ class AuthController extends Controller
             type: $type,
             recipientEmail: $user->email,
         ));
+    }
+
+    // -------------------------------------------------------------------------
+    // Phone Number Authentication
+    // -------------------------------------------------------------------------
+
+    /**
+     * Register a new user using a Philippine mobile phone number.
+     *
+     * POST /api/auth/register-phone
+     * Body: phone_number (09XXXXXXXXX | +639XXXXXXXXX | 639XXXXXXXXX), password
+     */
+    public function registerWithPhone(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
+            'password'     => ['required', 'string', Password::min(8)],
+        ]);
+
+        $phone = $this->normalizePhoneNumber($validated['phone_number']);
+
+        if (User::where('phone_number', $phone)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A user with this phone number is already registered.',
+            ], 409);
+        }
+
+        $user = User::create([
+            'phone_number' => $phone,
+            'password'     => $validated['password'],
+        ]);
+
+        $this->generateAndSendPhoneOtp($user, 'phone_verification');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registration successful. Check storage/logs/laravel.log for your OTP (SMS provider not yet configured).',
+            'data'    => [
+                'user' => [
+                    'id'           => $user->id,
+                    'phone_number' => $user->phone_number,
+                ],
+            ],
+        ], 201);
+    }
+
+    /**
+     * Login using a Philippine mobile phone number and password.
+     * Sends a 2FA OTP (logged; replace with SMS provider in production).
+     *
+     * POST /api/auth/login-phone
+     * Body: phone_number, password
+     */
+    public function loginWithPhone(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
+            'password'     => ['required', 'string'],
+        ]);
+
+        $phone = $this->normalizePhoneNumber($validated['phone_number']);
+
+        $user = User::where('phone_number', $phone)->first();
+
+        if (!$user || !Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The provided credentials are incorrect.',
+            ], 401);
+        }
+
+        if (!$user->isPhoneVerified()) {
+            $this->generateAndSendPhoneOtp($user, 'phone_verification');
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Your phone number is not verified. A new verification OTP has been sent.',
+            ], 403);
+        }
+
+        if ($user->tokens()->count() > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are already logged in. Please logout first before logging in again.',
+            ], 409);
+        }
+
+        $pendingOtp = Otp::where('user_id', $user->id)
+            ->where('type', 'login_2fa')
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if ($pendingOtp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A 2FA OTP has already been sent. Please check your device or wait for it to expire before requesting a new one.',
+            ], 429);
+        }
+
+        $this->generateAndSendPhoneOtp($user, 'login_2fa');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Credentials verified. Check storage/logs/laravel.log for your 2FA OTP to complete login.',
+        ], 200);
+    }
+
+    /**
+     * Verify OTP for phone verification or phone-based 2FA login.
+     *
+     * POST /api/auth/verify-otp-phone
+     * Body: phone_number, otp, type (phone_verification|login_2fa)
+     */
+    public function verifyOtpPhone(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
+            'otp'          => ['required', 'string', 'size:6'],
+            'type'         => ['required', 'string', 'in:phone_verification,login_2fa'],
+        ]);
+
+        $phone = $this->normalizePhoneNumber($validated['phone_number']);
+
+        $user = User::where('phone_number', $phone)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        $otp = Otp::where('user_id', $user->id)
+            ->where('code', $validated['otp'])
+            ->where('type', $validated['type'])
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
+
+        if (!$otp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired OTP.',
+            ], 422);
+        }
+
+        $otp->markAsUsed();
+
+        if ($validated['type'] === 'phone_verification') {
+            $user->phone_verified_at = now();
+            $user->save();
+
+            $user->tokens()->delete();
+            $token = $user->createToken('auth-token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Phone number verified successfully. You are now logged in.',
+                'data'    => [
+                    'user' => [
+                        'id'                => $user->id,
+                        'phone_number'      => $user->phone_number,
+                        'phone_verified_at' => $user->phone_verified_at,
+                    ],
+                    'token'      => $token,
+                    'token_type' => 'Bearer',
+                ],
+            ], 200);
+        }
+
+        // login_2fa via phone
+        $user->tokens()->delete();
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful.',
+            'data'    => [
+                'user' => [
+                    'id'                => $user->id,
+                    'phone_number'      => $user->phone_number,
+                    'phone_verified_at' => $user->phone_verified_at,
+                ],
+                'token'      => $token,
+                'token_type' => 'Bearer',
+            ],
+        ], 200);
+    }
+
+    /**
+     * Resend OTP for phone number verification.
+     *
+     * POST /api/auth/resend-otp-phone
+     * Body: phone_number, type (phone_verification)
+     */
+    public function resendOtpPhone(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
+            'type'         => ['required', 'string', 'in:phone_verification'],
+        ]);
+
+        $phone = $this->normalizePhoneNumber($validated['phone_number']);
+
+        $user = User::where('phone_number', $phone)->first();
+
+        if (!$user) {
+            // Prevent phone number enumeration
+            return response()->json([
+                'success' => true,
+                'message' => 'If the phone number exists, a new OTP has been sent.',
+            ], 200);
+        }
+
+        $recentOtp = Otp::where('user_id', $user->id)
+            ->where('type', $validated['type'])
+            ->where('created_at', '>', now()->subSeconds(60))
+            ->first();
+
+        if ($recentOtp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please wait 60 seconds before requesting a new OTP.',
+            ], 429);
+        }
+
+        $dailyResendCount = Otp::where('user_id', $user->id)
+            ->where('type', $validated['type'])
+            ->where('created_at', '>', now()->startOfDay())
+            ->count();
+
+        if ($dailyResendCount >= 3) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have reached the maximum of 3 OTP resend requests for today. Please try again tomorrow.',
+            ], 429);
+        }
+
+        $this->generateAndSendPhoneOtp($user, $validated['type']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'If the phone number exists, a new OTP has been sent.',
+        ], 200);
+    }
+
+    /**
+     * Normalize a Philippine mobile number to E.164 format (+639XXXXXXXXX).
+     *
+     * Accepted inputs: 09XXXXXXXXX | 639XXXXXXXXX | +639XXXXXXXXX
+     */
+    private function normalizePhoneNumber(string $phone): string
+    {
+        $phone = preg_replace('/[\s\-()]/', '', $phone);
+
+        if (str_starts_with($phone, '09')) {
+            return '+63' . substr($phone, 1);
+        }
+
+        if (str_starts_with($phone, '639')) {
+            return '+' . $phone;
+        }
+
+        return $phone; // already in +639... format
+    }
+
+    /**
+     * Generate a 6-digit phone OTP, persist it, and dispatch via SMS.
+     *
+     * NOTE: No SMS provider is configured. The OTP is written to
+     * storage/logs/laravel.log for development use.
+     * For production, replace the Log::info() call with an SMS driver,
+     * e.g. Semaphore PH (semaphore.co), Vonage, or Twilio.
+     */
+    private function generateAndSendPhoneOtp(User $user, string $type): void
+    {
+        // Invalidate any existing unused OTPs of the same type
+        Otp::where('user_id', $user->id)
+            ->where('type', $type)
+            ->whereNull('used_at')
+            ->update(['used_at' => now()]);
+
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        Otp::create([
+            'user_id'    => $user->id,
+            'code'       => $code,
+            'type'       => $type,
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        // TODO: Replace with real SMS provider before going to production.
+        Log::info("[SMS OTP] To: {$user->phone_number} | Type: {$type} | Code: {$code} | Expires: " . now()->addMinutes(10)->toDateTimeString());
     }
 }
