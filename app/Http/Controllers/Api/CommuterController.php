@@ -148,6 +148,7 @@ class CommuterController extends Controller
                 'message' => 'Unauthorized. Only Admin or the owning Commuter can update this profile.',
             ], 403);
         }
+        
 
         $validated = $request->validate([
             'classification_name' => ['sometimes', 'string', Rule::in(['Regular', 'Student', 'Senior Citizen', 'PWD'])],

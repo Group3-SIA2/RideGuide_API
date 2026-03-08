@@ -26,13 +26,13 @@ class DashboardController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         $totalVerifiedUsers = User::whereNotNull('email_verified_at')->count();
-        $totalAdmins        = User::whereHas('role', fn ($q) => $q->where('name', 'admin'))->count();
-        $totalSuperAdmins   = User::whereHas('role', fn ($q) => $q->where('name', 'super_admin'))->count();
-        $totalDrivers       = User::whereHas('role', fn ($q) => $q->where('name', 'driver'))->count();
-        $totalCommuters     = User::whereHas('role', fn ($q) => $q->where('name', 'commuter'))->count();
+        $totalAdmins        = User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->count();
+        $totalSuperAdmins   = User::whereHas('roles', fn ($q) => $q->where('name', 'super_admin'))->count();
+        $totalDrivers       = User::whereHas('roles', fn ($q) => $q->where('name', 'driver'))->count();
+        $totalCommuters     = User::whereHas('roles', fn ($q) => $q->where('name', 'commuter'))->count();
         $totalDriverProfiles = Driver::count();
 
-        $recentQuery = User::with('role')
+        $recentQuery = User::with('roles')
             ->whereNotNull('email_verified_at');
 
         if ($search = $request->input('search')) {
@@ -44,7 +44,7 @@ class DashboardController extends Controller
         }
 
         if ($role = $request->input('role')) {
-            $recentQuery->whereHas('role', fn ($q) => $q->where('name', $role));
+            $recentQuery->whereHas('roles', fn ($q) => $q->where('name', $role));
         }
 
         $recentUsers = $recentQuery->latest()->take(10)->get();

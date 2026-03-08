@@ -23,15 +23,15 @@ class DashboardController extends Controller
         }
 
         // Only admin can access
-        if ($user->role->name !== 'admin') {
+        if (!$user->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
         // Total Users
         $totalVerifiedUsers       = User::whereNotNull('email_verified_at')->count();
-        $totalAdmins      = User::whereHas('role', fn($q) => $q->where('name', 'admin'))->count();
-        $totalDrivers     = User::whereHas('role', fn($q) => $q->where('name', 'driver'))->count();
-        $totalCommuters   = User::whereHas('role', fn($q) => $q->where('name', 'commuter'))->count();
+        $totalAdmins      = User::whereHas('roles', fn($q) => $q->where('name', 'admin'))->count();
+        $totalDrivers     = User::whereHas('roles', fn($q) => $q->where('name', 'driver'))->count();
+        $totalCommuters   = User::whereHas('roles', fn($q) => $q->where('name', 'commuter'))->count();
 
         // Total Verified 
         $totalDriverProfiles = Driver::count();
@@ -74,7 +74,7 @@ class DashboardController extends Controller
         }
 
         // Only driver can access
-        if ($user->role->name !== 'driver') {
+        if (!$user->hasRole('driver')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -117,7 +117,7 @@ class DashboardController extends Controller
         }
 
         // Only commuter can access
-        if ($user->role->name !== 'commuter') {
+        if (!$user->hasRole('commuter')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -129,7 +129,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'User profile not found'], 404);
         }
 
-        $getUser = User::with('role')->find($user->id);
+        $getUser = User::with('roles')->find($user->id);
 
         return response()->json([
             'success' => true,

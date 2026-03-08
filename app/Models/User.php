@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -27,7 +27,6 @@ class User extends Authenticatable
         'middle_name',
         'email',
         'password',
-        'role_id',
     ];
 
     /**
@@ -54,11 +53,13 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the role that the user belongs to.
+     * Get the roles that belong to the user.
      */
-    public function role(): BelongsTo
+    public function roles(): BelongsToMany
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsToMany(Role::class, 'user_role')
+            ->using(UserRole::class)
+            ->withTimestamps();
     }
 
     /**
@@ -74,7 +75,7 @@ class User extends Authenticatable
      */
     public function hasRole(string $roleName): bool
     {
-        return $this->role->name === $roleName;
+        return $this->roles()->where('name', $roleName)->exists();
     }
 
     /**

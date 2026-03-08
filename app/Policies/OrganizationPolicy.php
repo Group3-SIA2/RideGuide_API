@@ -24,7 +24,7 @@ class OrganizationPolicy
      */
     public function create(User $user): bool
     {
-        return $this->isAdmin($user) || $user->role->name === 'organization';
+        return $this->isAdmin($user) || $user->hasRole('organization');
     }
 
     /**
@@ -36,7 +36,7 @@ class OrganizationPolicy
             return true;
         }
 
-        return $user->role->name === 'organization'
+        return $user->hasRole('organization')
             && $organization->owner_user_id === $user->id;
     }
 
@@ -49,7 +49,7 @@ class OrganizationPolicy
             return true;
         }
 
-        return $user->role->name === 'organization'
+        return $user->hasRole('organization')
             && $organization->owner_user_id === $user->id;
     }
 
@@ -63,6 +63,6 @@ class OrganizationPolicy
 
     private function isAdmin(User $user): bool
     {
-        return in_array($user->role->name, ['admin', 'super_admin']);
+        return $user->hasRole('admin') || $user->hasRole('super_admin');
     }
 }

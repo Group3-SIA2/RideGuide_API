@@ -23,8 +23,8 @@ class UserController extends Controller
 
         if ($user->hasRole('admin')) {
             // Admin sees all non-admin users (drivers & commuters)
-            $users = User::with('role')
-                ->whereHas('role', fn ($q) => $q->whereIn('name', ['driver', 'commuter']))
+            $users = User::with('roles')
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['driver', 'commuter']))
                 ->get()
                 ->map(fn ($u) => $this->formatUser($u));
 
@@ -37,7 +37,7 @@ class UserController extends Controller
         // Driver/Commuter only sees themselves
         return response()->json([
             'success' => true,
-            'data'    => [$this->formatUser($user->load('role'))],
+            'data'    => [$this->formatUser($user->load('roles'))],
         ]);
     }
 
@@ -47,7 +47,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
 
-        $targetUser = User::with('role')->find($id);
+        $targetUser = User::with('roles')->find($id);
 
         if (!$targetUser) {
             return response()->json([
@@ -90,7 +90,7 @@ class UserController extends Controller
             'last_name'         => $user->last_name,
             'middle_name'       => $user->middle_name,
             'email'             => $user->email,
-            'role'              => $user->role->name,
+            'role'              => $user->roles->pluck('name'),
             'email_verified_at' => $user->email_verified_at,
             'created_at'        => $user->created_at,
             'updated_at'        => $user->updated_at,

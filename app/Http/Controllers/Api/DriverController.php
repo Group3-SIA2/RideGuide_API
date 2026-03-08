@@ -23,7 +23,7 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
         
-        if ($user->role->name !== 'driver' || $user->role->name === 'admin') {
+        if (!$user->hasRole('driver')) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
         
@@ -71,7 +71,7 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        if ($driver->user_id !== $user->id && $user->role->name !== 'admin') {
+        if ($driver->user_id !== $user->id && !$user->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -93,11 +93,11 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        if ($driver->user_id !== auth()->id() && auth()->user()->role->name !== 'admin') {
+        if ($driver->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
         // Admin can update all data including verification status, driver can only update franchise number
-        if($user->role->name === 'admin') {
+        if ($user->hasRole('admin')) {
             $validatedData = $request->validate([
                 'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id), 'regex:/^[A-Z]\d{2}-\d{2}-\d+$/'],
                 'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id), 'regex:/^[A-Z]{2}-\d{4}-\d+$/'],
@@ -139,7 +139,7 @@ class DriverController extends Controller
         }
 
         // admin lungs
-        if (auth()->user()->role->name !== 'admin') {
+        if (!auth()->user()->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -165,7 +165,7 @@ class DriverController extends Controller
         }
 
         // admin lungs
-        if ($user->role->name !== 'admin') {
+        if (!$user->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

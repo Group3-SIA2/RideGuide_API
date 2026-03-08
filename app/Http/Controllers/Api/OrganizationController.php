@@ -51,7 +51,7 @@ class OrganizationController extends Controller
         $user  = auth()->user();
         $query = Organization::withCount('drivers');
 
-        if (!in_array($user->role->name, ['admin', 'super_admin'])) {
+        if (!$user->hasRole('admin') && !$user->hasRole('super_admin')) {
             $query->where('status', 'active');
         }
 
@@ -82,7 +82,7 @@ class OrganizationController extends Controller
         $user = auth()->user();
 
         // Organization-role users are limited to one organization.
-        if ($user->role->name === 'organization') {
+        if ($user->hasRole('organization')) {
             if (Organization::where('owner_user_id', $user->id)->exists()) {
                 return response()->json([
                     'success' => false,
@@ -94,7 +94,7 @@ class OrganizationController extends Controller
         $data = $request->validated();
 
         // Automatically assign ownership when an organization-role user creates.
-        if ($user->role->name === 'organization') {
+        if ($user->hasRole('organization')) {
             $data['owner_user_id'] = $user->id;
         }
 
@@ -136,7 +136,7 @@ class OrganizationController extends Controller
         ]);
 
         // Organization-role users cannot toggle their own status.
-        if (auth()->user()->role->name === 'organization') {
+        if (auth()->user()->hasRole('organization')) {
             unset($validated['status']);
         }
 

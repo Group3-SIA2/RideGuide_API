@@ -15,7 +15,7 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::with('role')
+        $query = User::with('roles')
             ->whereNotNull('email_verified_at');
 
         if ($search = $request->input('search')) {
@@ -27,7 +27,7 @@ class UserController extends Controller
         }
 
         if ($role = $request->input('role')) {
-            $query->whereHas('role', fn ($q) => $q->where('name', $role));
+            $query->whereHas('roles', fn ($q) => $q->where('name', $role));
         }
 
         $users = $query->latest()->paginate(15)->withQueryString();

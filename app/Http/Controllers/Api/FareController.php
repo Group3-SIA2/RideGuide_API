@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-//use App\Models\Fare;
+use App\Models\Fare;
 use App\Models\Driverprofile;
 use App\Models\UserProfile;
 use App\Models\User;
