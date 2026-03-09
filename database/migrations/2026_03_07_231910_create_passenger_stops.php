@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('waypoint_id')->notNull();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('waypoint_id')->references('id')->on('waypoint')->onDelete('cascade');
         });

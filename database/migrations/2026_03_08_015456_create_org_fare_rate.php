@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('organization_id')->notNull();
             $table->uuid('fare_rate_id')->notNull();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
             $table->foreign('fare_rate_id')->references('id')->on('fare_rate')->onDelete('cascade');

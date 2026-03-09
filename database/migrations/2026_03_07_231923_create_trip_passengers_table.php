@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('fare', 8, 2)->notNull(); // I calculate ang trip and waypoint tapos store dri
 
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('commuter_id')->references('id')->on('commuter')->onDelete('cascade');
             $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');

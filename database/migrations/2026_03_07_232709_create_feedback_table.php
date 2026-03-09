@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->string('video')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('commuter_id')->references('id')->on('commuter')->onDelete('cascade');
             $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');

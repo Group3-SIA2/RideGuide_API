@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('organization_id')->notNull();
             $table->string('hotline_number')->notNull();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
         });

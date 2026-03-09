@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid('driver_id')->notNull();
             $table->uuid('terminal_id')->notNull();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
             $table->foreign('terminal_id')->references('id')->on('terminals')->onDelete('cascade');
