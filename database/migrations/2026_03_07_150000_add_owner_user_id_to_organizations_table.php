@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('organizations', function (Blueprint $table) {
-            $table->uuid('owner_user_id')->nullable()->after('contact_number');
+            $table->uuid('owner_user_id')->nullable()->after('description');
             $table->foreign('owner_user_id')
                   ->references('id')
                   ->on('users')

@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('contact', function (Blueprint $table) {
+        Schema::create('drv_assign_term', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id')->notNull();
-            $table->string('number_1')->notNull();
-
+            $table->uuid('driver_id')->notNull();
+            $table->uuid('terminal_id')->notNull();
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
+            $table->foreign('terminal_id')->references('id')->on('terminals')->onDelete('cascade');
         });
     }
 
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('contact');
+        Schema::dropIfExists('drv_assign_term');
     }
 };

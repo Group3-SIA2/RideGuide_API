@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('discount_img', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('image_path')->notNull();
-            
+            $table->string('image_front')->notNull();
+            $table->string('image_back')->notNull();
+
             $table->timestamps();
             $table->softDeletes();
         });
