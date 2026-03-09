@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('discounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('ID_number')->notNull()->unique();
-            $table->string('ID_image_path')->notNull();
+            $table->uuid('ID_image_id')->notNull();
             $table->uuid('classification_type_id')->nullable();
 
+            $table->foreign('ID_image_id')->references('id')->on('discount_img')->onDelete('cascade');
             $table->foreign('classification_type_id')->references('id')->on('commuter_classification_types')->onDelete('set null');
 
             $table->timestamps();
