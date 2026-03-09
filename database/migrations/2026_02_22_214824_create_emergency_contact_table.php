@@ -16,7 +16,9 @@ return new class extends Migration
             $table->string('emergency_contact_name')->notNull();
             $table->string('emergency_contact_phone_number')->notNull();
             $table->string('emergency_contact_relationship')->notNull();
+
             $table->timestamps();
+            $table->softDeletes();
 
         });
     }

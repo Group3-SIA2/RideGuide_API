@@ -16,8 +16,7 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->string('type'); 
             $table->text('description')->nullable();                       
-            $table->string('address')->nullable();
-            $table->string('contact_number')->nullable();
+            $table->string('hq_address')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
             $table->softDeletes();

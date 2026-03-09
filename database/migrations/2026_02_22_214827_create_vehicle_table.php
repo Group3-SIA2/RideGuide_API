@@ -17,8 +17,8 @@ return new class extends Migration
             $table->uuid('vehicle_type_id')->notNull();
             $table->uuid('plate_number_id')->notNull();
 
-            $table->softDeletes();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
             $table->foreign('vehicle_type_id')->references('id')->on('vehicle_types')->onDelete('cascade');

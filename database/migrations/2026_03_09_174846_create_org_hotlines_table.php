@@ -11,15 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('contact', function (Blueprint $table) {
+        Schema::create('org_hotlines', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id')->notNull();
-            $table->string('number_1')->notNull();
-
+            $table->uuid('organization_id')->notNull();
+            $table->string('hotline_number')->notNull();
             $table->timestamps();
-            $table->softDeletes();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
         });
     }
 
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('contact');
+        Schema::dropIfExists('org_hotlines');
     }
 };

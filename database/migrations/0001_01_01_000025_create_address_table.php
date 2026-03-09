@@ -18,7 +18,9 @@ return new class extends Migration
             $table->string('street')->notNull();
             $table->string('subdivision')->nullable();
             $table->string('Floor/Unit/Room #')->nullable();
+
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });

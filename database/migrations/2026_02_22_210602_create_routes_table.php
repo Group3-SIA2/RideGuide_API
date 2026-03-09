@@ -23,6 +23,7 @@ return new class extends Migration
             $table->foreign('destination_terminal_id')->references('id')->on('route_stops')->onDelete('cascade');
 
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
