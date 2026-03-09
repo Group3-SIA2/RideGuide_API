@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('emergency_contact', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('emergency_contact_name')->notNull();
-            $table->string('emergency_contact_phone_number')->notNull();
-            $table->string('emergency_contact_relationship')->notNull();
+            $table->string('contact_name')->notNull();
+            $table->string('contact_phone_number')->notNull();
+            $table->string('contact_relationship')->notNull();
 
             $table->timestamps();
             $table->softDeletes();
