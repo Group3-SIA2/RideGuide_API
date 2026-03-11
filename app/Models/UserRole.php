@@ -11,6 +11,11 @@ class UserRole extends Pivot
 
     protected $table = 'user_role';
 
+    protected $fillable = [
+        'user_id',
+        'role_id',
+    ];
+
     public $incrementing = false;
     protected $keyType = 'string';
 }
