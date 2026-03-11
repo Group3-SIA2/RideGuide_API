@@ -365,6 +365,12 @@ return [
             'active' => ['admin/profile*'],
         ],
         [
+            'text'   => 'Backup & Restore',
+            'route'  => 'admin.backups.index',
+            'icon'   => 'fas fa-fw fa-save',
+            'active' => ['admin/backup*'],
+        ],
+        [
             'text'   => 'Logout',
             'route'  => 'admin.logout.confirm',
             'icon'   => 'fas fa-fw fa-sign-out-alt',
