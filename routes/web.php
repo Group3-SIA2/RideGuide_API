@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\LogoutController;
 use App\Http\Controllers\Admin\OrganizationController;
+use App\Http\Controllers\Admin\BackupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,5 +49,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/profile',         [ProfileController::class,      'index'])->name('profile.index');
         Route::get('/logout',     [LogoutController::class,    'confirm'])->name('logout.confirm');
         Route::post('/logout',    [LogoutController::class,    'logout'])->name('logout');
+
+        Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::post('/backups', [BackupController::class, 'create'])->name('backups.create');
+        Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
+        Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])->name('backups.restore');
     });
 });
