@@ -20,10 +20,7 @@ class DatabaseSeeder extends Seeder
         // Seed roles first
         $this->call(RoleSeeder::class);
         $this->call(DiscountTypesSeeder::class);
-        $this->call(OrganizationSeeder::class);
-
-        $superAdminRole = Role::where('name', Role::SUPER_ADMIN)->first();
-        $adminRole      = Role::where('name', Role::ADMIN)->first();
+       // $this->call(OrganizationSeeder::class);
 
         // Super Admin account
         // Email   : superadmin@rideguide.com
@@ -34,9 +31,10 @@ class DatabaseSeeder extends Seeder
                 'first_name'        => 'Super',
                 'last_name'         => 'Admin',
                 'middle_name'       => null,
+                'birthdate'          => '1990-01-01',
+                'profile_picture'   => null,
                 'email_verified_at' => now(),
                 'password'          => Hash::make('SuperAdmin@2026'),
-                'role_id'           => $superAdminRole->id,
             ]
         );
 
@@ -49,10 +47,13 @@ class DatabaseSeeder extends Seeder
                 'first_name'        => 'Admin',
                 'last_name'         => 'User',
                 'middle_name'       => null,
+                'birthdate'          => '1990-01-01',
+                'profile_picture'   => null,
                 'email_verified_at' => now(),
                 'password'          => Hash::make('Admin@2026'),
-                'role_id'           => $adminRole->id,
             ]
         );
+
+        $this->call(UserRoleSeeder::class);
     }
 }

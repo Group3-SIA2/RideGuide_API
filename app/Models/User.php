@@ -95,4 +95,11 @@ class User extends Authenticatable
     {
         return !is_null($this->phone_verified_at);
     }
+
+    // Seeder purpose lungs
+    public static function getIdByFirstName(string $firstName): ?string
+    {
+        $user = self::where('first_name', $firstName)->first();
+        return $user ? $user->id : null;
+    }
 }

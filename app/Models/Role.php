@@ -36,4 +36,11 @@ class Role extends Model
             ->using(UserRole::class)
             ->withTimestamps();
     }
+
+    // Seeder purpose lungs
+    public static function getIdbyName(string $name): ?string
+    {
+        $role = self::where('name', $name)->first();
+        return $role ? $role->id : null;
+    }
 }
