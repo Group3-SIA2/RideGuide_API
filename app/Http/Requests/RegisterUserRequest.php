@@ -19,7 +19,7 @@ class RegisterUserRequest extends FormRequest
             'last_name'      => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'phone'    => ['nullable', 'string', 'max:20'],
+            'phone_number'    => ['nullable', 'string', 'max:20'],
         ];
     }
 
