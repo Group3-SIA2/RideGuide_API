@@ -40,4 +40,9 @@ return [
         'url'       => 'https://www.iprogsms.com/api/v1/otp',
     ],
 
+    'facebook' => [
+        'app_id' => env('FACEBOOK_APP_ID'),
+        'app_secret' => env('FACEBOOK_APP_SECRET'),
+    ],
+
 ];
