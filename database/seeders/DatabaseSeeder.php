@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         // Email   : superadmin@rideguide.com
         // Password: SuperAdmin@2026
         User::firstOrCreate(
-            ['email' => 'superadmin@rideguide.com'],
+            ['email' => 'edriane.bangonon26@gmail.com'],
             [
                 'first_name'        => 'Super',
                 'last_name'         => 'Admin',
