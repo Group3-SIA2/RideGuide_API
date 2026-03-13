@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CommuterController;
@@ -24,6 +25,17 @@ Route::get('/', function () {
 });
 
 Auth::routes();
+
+Route::get('/legal/privacy-policy', [LegalController::class, 'privacyPolicy'])
+    ->name('legal.privacy-policy');
+Route::get('/legal/terms-of-service', [LegalController::class, 'termsOfService'])
+    ->name('legal.terms-of-service');
+Route::get('/legal/data-deletion', [LegalController::class, 'dataDeletionInstructions'])
+    ->name('legal.data-deletion');
+Route::post('/facebook/data-deletion/callback', [LegalController::class, 'facebookDataDeletionCallback'])
+    ->name('legal.facebook.data-deletion.callback');
+Route::get('/facebook/data-deletion/status', [LegalController::class, 'dataDeletionStatus'])
+    ->name('legal.data-deletion.status');
 
 /*
 |--------------------------------------------------------------------------

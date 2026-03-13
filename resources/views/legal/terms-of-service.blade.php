@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RideGuide Terms of Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 900px; line-height: 1.6; color: #1f2937; padding: 0 1rem; }
+        h1, h2 { color: #111827; }
+        .muted { color: #6b7280; }
+    </style>
+</head>
+<body>
+    <h1>Terms of Service</h1>
+    <p class="muted">Last updated: {{ now()->toDateString() }}</p>
+
+    <p>By using RideGuide, you agree to these Terms of Service. If you do not agree, please do not use the service.</p>
+
+    <h2>Account Responsibilities</h2>
+    <ul>
+        <li>You are responsible for the accuracy of information you provide.</li>
+        <li>You are responsible for maintaining the confidentiality of your account.</li>
+        <li>You must not use the service for unlawful activity.</li>
+    </ul>
+
+    <h2>Service Availability</h2>
+    <p>We may update, suspend, or discontinue features when necessary for maintenance, security, or compliance.</p>
+
+    <h2>Limitation of Liability</h2>
+    <p>RideGuide is provided on an as-is basis. To the extent permitted by law, we are not liable for indirect, incidental, or consequential damages.</p>
+
+    <h2>Termination</h2>
+    <p>We may suspend or terminate accounts that violate these terms or applicable laws.</p>
+
+    <h2>Contact</h2>
+    <p>For questions about these terms, email: <strong>support@rideguide.app</strong></p>
+</body>
+</html>
