@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Route;
 Route::controller(AuthController::class)->prefix('auth')->group(function (): void {
     Route::post('/register',        'register')->name('api.auth.register');
     Route::post('/login',           'login')->name('api.auth.login');
+    Route::post('/social/firebase', 'socialLoginFirebase')
+        ->middleware('throttle:10,1')
+        ->name('api.auth.social.firebase');
     Route::post('/verify-otp',      'verifyOtp')->name('api.auth.verify-otp');
     Route::post('/forgot-password', 'forgotPassword')->name('api.auth.forgot-password');
     Route::post('/reset-password',  'resetPassword')->name('api.auth.reset-password');
