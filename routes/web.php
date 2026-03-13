@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\LogoutController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\Admin\UserManagementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -74,5 +75,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/backups', [BackupController::class, 'create'])->name('backups.create');
         Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
         Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])->name('backups.restore');
+
+        Route::get('/user-management',                     [UserManagementController::class, 'index'])->name('user-management.index');
+        Route::get('/user-management/role/{role}/edit',    [UserManagementController::class, 'editRole'])->name('user-management.edit-role');
+        Route::put('/user-management/role/{role}',         [UserManagementController::class, 'updateRole'])->name('user-management.update-role');
+        Route::get('/user-management/user/{user}/edit',    [UserManagementController::class, 'editUser'])->name('user-management.edit-user');
+        Route::put('/user-management/user/{user}',         [UserManagementController::class, 'updateUser'])->name('user-management.update-user');
     });
 });
