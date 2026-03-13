@@ -258,8 +258,8 @@ return [
 
     'use_route_url' => true,
     'dashboard_url' => 'admin.dashboard',
-    'logout_url' => 'logout',
-    'login_url' => 'login',
+    'logout_url' => 'admin.logout',
+    'login_url' => 'admin.login',
     'register_url' => 'register',
     'password_reset_url' => 'password.request',
     'password_email_url' => 'password.email',
