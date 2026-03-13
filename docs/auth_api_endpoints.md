@@ -126,6 +126,108 @@ password    password123
 
 ---
 
+### 2A. Social Signup/Login (Firebase Google/Facebook)
+
+**POST** `https://rideguide.test/api/auth/social/firebase`
+
+This endpoint is for Flutter social auth in hybrid mode.
+
+Flow:
+1. Flutter signs in with Firebase (Google or Facebook).
+2. Flutter gets Firebase `id_token`.
+3. Flutter sends the token to Laravel.
+4. Laravel verifies the token and returns a Sanctum token.
+
+In Postman, go to the **Body** tab, select **form-data**, and fill in:
+
+```
+id_token    <firebase_id_token_from_flutter>
+provider    google.com
+```
+
+`provider` accepts:
+- `google.com`
+- `facebook.com`
+- `google`
+- `facebook`
+- `Google`
+- `Facebook`
+
+If the email does not exist, Laravel creates a new user.
+If the email exists, Laravel logs in that user.
+
+**Success Response (200) — New Social User**
+```json
+{
+    "success": true,
+    "message": "Social signup successful.",
+    "data": {
+        "user": {
+            "id": "9f1a2b3c-...",
+            "email": "user@gmail.com",
+            "email_verified_at": "2026-03-13T11:20:00.000000Z"
+        },
+        "token": "1|abc123xyz456...",
+        "token_type": "Bearer"
+    }
+}
+```
+
+**Success Response (200) — Existing Social User**
+```json
+{
+    "success": true,
+    "message": "Social login successful.",
+    "data": {
+        "user": {
+            "id": "9f1a2b3c-...",
+            "email": "user@gmail.com",
+            "email_verified_at": "2026-03-13T11:20:00.000000Z"
+        },
+        "token": "1|abc123xyz456...",
+        "token_type": "Bearer"
+    }
+}
+```
+
+**Error Response — Invalid/Expired Token (401)**
+```json
+{
+    "success": false,
+    "message": "Invalid or expired Firebase ID token."
+}
+```
+
+**Error Response — Missing Email in Social Account (422)**
+```json
+{
+    "success": false,
+    "message": "Your social account did not provide an email address. Please use an account with email permission."
+}
+```
+
+**Error Response — Provider Mismatch (422)**
+```json
+{
+    "success": false,
+    "message": "Provider mismatch between request and Firebase token."
+}
+```
+
+**Error Response — Validation Error (422)**
+```json
+{
+    "message": "The provider field must be one of: google.com, facebook.com, google, facebook, Google, Facebook.",
+    "errors": {
+        "provider": [
+            "The selected provider is invalid."
+        ]
+    }
+}
+```
+
+---
+
 ### 3. Verify OTP
 
 **POST** `https://rideguide.test/api/auth/verify-otp`

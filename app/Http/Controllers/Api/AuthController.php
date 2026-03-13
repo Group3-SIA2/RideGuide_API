@@ -9,9 +9,15 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
+use Kreait\Firebase\Factory;
+use RuntimeException;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -109,6 +115,139 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Credentials verified. Please check your email for the 2FA OTP to complete login.',
+        ], 200);
+    }
+
+    /**
+     * Social login/register using Firebase ID token (Google/Facebook).
+     *
+     * POST /api/auth/social/firebase
+     * Body: id_token, provider (google.com|facebook.com)
+     */
+    public function socialLoginFirebase(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id_token' => ['required', 'string'],
+            'provider' => ['nullable', 'string', 'in:google.com,facebook.com,google,facebook,Google,Facebook'],
+        ]);
+
+        try {
+            $claims = $this->verifyFirebaseIdToken($validated['id_token']);
+        } catch (FailedToVerifyToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired Firebase ID token.',
+            ], 401);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 500);
+        } catch (Throwable) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to verify social login token at this time.',
+            ], 500);
+        }
+
+        $providerFromToken = (string) data_get($claims, 'firebase.sign_in_provider', '');
+        $requestedProvider = $this->normalizeSocialProvider($validated['provider'] ?? null);
+
+        if (!in_array($providerFromToken, ['google.com', 'facebook.com'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unsupported provider in Firebase token.',
+            ], 422);
+        }
+
+        if ($requestedProvider !== null && $requestedProvider !== $providerFromToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Provider mismatch between request and Firebase token.',
+            ], 422);
+        }
+
+        $firebaseUid = (string) data_get($claims, 'sub', '');
+        $email = data_get($claims, 'email');
+        $displayName = (string) data_get($claims, 'name', '');
+        $emailVerified = (bool) data_get($claims, 'email_verified', false);
+
+        if ($firebaseUid === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Firebase token is missing user identifier.',
+            ], 422);
+        }
+
+        if (!is_string($email) || $email === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your social account did not provide an email address. Please use an account with email permission.',
+            ], 422);
+        }
+
+        $user = User::where('email', $email)->first();
+        $isNewUser = false;
+
+        if (!$user) {
+            $nameParts = $this->splitDisplayName($displayName);
+
+            $user = User::create([
+                'email' => $email,
+                'first_name' => $nameParts['first_name'],
+                'last_name' => $nameParts['last_name'],
+                'password' => Str::random(40),
+            ]);
+
+            $isNewUser = true;
+        }
+
+        $updates = [];
+
+        if ($providerFromToken === 'google.com') {
+            $updates['google_id'] = $firebaseUid;
+        }
+
+        if ($providerFromToken === 'facebook.com') {
+            $updates['facebook_id'] = $firebaseUid;
+        }
+
+        if ($emailVerified && is_null($user->email_verified_at)) {
+            $updates['email_verified_at'] = now();
+        }
+
+        if ($displayName !== '' && (empty($user->first_name) || empty($user->last_name))) {
+            $nameParts = $this->splitDisplayName($displayName);
+
+            if (empty($user->first_name) && $nameParts['first_name'] !== null) {
+                $updates['first_name'] = $nameParts['first_name'];
+            }
+
+            if (empty($user->last_name) && $nameParts['last_name'] !== null) {
+                $updates['last_name'] = $nameParts['last_name'];
+            }
+        }
+
+        if ($updates !== []) {
+            $user->update($updates);
+            $user->refresh();
+        }
+
+        $user->tokens()->delete();
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => $isNewUser ? 'Social signup successful.' : 'Social login successful.',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'email_verified_at' => $user->email_verified_at,
+                ],
+                'token' => $token,
+                'token_type' => 'Bearer',
+            ],
         ], 200);
     }
 
@@ -418,5 +557,91 @@ class AuthController extends Controller
             type: $type,
             recipientEmail: $user->email,
         ));
+    }
+
+    /**
+     * Verify Firebase ID token and return token claims.
+     *
+     * @return array<string, mixed>
+     */
+    private function verifyFirebaseIdToken(string $idToken): array
+    {
+        if (!class_exists(Factory::class)) {
+            throw new RuntimeException('Firebase Admin SDK is not installed. Run: composer require kreait/firebase-php');
+        }
+
+        $factory = new Factory();
+        $projectId = (string) config('services.firebase.project_id', '');
+        $credentialsPath = (string) config('services.firebase.credentials', '');
+        $credentialsJson = (string) config('services.firebase.credentials_json', '');
+
+        if ($projectId !== '') {
+            $factory = $factory->withProjectId($projectId);
+        }
+
+        if ($credentialsJson !== '') {
+            $decodedCredentials = json_decode($credentialsJson, true);
+
+            if (!is_array($decodedCredentials)) {
+                throw new RuntimeException('Invalid FIREBASE_CREDENTIALS_JSON value. Expected valid JSON object.');
+            }
+
+            $factory = $factory->withServiceAccount($decodedCredentials);
+        } elseif ($credentialsPath !== '') {
+            $factory = $factory->withServiceAccount($credentialsPath);
+        } else {
+            throw new RuntimeException('Firebase Admin credentials are missing. Set FIREBASE_CREDENTIALS or FIREBASE_CREDENTIALS_JSON in your .env file.');
+        }
+
+        $auth = $factory->createAuth();
+        $verifiedToken = $auth->verifyIdToken($idToken, true);
+
+        $claims = $verifiedToken->claims()->all();
+        $expiresAt = data_get($claims, 'exp');
+
+        if (is_numeric($expiresAt) && Carbon::createFromTimestamp((int) $expiresAt)->isPast()) {
+            throw new RuntimeException('Firebase ID token has expired.');
+        }
+
+        return $claims;
+    }
+
+    /**
+     * @return array{first_name: string|null, last_name: string|null}
+     */
+    private function splitDisplayName(string $displayName): array
+    {
+        $cleanName = trim($displayName);
+
+        if ($cleanName === '') {
+            return [
+                'first_name' => null,
+                'last_name' => null,
+            ];
+        }
+
+        $nameParts = preg_split('/\s+/', $cleanName) ?: [];
+        $firstName = $nameParts[0] ?? null;
+        $lastName = count($nameParts) > 1 ? implode(' ', array_slice($nameParts, 1)) : null;
+
+        return [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+        ];
+    }
+
+    private function normalizeSocialProvider(mixed $provider): ?string
+    {
+        if (!is_string($provider) || trim($provider) === '') {
+            return null;
+        }
+
+        $normalized = strtolower(trim($provider));
+
+        return match ($normalized) {
+            'google', 'google.com' => 'google.com',
+            'facebook', 'facebook.com' => 'facebook.com',
+            default => null,
+        };
     }
 }
