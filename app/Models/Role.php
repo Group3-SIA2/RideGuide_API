@@ -37,6 +37,23 @@ class Role extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Get the permissions that belong to this role.
+     */
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'role_permission')
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if the role has a specific permission.
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        return $this->permissions()->where('name', $permissionName)->exists();
+    }
+
     // Seeder purpose lungs
     public static function getIdbyName(string $name): ?string
     {

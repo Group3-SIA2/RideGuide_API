@@ -83,6 +83,46 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if the user has a specific permission through any of their roles.
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        // Super admins always have all permissions
+        if ($this->hasRole(Role::SUPER_ADMIN)) {
+            return true;
+        }
+
+        return $this->roles()
+            ->whereHas('permissions', function ($q) use ($permissionName) {
+                $q->where('name', $permissionName);
+            })
+            ->exists();
+    }
+
+    /**
+     * Check if the user has any of the given permissions.
+     */
+    public function hasAnyPermission(array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission($permission)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get all permissions for the user (via their roles).
+     */
+    public function getAllPermissions(): \Illuminate\Support\Collection
+    {
+        return Permission::whereHas('roles', function ($q) {
+            $q->whereIn('roles.id', $this->roles()->pluck('roles.id'));
+        })->get();
+    }
+
+    /**
      * Check if the user's email is verified.
      */
     public function isEmailVerified(): bool

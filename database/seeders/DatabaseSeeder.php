@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         // Seed roles first
         $this->call(RoleSeeder::class);
         $this->call(DiscountTypesSeeder::class);
+        $this->call(PermissionSeeder::class);
        // $this->call(OrganizationSeeder::class);
 
         // Super Admin account
