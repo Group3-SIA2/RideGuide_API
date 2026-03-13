@@ -23,9 +23,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('set null');
-            $table->foreign('emergency_contact_id')->references('id')->on('emergency_contact')->onDelete('set null');
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->foreign('emergency_contact_id')->references('id')->on('emergency_contact')->nullOnDelete();
         });
     }
 
