@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\LogoutController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\Auth2faController;
 
 /*
 |--------------------------------------------------------------------------
@@ -82,4 +83,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/user-management/user/{user}/edit',    [UserManagementController::class, 'editUser'])->name('user-management.edit-user');
         Route::put('/user-management/user/{user}',         [UserManagementController::class, 'updateUser'])->name('user-management.update-user');
     });
+});
+
+
+Route::prefix('admin')->group(function () {
+    Route::get('/login', [Auth2faController::class, 'showLogin'])->name('admin.login');
+    Route::post('/login', [Auth2faController::class, 'loginStep1'])->name('admin.login.step1');
+
+    Route::get('/2fa', [Auth2faController::class, 'show2faForm'])->name('admin.2fa.form');
+    Route::post('/2fa', [Auth2faController::class, 'verify2fa'])->name('admin.2fa.verify');
 });
