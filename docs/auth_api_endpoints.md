@@ -55,16 +55,11 @@ Creates a new user account and sends an email verification OTP to the provided e
 In Postman, go to the **Body** tab, select **form-data**, and fill in the following fields:
 
 ```
-first_name             Aslainie
-last_name              Maruhom
-middle_name            Lampac
 email                  aslainiemaruhom19@gmail.com
 password               password123
-password_confirmation  password123
-role                   commuter
 ```
 
-Note: The `middle_name` field is optional. The `role` field accepts only `admin`, `driver`, or `commuter`.
+Note: `first_name`, `last_name`, `middle_name`, and `roles` are handled in the setup step (`POST /api/setup/setup-users`) after OTP verification.
 
 **Success Response (201)**
 ```json
@@ -74,11 +69,7 @@ Note: The `middle_name` field is optional. The `role` field accepts only `admin`
     "data": {
         "user": {
             "id": "9f1a2b3c-...",
-            "first_name": "Aslainie",
-            "last_name": "Maruhom",
-            "middle_name": "Lampac",
-            "email": "aslainiemaruhom19@gmail.com",
-            "role": "commuter"
+            "email": "aslainiemaruhom19@gmail.com"
         }
     }
 }
@@ -165,11 +156,7 @@ type     login_2fa
     "data": {
         "user": {
             "id": "9f1a2b3c-...",
-            "first_name": "Aslainie",
-            "last_name": "Maruhom",
-            "middle_name": "Lampac",
             "email": "aslainiemaruhom19@gmail.com",
-            "role": "commuter",
             "email_verified_at": "2026-02-22T10:30:00.000000Z"
         },
         "token": "1|abc123xyz456...",
@@ -186,11 +173,7 @@ type     login_2fa
     "data": {
         "user": {
             "id": "9f1a2b3c-...",
-            "first_name": "Aslainie",
-            "last_name": "Maruhom",
-            "middle_name": "Lampac",
             "email": "aslainiemaruhom19@gmail.com",
-            "role": "commuter",
             "email_verified_at": "2026-02-22T10:30:00.000000Z"
         },
         "token": "1|abc123xyz456...",
