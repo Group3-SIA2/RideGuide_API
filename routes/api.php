@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CommuterController;
 use App\Http\Controllers\Api\SetUpController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\OrganizationController;
+use App\Http\Controllers\Api\EmergencyContactController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -99,5 +100,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::put('/{id}',        'update')->name('api.organizations.update');
         Route::delete('/{id}',     'destroy')->name('api.organizations.destroy');
         Route::put('/{id}/restore','restore')->name('api.organizations.restore');
+    });
+
+    // Emergency Contact Routes
+    Route::controller(EmergencyContactController::class)->prefix('emergency-contacts')->group(function (): void {
+        Route::post('/',           'addEmergencyContact')->name('api.emergency-contacts.add');
+        Route::put('/{id}',        'updateEmergencyContact')->name('api.emergency-contacts.update');
+        Route::get('/',            'getEmergencyContacts')->name('api.emergency-contacts.get');
+        Route::delete('/{id}',     'softDeleteEmergencyContact')->name('api.emergency-contacts.delete');
     });
 });
