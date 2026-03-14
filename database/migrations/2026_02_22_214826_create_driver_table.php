@@ -18,13 +18,11 @@ return new class extends Migration
             $table->string('franchise_number')->notNull()->unique();
             $table->uuid('organization_id')->nullable();
             $table->enum('verification_status', ['unverified', 'verified', 'rejected'])->notNull()->default('unverified');
-            $table->uuid('emergency_contact_id')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
-            $table->foreign('emergency_contact_id')->references('id')->on('emergency_contact')->nullOnDelete();
         });
     }
 

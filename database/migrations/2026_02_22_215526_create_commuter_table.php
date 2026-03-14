@@ -15,10 +15,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('user_id')->notNull()->unique();
             $table->uuid('discount_id')->nullable();
-            $table->uuid('emergency_contact_id')->nullable();
                 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('emergency_contact_id')->references('id')->on('emergency_contact')->onDelete('set null');
             $table->foreign('discount_id')->references('id')->on('discounts')->onDelete('set null');
 
             $table->timestamps();
