@@ -11,6 +11,7 @@ use App\Models\Driver;
 use App\Models\Organization;
 use Illuminate\Validation\Rule;
 use App\Models\User;
+use App\Support\DashboardCache;
 
 class DriverController extends Controller
 {
@@ -46,6 +47,8 @@ class DriverController extends Controller
             'franchise_number' => $validatedData['franchise_number'],
             'verification_status' => 'unverified', // default lng only admin can edit or set this
         ]);
+
+        DashboardCache::forgetUserDashboards($driver->user_id);
 
         return response()->json([
             'message' => 'Driver profile created successfully',
@@ -124,6 +127,7 @@ class DriverController extends Controller
         }
 
         $driver->update($validatedData);
+        DashboardCache::forgetUserDashboards($driver->user_id);
 
         return response()->json([
             'message' => 'Driver profile updated successfully',
@@ -145,6 +149,7 @@ class DriverController extends Controller
         }
 
         $driver->delete();
+        DashboardCache::forgetUserDashboards($driver->user_id);
 
         return response()->json([
             'message' => 'Driver profile deleted successfully',
@@ -171,6 +176,7 @@ class DriverController extends Controller
         }
 
         $driver->restore();
+        DashboardCache::forgetUserDashboards($driver->user_id);
 
         return response()->json([
             'message' => 'Driver profile restored successfully',

@@ -15,6 +15,7 @@ use App\Models\DiscountTypes;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
+use App\Support\DashboardCache;
 
 class CommuterController extends Controller
 {
@@ -107,6 +108,8 @@ class CommuterController extends Controller
             'user_id'     => $user->id,
             'discount_id' => $discountId,
         ]);
+
+        DashboardCache::forgetUserDashboards($user->id);
 
         
 
@@ -347,6 +350,8 @@ class CommuterController extends Controller
             }
         }
 
+        DashboardCache::forgetUserDashboards($commuter->user_id);
+
         return response()->json([
             'success' => true,
             'message' => 'Commuter profile updated successfully.',
@@ -403,6 +408,7 @@ class CommuterController extends Controller
         }
 
         $commuter->delete();
+        DashboardCache::forgetUserDashboards($commuter->user_id);
 
         return response()->json([
             'success' => true,
@@ -470,6 +476,7 @@ class CommuterController extends Controller
         }
 
         $commuter->restore();
+        DashboardCache::forgetUserDashboards($commuter->user_id);
 
         return response()->json([
             'success' => true,
