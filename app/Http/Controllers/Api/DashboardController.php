@@ -10,10 +10,122 @@ use App\Models\Commuter;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use App\Support\DashboardCache;
 
 class DashboardController extends Controller
 {
-   
+
+    private function formatUser(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'middle_name' => $user->middle_name,
+            'birthdate' => $user->birthdate,
+            'profile_picture' => $user->profile_picture,
+            'email' => $user->email,
+            'google_id' => $user->google_id,
+            'facebook_id' => $user->facebook_id,
+            'phone_number' => $user->phone_number,
+            'email_verified_at' => $user->email_verified_at,
+            'phone_verified_at' => $user->phone_verified_at,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+            'deleted_at' => $user->deleted_at,
+        ];
+    }
+
+    private function formatDriverProfile(?Driver $driver): ?array
+    {
+        if (! $driver) {
+            return null;
+        }
+
+        return [
+            'id' => $driver->id,
+            'user_id' => $driver->user_id,
+            'license_number' => $driver->license_number,
+            'franchise_number' => $driver->franchise_number,
+            'organization_id' => $driver->organization_id,
+            'verification_status' => $driver->verification_status,
+            'created_at' => $driver->created_at,
+            'updated_at' => $driver->updated_at,
+            'deleted_at' => $driver->deleted_at,
+        ];
+    }
+
+    private function formatCommuterProfile(?Commuter $commuter): ?array
+    {
+        if (! $commuter) {
+            return null;
+        }
+
+        return [
+            'id' => $commuter->id,
+            'user_id' => $commuter->user_id,
+            'discount_id' => $commuter->discount_id,
+            'classification_name' => $commuter->discount?->classificationType?->classification_name ?? 'Regular',
+            'discount' => $commuter->discount ? [
+                'id' => $commuter->discount->id,
+                'ID_number' => $commuter->discount->ID_number,
+                'ID_image_id' => $commuter->discount->ID_image_id,
+                'classification_type_id' => $commuter->discount->classification_type_id,
+                'created_at' => $commuter->discount->created_at,
+                'updated_at' => $commuter->discount->updated_at,
+                'deleted_at' => $commuter->discount->deleted_at,
+                'classification_type' => $commuter->discount->classificationType ? [
+                    'id' => $commuter->discount->classificationType->id,
+                    'classification_name' => $commuter->discount->classificationType->classification_name,
+                    'created_at' => $commuter->discount->classificationType->created_at,
+                    'updated_at' => $commuter->discount->classificationType->updated_at,
+                    'deleted_at' => $commuter->discount->classificationType->deleted_at,
+                ] : null,
+            ] : null,
+            'created_at' => $commuter->created_at,
+            'updated_at' => $commuter->updated_at,
+            'deleted_at' => $commuter->deleted_at,
+        ];
+    }
+
+    private function resolveRoleNames(User $user): array
+    {
+        return $user->roles()->pluck('name')->map(fn (string $name) => strtolower($name))->values()->all();
+    }
+
+    private function unauthorizedForRole(array $roleNames, string $requiredRole): bool
+    {
+        return !in_array(strtolower($requiredRole), $roleNames, true);
+    }
+
+    private function baseResponsePayload(User $user, string $activeRole, array $roleNames): array
+    {
+        return [
+            'user_id' => $user->id,
+            'active_role' => strtolower($activeRole),
+            'roles' => $roleNames,
+        ];
+    }
+
+    private function buildUserDashboardData(User $user, string $activeRole, array $roleNames): array
+    {
+        $freshUser = User::findOrFail($user->id);
+        $driverProfile = Driver::where('user_id', $user->id)->first();
+        $commuterProfile = Commuter::with('discount.classificationType')
+            ->where('user_id', $user->id)
+            ->first();
+
+        return array_merge(
+            $this->baseResponsePayload($freshUser, $activeRole, $roleNames),
+            [
+                'user' => $this->formatUser($freshUser),
+                'driver_profile' => $this->formatDriverProfile($driverProfile),
+                'commuter_profile' => $this->formatCommuterProfile($commuterProfile),
+            ]
+        );
+    }
+
     public function adminDashboard(): JsonResponse
     {
         $user = auth()->user();
@@ -22,43 +134,38 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // Only admin can access
-        if (!$user->hasRole('admin')) {
+        $roleNames = $this->resolveRoleNames($user);
+
+        if ($this->unauthorizedForRole($roleNames, 'admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Total Users
-        $totalVerifiedUsers       = User::whereNotNull('email_verified_at')->count();
-        $totalAdmins      = User::whereHas('roles', fn($q) => $q->where('name', 'admin'))->count();
-        $totalDrivers     = User::whereHas('roles', fn($q) => $q->where('name', 'driver'))->count();
-        $totalCommuters   = User::whereHas('roles', fn($q) => $q->where('name', 'commuter'))->count();
+        $cacheKey = DashboardCache::key($user->id, 'admin');
 
-        // Total Verified 
-        $totalDriverProfiles = Driver::count();
-        $getAllDriverProfiles = Driver::all();
+        $data = Cache::remember($cacheKey, DashboardCache::ttlSeconds(), function () use ($user, $roleNames) {
+            $totalVerifiedUsers = User::whereNotNull('email_verified_at')->count();
+            $totalAdmins = User::whereHas('roles', fn ($query) => $query->where('name', 'admin'))->count();
+            $totalDrivers = User::whereHas('roles', fn ($query) => $query->where('name', 'driver'))->count();
+            $totalCommuters = User::whereHas('roles', fn ($query) => $query->where('name', 'commuter'))->count();
+            $getCredentials = User::where('id', $user->id)->first();
 
-        // get own credentials
-        $getCredentials = User::where('id', $user->id)->first();
-    
-
-        // teerminals
-        // $totalTerminals = Terminals::count();
-        // $getAllTerminals = Terminals::all();
-
-
-        
+            return array_merge(
+                $this->baseResponsePayload($user, 'admin', $roleNames),
+                [
+                    'users' => [
+                        'total_verified_users' => $totalVerifiedUsers,
+                        'total_admins' => $totalAdmins,
+                        'total_drivers' => $totalDrivers,
+                        'total_commuters' => $totalCommuters,
+                    ],
+                    'admin_credentials' => $getCredentials,
+                ]
+            );
+        });
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'users' => [
-                    'total_verified_users' => $totalVerifiedUsers,
-                    'total_admins' => $totalAdmins,
-                    'total_drivers' => $totalDrivers,
-                    'total_commuters' => $totalCommuters,
-                ],
-                'admin_credentials' => $getCredentials,
-            ],
+            'data' => $data,
         ], 200);
     }
 
@@ -73,35 +180,31 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // Only driver can access
-        if (!$user->hasRole('driver')) {
+        $roleNames = $this->resolveRoleNames($user);
+
+        if ($this->unauthorizedForRole($roleNames, 'driver')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        //  Driver Profile 
-        $driverProfile = Driver::where('user_id', $user->id)->first();
+        $cacheKey = DashboardCache::key($user->id, 'driver');
 
-        if (! $driverProfile) {
+        $data = Cache::remember($cacheKey, DashboardCache::ttlSeconds(), function () use ($user, $roleNames) {
+            $driverProfile = Driver::where('user_id', $user->id)->first();
+
+            if (! $driverProfile) {
+                return null;
+            }
+
+            return $this->buildUserDashboardData($user, 'driver', $roleNames);
+        });
+
+        if ($data === null) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
-        $getUser = User::where('id', $user->id)->first();
-        $getUserClassification = Commuter::where('user_id', $user->id)->first();
-        $getDriversProfile = Driver::where('user_id', $user->id)->first();
-        //$getFeedbacks = Feedback::where('driver_id', $driverProfile->id)->get();
-        //$getTerminals = Terminals::where('driver_id', $driverProfile->id)->get();
-        //$getDriverRoutes = DriverRoutes::where('driver_id', $driverProfile->id)->get();
-        //$getDriverVehiclesType = DriverVehicles::where('driver_id', $driverProfile->id)->get();
-        //$getDriverRouteTerminals = DriverRouteTerminals::where('driver_id', $driverProfile->id)->get();
-        //$getRouteStops = RouteStops::where('driver_id', $driverProfile->id)->get();
-
         return response()->json([
             'success' => true,
-            'data'    => [
-                'user' => $getUser,
-                'classification' => $getUserClassification,
-                'driver_profile' => $getDriversProfile,
-            ],
+            'data' => $data,
         ], 200);
     }
 
@@ -116,27 +219,33 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // Only commuter can access
-        if (!$user->hasRole('commuter')) {
+        $roleNames = $this->resolveRoleNames($user);
+
+        if ($this->unauthorizedForRole($roleNames, 'commuter')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $commuterProfile = Commuter::with('user', 'discount.classificationType')
-            ->where('user_id', $user->id)
-            ->first();
+        $cacheKey = DashboardCache::key($user->id, 'commuter');
 
-        if (! $commuterProfile) {
+        $data = Cache::remember($cacheKey, DashboardCache::ttlSeconds(), function () use ($user, $roleNames) {
+            $commuterProfile = Commuter::with('user', 'discount.classificationType')
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (! $commuterProfile) {
+                return null;
+            }
+
+            return $this->buildUserDashboardData($user, 'commuter', $roleNames);
+        });
+
+        if ($data === null) {
             return response()->json(['error' => 'User profile not found'], 404);
         }
 
-        $getUser = User::with('roles')->find($user->id);
-
         return response()->json([
             'success' => true,
-            'data'    => [
-                'user'             => $getUser,
-                'commuter_profile' => $commuterProfile,
-            ],
+            'data' => $data,
         ], 200);
     }
 }
