@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\EmergencyContact;
+use App\Models\UsersEmergencyContact;
 use App\Models\Commuter;
 use App\Models\Driver;
 
@@ -47,12 +48,11 @@ class EmergencyContactController extends Controller
             'contact_relationship' => $validatedData['contact_relationship'],
         ]);
 
-        // add Contact ID to commuter and driver profiles if they exist
-        $commuter = Commuter::where('user_id', auth()->id())->first();
-        if ($commuter) {
-            $commuter->emergency_contact_id = $emergencyContact->id;
-            $commuter->save();
-        }
+        //insert to UsersEmergencyContact pivot table
+        UsersEmergencyContact::create([
+            'user_id' => auth()->id(),
+            'emergency_contact_id' => $emergencyContact->id,
+        ]);
 
         $driver = Driver::where('user_id', auth()->id())->first();
         if ($driver) {
