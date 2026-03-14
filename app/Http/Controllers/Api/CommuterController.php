@@ -6,7 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Commuter;
+use App\Models\EmergencyContact;
+use App\Models\Driver;
 use App\Models\Discount;
+use App\Models\DiscountImage;
 use App\Models\DiscountTypes;
 use App\Models\User;
 use Carbon\Carbon;
@@ -18,6 +21,19 @@ class CommuterController extends Controller
     private const RESTORE_WINDOW_DAYS = 30;
 
     // Create Commuter Profile
+
+    /* Endpoint: /api/commuter/add-commuter
+       Method: POST
+       Body Params:
+         - classification_name (string, required): One of 'Regular', 'Student', 'Senior Citizen', 'PWD'
+         - ID_number (string, required if classification is not Regular): Alphanumeric ID number for discount verification
+         - image_front (file, required if classification is not Regular): Front image of the ID for verification
+         - image_back (file, required if classification is not Regular): Back image of the ID for verification
+       Response:
+         - success (boolean)
+         - message (string)
+         - data (object) – commuter profile details if successful
+    */
 
     public function addCommuter(Request $request): JsonResponse
     {
@@ -45,11 +61,20 @@ class CommuterController extends Controller
 
         $validated = $request->validate([
             'classification_name' => ['required', 'string', Rule::in(['Regular', 'Student', 'Senior Citizen', 'PWD'])],
-            'ID_number'           => ['nullable', 'required_unless:classification_name,Regular', 'string', 'max:255', 'unique:discounts,ID_number','regex:/^[0-9\s]+$/'],
-            'ID_image'            => ['nullable', 'required_unless:classification_name,Regular', 'image', 'max:2048',],
-        ],);
+            'ID_number' => [
+                Rule::requiredIf(fn () => $request->input('classification_name') !== 'Regular'),
+                'nullable', 'string', 'max:255', 'regex:/^[0-9\s]+$/', 'unique:discounts,ID_number',
+            ],
+            'image_front' => [
+                Rule::requiredIf(fn () => $request->input('classification_name') !== 'Regular'),
+                'nullable', 'image', 'max:2048',
+            ],
+            'image_back' => [
+                Rule::requiredIf(fn () => $request->input('classification_name') !== 'Regular'),
+                'nullable', 'image', 'max:2048',
+            ],
+        ]);
 
-        // Look up the classification type
         $classificationType = DiscountTypes::where('classification_name', $validated['classification_name'])->first();
         if (!$classificationType) {
             return response()->json([
@@ -62,34 +87,52 @@ class CommuterController extends Controller
         $discountId = null;
 
         if ($validated['classification_name'] !== 'Regular') {
-            $idImagePath = null;
-            if ($request->hasFile('ID_image')) {
-                $idImagePath = $request->file('ID_image')->store('discount_ids', 'public');
-            }
+            $discountImage = DiscountImage::create([
+                'image_front' => $request->file('image_front')->store('discount_ids', 'public'),
+                'image_back'  => $request->file('image_back')->store('discount_ids', 'public'),
+            ]);
 
             $discount = Discount::create([
-                'ID_number'               => $validated['ID_number'],
-                'ID_image_path'           => $idImagePath,
-                'classification_type_id'  => $classificationType->id,
+                'ID_number'              => $validated['ID_number'],
+                'ID_image_id'            => $discountImage->id,
+                'classification_type_id' => $classificationType->id,
             ]);
 
             $discountId = $discount->id;
         }
-
+        // check if the user has an existing emergency contact in other profile (driver or commuter) and associate it with the new commuter profile
+        $existingDriverContact = \App\Models\Driver::where('user_id', $user->id)->whereNotNull('emergency_contact_id')->first();
+        $emergencyContactId = null;
+        if ($existingDriverContact) {
+            $emergencyContactId = $existingDriverContact->emergency_contact_id;
+        }
         // Create commuter profile
         $commuter = Commuter::create([
             'user_id'     => $user->id,
             'discount_id' => $discountId,
+            'emergency_contact_id' => $emergencyContactId ? $emergencyContactId : null, // null kung wla
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Commuter profile created successfully.',
-            'data'    => $this->formatCommuter($commuter->load('user', 'discount.classificationType')),
+            'data'    => $this->formatCommuter(
+                $commuter->load('user', 'discount.classificationType', 'discount.idImage')
+            ),
         ], 201);
     }
 
     // Read Commuter Profile
+
+    /* Endpoint: /api/commuter/{id}
+       Method: GET
+       URL Params:
+         - id (string, required): Commuter profile ID
+       Response:
+         - success (boolean)
+         - message (string)
+         - data (object) – commuter profile details if successful
+    */
 
     public function getCommuter(string $id): JsonResponse
     {
@@ -99,7 +142,7 @@ class CommuterController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $commuter = Commuter::with('user', 'discount.classificationType')->find($id);
+        $commuter = Commuter::with('user', 'discount.classificationType', 'discount.idImage')->find($id);
 
         if (!$commuter) {
             return response()->json([
@@ -124,6 +167,21 @@ class CommuterController extends Controller
 
     // Update Commuter Classification
 
+    /* Endpoint: /api/commuter/update-commuter/{id}
+       Method: PUT
+       URL Params:
+         - id (string, required): Commuter profile ID
+       Body Params:
+         - classification_name (string, optional): One of 'Regular', 'Student', 'Senior Citizen', 'PWD'
+         - ID_number (string, required if classification is not Regular): Alphanumeric ID number for discount verification
+         - image_front (file, required if classification is not Regular): Front image of the ID for verification
+         - image_back (file, required if classification is not Regular): Back image of the ID for verification
+       Response:
+         - success (boolean)
+         - message (string)
+         - data (object) – updated commuter profile details if successful
+    */
+
     public function updateCommuterClassification(Request $request, string $id): JsonResponse
     {
         $user = auth()->user();
@@ -132,7 +190,7 @@ class CommuterController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $commuter = Commuter::with('user', 'discount.classificationType')->find($id);
+        $commuter = Commuter::with('user', 'discount.classificationType', 'discount.idImage')->find($id);
 
         if (!$commuter) {
             return response()->json([
@@ -152,11 +210,14 @@ class CommuterController extends Controller
 
         $validated = $request->validate([
             'classification_name' => ['sometimes', 'string', Rule::in(['Regular', 'Student', 'Senior Citizen', 'PWD'])],
-            'ID_number'           => ['nullable', 'string', 'max:255','unique:discounts,ID_number','regex:/^[0-9\s]+$/'],
-            'ID_image'            => ['nullable', 'image', 'max:2048'],
+            'ID_number' => [
+                'nullable', 'string', 'max:255', 'regex:/^[0-9\s]+$/',
+                Rule::unique('discounts', 'ID_number')->ignore($commuter->discount_id),
+            ],
+            'image_front' => ['nullable', 'image', 'max:2048'],
+            'image_back'  => ['nullable', 'image', 'max:2048'],
         ]);
 
-        // If classification is changing
         if (isset($validated['classification_name'])) {
             $classificationType = DiscountTypes::where('classification_name', $validated['classification_name'])->first();
 
@@ -172,6 +233,12 @@ class CommuterController extends Controller
                 if ($commuter->discount_id) {
                     $oldDiscount = Discount::find($commuter->discount_id);
                     if ($oldDiscount) {
+                        if ($oldDiscount->ID_image_id) {
+                            $oldImage = DiscountImage::find($oldDiscount->ID_image_id);
+                            if ($oldImage) {
+                                $oldImage->delete();
+                            }
+                        }
                         $oldDiscount->delete();
                     }
                     $commuter->discount_id = null;
@@ -186,29 +253,58 @@ class CommuterController extends Controller
                     ], 422);
                 }
 
-                $idImagePath = null;
-                if ($request->hasFile('ID_image')) {
-                    $idImagePath = $request->file('ID_image')->store('discount_ids', 'public');
-                }
-
                 if ($commuter->discount_id) {
                     // Update existing discount
                     $discount = Discount::find($commuter->discount_id);
                     if ($discount) {
-                        $updateData = ['classification_type_id' => $classificationType->id];
+                        $updateData = [
+                            'classification_type_id' => $classificationType->id,
+                        ];
+
                         if (isset($validated['ID_number'])) {
                             $updateData['ID_number'] = $validated['ID_number'];
                         }
-                        if ($idImagePath) {
-                            $updateData['ID_image_path'] = $idImagePath;
+
+                        $image = $discount->idImage;
+                        if (!$image && ($request->hasFile('image_front') || $request->hasFile('image_back'))) {
+                            $image = DiscountImage::create([
+                                'image_front' => null,
+                                'image_back'  => null,
+                            ]);
+                            $updateData['ID_image_id'] = $image->id;
                         }
+
+                        if ($image) {
+                            $imgUpdate = [];
+                            if ($request->hasFile('image_front')) {
+                                $imgUpdate['image_front'] = $request->file('image_front')->store('discount_ids', 'public');
+                            }
+                            if ($request->hasFile('image_back')) {
+                                $imgUpdate['image_back'] = $request->file('image_back')->store('discount_ids', 'public');
+                            }
+                            if (!empty($imgUpdate)) {
+                                $image->update($imgUpdate);
+                            }
+                        }
+
                         $discount->update($updateData);
                     }
                 } else {
-                    // Create new discount
+                    if (!$request->hasFile('image_front') || !$request->hasFile('image_back')) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Both front and back ID images are required for non-regular classifications.',
+                        ], 422);
+                    }
+
+                    $discountImage = DiscountImage::create([
+                        'image_front' => $request->file('image_front')->store('discount_ids', 'public'),
+                        'image_back'  => $request->file('image_back')->store('discount_ids', 'public'),
+                    ]);
+
                     $discount = Discount::create([
-                        'ID_number'              => $validated['ID_number'] ?? null,
-                        'ID_image_path'          => $idImagePath,
+                        'ID_number'              => $validated['ID_number'],
+                        'ID_image_id'            => $discountImage->id,
                         'classification_type_id' => $classificationType->id,
                     ]);
                     $commuter->discount_id = $discount->id;
@@ -224,9 +320,29 @@ class CommuterController extends Controller
                     if (isset($validated['ID_number'])) {
                         $updateData['ID_number'] = $validated['ID_number'];
                     }
-                    if ($request->hasFile('ID_image')) {
-                        $updateData['ID_image_path'] = $request->file('ID_image')->store('discount_ids', 'public');
+
+                    $image = $discount->idImage;
+                    if (!$image && ($request->hasFile('image_front') || $request->hasFile('image_back'))) {
+                        $image = DiscountImage::create([
+                            'image_front' => null,
+                            'image_back'  => null,
+                        ]);
+                        $updateData['ID_image_id'] = $image->id;
                     }
+
+                    if ($image) {
+                        $imgUpdate = [];
+                        if ($request->hasFile('image_front')) {
+                            $imgUpdate['image_front'] = $request->file('image_front')->store('discount_ids', 'public');
+                        }
+                        if ($request->hasFile('image_back')) {
+                            $imgUpdate['image_back'] = $request->file('image_back')->store('discount_ids', 'public');
+                        }
+                        if (!empty($imgUpdate)) {
+                            $image->update($imgUpdate);
+                        }
+                    }
+
                     if (!empty($updateData)) {
                         $discount->update($updateData);
                     }
@@ -237,11 +353,20 @@ class CommuterController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Commuter profile updated successfully.',
-            'data'    => $this->formatCommuter($commuter->fresh('user', 'discount.classificationType')),
+            'data'    => $this->formatCommuter(
+                $commuter->fresh('user', 'discount.classificationType', 'discount.idImage')
+            ),
         ]);
     }
 
-    // Delete (Admin only)
+    /* Endpoint: /api/commuter/delete-commuter/{id}
+       Method: DELETE
+       URL Params:
+         - id (string, required): Commuter profile ID
+       Response:
+         - success (boolean)
+         - message (string)
+    */
 
     public function deleteCommuter(string $id): JsonResponse
     {
@@ -267,10 +392,15 @@ class CommuterController extends Controller
             ], 404);
         }
 
-        // Soft delete the discount too if exists
         if ($commuter->discount_id) {
             $discount = Discount::find($commuter->discount_id);
             if ($discount) {
+                if ($discount->ID_image_id) {
+                    $image = DiscountImage::find($discount->ID_image_id);
+                    if ($image) {
+                        $image->delete();
+                    }
+                }
                 $discount->delete();
             }
         }
@@ -283,7 +413,15 @@ class CommuterController extends Controller
         ]);
     }
 
-    // Restore (Admin only — within retention window)
+    /* Endpoint: /api/commuter/restore-commuter/{id}
+       Method: PUT
+       URL Params:
+         - id (string, required): Commuter profile ID
+       Response:
+         - success (boolean)
+         - message (string)
+         - data (object) – restored commuter profile details if successful
+    */
 
     public function restoreCommuter(string $id): JsonResponse
     {
@@ -315,7 +453,7 @@ class CommuterController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'This profile was deleted more than ' . self::RESTORE_WINDOW_DAYS
-                             . ' days ago and can no longer be restored for data-privacy compliance.',
+                    . ' days ago and can no longer be restored for data-privacy compliance.',
             ], 403);
         }
 
@@ -324,6 +462,13 @@ class CommuterController extends Controller
             $discount = Discount::onlyTrashed()->find($commuter->discount_id);
             if ($discount) {
                 $discount->restore();
+
+                if ($discount->ID_image_id) {
+                    $image = DiscountImage::onlyTrashed()->find($discount->ID_image_id);
+                    if ($image) {
+                        $image->restore();
+                    }
+                }
             }
         }
 
@@ -332,7 +477,9 @@ class CommuterController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Commuter profile restored successfully.',
-            'data'    => $this->formatCommuter($commuter->fresh('user', 'discount.classificationType')),
+            'data'    => $this->formatCommuter(
+                $commuter->fresh('user', 'discount.classificationType', 'discount.idImage')
+            ),
         ]);
     }
 
@@ -341,24 +488,25 @@ class CommuterController extends Controller
     private function formatCommuter(Commuter $commuter): array
     {
         return [
-            'id'                  => $commuter->id,
-            'user_id'             => $commuter->user_id,
-            'user'                => $commuter->user ? [
-                'id'         => $commuter->user->id,
+            'id' => $commuter->id,
+            'user_id' => $commuter->user_id,
+            'user' => $commuter->user ? [
+                'id' => $commuter->user->id,
                 'first_name' => $commuter->user->first_name,
-                'last_name'  => $commuter->user->last_name,
+                'last_name' => $commuter->user->last_name,
                 'middle_name' => $commuter->user->middle_name,
-                'email'      => $commuter->user->email,
+                'email' => $commuter->user->email,
             ] : null,
             'classification_name' => $commuter->discount?->classificationType?->classification_name ?? 'Regular',
-            'discount'            => $commuter->discount ? [
-                'id'             => $commuter->discount->id,
-                'ID_number'      => $commuter->discount->ID_number,
-                'ID_image_path'  => $commuter->discount->ID_image_path,
+            'discount' => $commuter->discount ? [
+                'id' => $commuter->discount->id,
+                'ID_number' => $commuter->discount->ID_number,
+                'images' => [
+                    'front' => $commuter->discount->idImage?->image_front,
+                    'back'  => $commuter->discount->idImage?->image_back,
+                ],
                 'classification' => $commuter->discount->classificationType?->classification_name ?? 'Regular',
             ] : null,
-            'created_at'          => $commuter->created_at,
-            'updated_at'          => $commuter->updated_at,
         ];
     }
 }

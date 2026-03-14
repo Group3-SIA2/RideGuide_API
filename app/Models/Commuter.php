@@ -17,6 +17,7 @@ class Commuter extends Model
     protected $fillable = [
         'user_id',
         'discount_id',
+        'emergency_contact_id',
     ];
 
     public function user()

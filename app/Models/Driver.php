@@ -23,6 +23,7 @@ class Driver extends Model
         'franchise_number',
         'organization_id',
         'verification_status',
+        'emergency_contact_id',
     ];
 
     public function user()
