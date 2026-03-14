@@ -8,7 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 
-class UserManagementController extends Controller
+class UserAuthorizationController extends Controller
 {
     public function __construct()
     {

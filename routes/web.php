@@ -11,7 +11,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\LogoutController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\BackupController;
-use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\UserAuthorizationController;
 use App\Http\Controllers\Admin\Auth2faController;
 
 /*
@@ -77,11 +77,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
         Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])->name('backups.restore');
 
-        Route::get('/user-management',                     [UserManagementController::class, 'index'])->name('user-management.index');
-        Route::get('/user-management/role/{role}/edit',    [UserManagementController::class, 'editRole'])->name('user-management.edit-role');
-        Route::put('/user-management/role/{role}',         [UserManagementController::class, 'updateRole'])->name('user-management.update-role');
-        Route::get('/user-management/user/{user}/edit',    [UserManagementController::class, 'editUser'])->name('user-management.edit-user');
-        Route::put('/user-management/user/{user}',         [UserManagementController::class, 'updateUser'])->name('user-management.update-user');
+        Route::get('/user-management',                     [UserAuthorizationController::class, 'index'])->name('user-management.index');
+        Route::get('/user-management/role/{role}/edit',    [UserAuthorizationController::class, 'editRole'])->name('user-management.edit-role');
+        Route::put('/user-management/role/{role}',         [UserAuthorizationController::class, 'updateRole'])->name('user-management.update-role');
+        Route::get('/user-management/user/{user}/edit',    [UserAuthorizationController::class, 'editUser'])->name('user-management.edit-user');
+        Route::put('/user-management/user/{user}',         [UserAuthorizationController::class, 'updateUser'])->name('user-management.update-user');
     });
 });
 
