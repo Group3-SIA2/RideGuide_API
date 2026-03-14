@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Support\Str;
+use App\Support\DashboardCache;
 
 class SetUpController extends Controller
 {
@@ -53,6 +54,7 @@ class SetUpController extends Controller
         $user->save();
 
         $user->roles()->sync($roles->pluck('id')->toArray());
+        DashboardCache::forgetUserDashboards($user->id);
 
         return response()->json([
             'success' => true,
