@@ -13,13 +13,23 @@ class Discount extends Model
     protected $table = 'discounts';
 
     protected $fillable = [
-        'classification_type_id',
         'ID_number',
-        'ID_image_path',
+        'ID_image_id',
+        'classification_type_id',
     ];
 
     public function classificationType()
     {
         return $this->belongsTo(DiscountTypes::class, 'classification_type_id');
+    }
+
+    public function idImage()
+    {
+        return $this->belongsTo(DiscountImage::class, 'ID_image_id');
+    }
+
+    public function commuter()
+    {
+        return $this->hasOne(Commuter::class, 'discount_id');
     }
 }
