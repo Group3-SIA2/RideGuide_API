@@ -39,19 +39,12 @@ class DriverController extends Controller
 
         ]);
 
-         // check if the user has an existing emergency contact in other profile (driver or commuter) and associate it with the new commuter profile
-            $existingCommuterContact = \App\Models\Commuter::where('user_id', $user->id)->whereNotNull('emergency_contact_id')->first();
-            $emergencyContactId = null;
-            if ($existingCommuterContact) {
-                $emergencyContactId = $existingCommuterContact->emergency_contact_id;
-            }
 
         $driver = Driver::create([
             'user_id' => $request->user()->id,
             'license_number' => $validatedData['license_number'],
             'franchise_number' => $validatedData['franchise_number'],
             'verification_status' => 'unverified', // default lng only admin can edit or set this
-            'emergency_contact_id' => $emergencyContactId ? $emergencyContactId : null, // null kung wla
         ]);
 
         return response()->json([
@@ -181,12 +174,13 @@ class DriverController extends Controller
 
         return response()->json([
             'message' => 'Driver profile restored successfully',
-            'driver_profile' => $this->formatDriver($driver->fresh()->loadMissing('user')),
+            'driver_profile' => $this->formatDriver($driver->fresh()->loadMissing('user' )),
         ], 200);
     }
 
     private function formatDriver(Driver $driver): array
     {
+        $emergency = $driver->usersEmergencyContact?->emergencyContact;
         return [
             'id'                  => $driver->id,
             'user_id'             => $driver->user_id,
@@ -205,6 +199,12 @@ class DriverController extends Controller
                 'type' => $driver->organization->type,
             ] : null,
             'verification_status' => $driver->verification_status,
+            'emergency_contact' => $emergency ? [
+            'id' => $emergency->id,
+            'contact_name' => $emergency->contact_name,
+            'contact_phone_number' => $emergency->contact_phone_number,
+            'contact_relationship' => $emergency->contact_relationship,
+            ] : null,
             'created_at'          => $driver->created_at,
             'updated_at'          => $driver->updated_at,
             'deleted_at'          => $driver->deleted_at,

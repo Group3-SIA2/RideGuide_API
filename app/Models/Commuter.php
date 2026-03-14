@@ -17,7 +17,6 @@ class Commuter extends Model
     protected $fillable = [
         'user_id',
         'discount_id',
-        'emergency_contact_id',
     ];
 
     public function user()
@@ -28,5 +27,10 @@ class Commuter extends Model
     public function discount()
     {
         return $this->belongsTo(Discount::class, 'discount_id');
+    }
+
+    public function usersEmergencyContact()
+    {
+        return $this->hasOne(UsersEmergencyContact::class, 'user_id', 'user_id');
     }
 }

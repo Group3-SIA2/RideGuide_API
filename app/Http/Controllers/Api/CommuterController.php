@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Commuter;
 use App\Models\EmergencyContact;
+use App\Models\UsersEmergencyContact;
 use App\Models\Driver;
 use App\Models\Discount;
 use App\Models\DiscountImage;
@@ -100,24 +101,20 @@ class CommuterController extends Controller
 
             $discountId = $discount->id;
         }
-        // check if the user has an existing emergency contact in other profile (driver or commuter) and associate it with the new commuter profile
-        $existingDriverContact = \App\Models\Driver::where('user_id', $user->id)->whereNotNull('emergency_contact_id')->first();
-        $emergencyContactId = null;
-        if ($existingDriverContact) {
-            $emergencyContactId = $existingDriverContact->emergency_contact_id;
-        }
+
         // Create commuter profile
         $commuter = Commuter::create([
             'user_id'     => $user->id,
             'discount_id' => $discountId,
-            'emergency_contact_id' => $emergencyContactId ? $emergencyContactId : null, // null kung wla
         ]);
+
+        
 
         return response()->json([
             'success' => true,
             'message' => 'Commuter profile created successfully.',
             'data'    => $this->formatCommuter(
-                $commuter->load('user', 'discount.classificationType', 'discount.idImage')
+                $commuter->fresh('user', 'discount.classificationType', 'discount.idImage')
             ),
         ], 201);
     }
@@ -487,6 +484,7 @@ class CommuterController extends Controller
 
     private function formatCommuter(Commuter $commuter): array
     {
+        $emergencyContact = $commuter->usersEmergencyContact?->emergencyContact;
         return [
             'id' => $commuter->id,
             'user_id' => $commuter->user_id,
@@ -507,6 +505,13 @@ class CommuterController extends Controller
                 ],
                 'classification' => $commuter->discount->classificationType?->classification_name ?? 'Regular',
             ] : null,
+            'emergency_contact' => $emergencyContact ? [
+                'id' => $emergencyContact->id,
+                'contact_name' => $emergencyContact->contact_name,
+                'contact_phone_number' => $emergencyContact->contact_phone_number,
+                'contact_relationship' => $emergencyContact->contact_relationship,
+             ] : null,
+            
         ];
     }
 }

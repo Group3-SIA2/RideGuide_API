@@ -23,7 +23,6 @@ class Driver extends Model
         'franchise_number',
         'organization_id',
         'verification_status',
-        'emergency_contact_id',
     ];
 
     public function user()
@@ -34,5 +33,10 @@ class Driver extends Model
     public function organization()
     {
         return $this->belongsTo(\App\Models\Organization::class, 'organization_id');
+    }
+
+    public function usersEmergencyContact()
+    {
+        return $this->hasOne(\App\Models\UsersEmergencyContact::class, 'user_id', 'user_id');
     }
 }
