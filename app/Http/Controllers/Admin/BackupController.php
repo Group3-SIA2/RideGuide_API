@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -27,17 +26,7 @@ class BackupController extends Controller
     // List all Backups
     public function index(Request $request): View|JsonResponse
     {
-        $user = auth()->user();
-
-        if (!$user || !$user->hasRole(Role::SUPER_ADMIN)) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized. Super admin access required.',
-                ], 403);
-            }
-            abort(403, 'Unauthorized. Super admin access required.');
-        }
+        $this->authorizePermissions($request, 'view_backups');
 
         $backups = collect();
         $error   = null;
@@ -98,16 +87,9 @@ class BackupController extends Controller
     }
 
     // Donwload a backup
-    public function download(string $filename): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
+    public function download(Request $request, string $filename): JsonResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $user = auth()->user();
-
-        if (!$user || !$user->hasRole(Role::SUPER_ADMIN)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Super admin access required.',
-            ], 403);
-        }
+        $this->authorizePermissions($request, 'download_backups');
 
         if (!str_ends_with($filename, '.sql')) {
             return response()->json([
@@ -149,16 +131,11 @@ class BackupController extends Controller
     }
 
     // Restore a backup from Supabase Storage
-    public function restore(string $filename): JsonResponse
+    public function restore(Request $request, string $filename): JsonResponse
     {
-        $user = auth()->user();
+        $this->authorizePermissions($request, 'restore_backups');
 
-        if (!$user || !$user->hasRole(Role::SUPER_ADMIN)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Super admin access required.',
-            ], 403);
-        }
+        $user = $request->user();
 
         if (!str_ends_with($filename, '.sql')) {
             return response()->json([
@@ -229,16 +206,11 @@ class BackupController extends Controller
     }
 
     // Create new backup manually
-    public function create(): JsonResponse
+    public function create(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $this->authorizePermissions($request, 'create_backups');
 
-        if (!$user || !$user->hasRole(Role::SUPER_ADMIN)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized. Super admin access required.',
-            ], 403);
-        }
+        $user = $request->user();
 
         try {
             Log::info("Manual database backup initiated by super admin: {$user->email}");

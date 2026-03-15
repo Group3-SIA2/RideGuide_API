@@ -16,6 +16,8 @@ class CommuterController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorizePermissions($request, 'view_commuters', 'manage_commuters');
+
         $query = Commuter::with('user', 'discount.classificationType');
 
         if ($search = $request->input('search')) {

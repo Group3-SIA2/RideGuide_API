@@ -15,6 +15,8 @@ class DriverController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorizePermissions($request, 'view_drivers', 'manage_drivers');
+
         $query = Driver::with('user', 'organization');
 
         if ($search = $request->input('search')) {

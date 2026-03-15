@@ -78,11 +78,11 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
         Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])->name('backups.restore');
 
-        Route::get('/user-management',                     [UserAuthorizationController::class, 'index'])->name('user-management.index');
-        Route::get('/user-management/role/{role}/edit',    [UserAuthorizationController::class, 'editRole'])->name('user-management.edit-role');
-        Route::put('/user-management/role/{role}',         [UserAuthorizationController::class, 'updateRole'])->name('user-management.update-role');
-        Route::get('/user-management/user/{user}/edit',    [UserAuthorizationController::class, 'editUser'])->name('user-management.edit-user');
-        Route::put('/user-management/user/{user}',         [UserAuthorizationController::class, 'updateUser'])->name('user-management.update-user');
+        Route::get('/user-authorization',                     [UserAuthorizationController::class, 'index'])->name('user-authorization.index');
+        Route::get('/user-authorization/role/{role}/edit',    [UserAuthorizationController::class, 'editRole'])->name('user-authorization.edit-role');
+        Route::put('/user-authorization/role/{role}',         [UserAuthorizationController::class, 'updateRole'])->name('user-authorization.update-role');
+        Route::get('/user-authorization/user/{user}/edit',    [UserAuthorizationController::class, 'editUser'])->name('user-authorization.edit-user');
+        Route::put('/user-authorization/user/{user}',         [UserAuthorizationController::class, 'updateUser'])->name('user-authorization.update-user');
 
         Route::get('/user-status', [UserManagementController::class, 'index'])->name('user-status.index');
         Route::patch('/user-status/users/{user}', [UserManagementController::class, 'updateUserStatus'])->name('user-status.users.update');

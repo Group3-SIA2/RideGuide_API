@@ -89,7 +89,7 @@ class UserManagementController extends Controller
             ->paginate(10, ['*'], 'discounts_page')
             ->withQueryString();
 
-        return view('admin.user-management.status-dashboard', [
+        return view('admin.users.status-dashboard', [
             'users' => $users,
             'drivers' => $drivers,
             'vehicles' => $vehicles,
@@ -217,23 +217,6 @@ class UserManagementController extends Controller
 
         return redirect()->route('admin.user-status.index')
             ->with('success', 'Driver verification updated successfully.');
-    }
-
-    protected function authorizePermissions(Request $request, string ...$permissions): void
-    {
-        $authUser = $request->user();
-
-        if (!$authUser) {
-            abort(403, 'Unauthorized.');
-        }
-
-        if ($authUser->hasRole(Role::SUPER_ADMIN)) {
-            return;
-        }
-
-        if (!$authUser->hasAnyPermission($permissions)) {
-            abort(403, 'You do not have permission to perform this action.');
-        }
     }
 
     public function restoreUsers(Request $request)

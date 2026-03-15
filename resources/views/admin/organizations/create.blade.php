@@ -9,7 +9,7 @@
             <p class="rg-page-subtitle">Create a new driver organization.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            @include('admin.partials.header_status_badges')
+            
             <a href="{{ route('admin.organizations.index') }}" class="rg-btn rg-btn-secondary rg-btn-sm">
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>

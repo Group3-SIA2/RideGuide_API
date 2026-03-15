@@ -14,7 +14,7 @@
     <td>
         <span class="rg-role-badge">{{ $org->type }}</span>
     </td>
-    <td class="rg-td-muted" style="max-width:280px;">{{ $org->description ?? '—' }}</td>
+
     <td class="rg-td-muted">{{ $org->hq_address ?? '—' }}</td>
     <td class="rg-td-muted">{{ $org->drivers_count }}</td>
     <td>

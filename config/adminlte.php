@@ -327,6 +327,7 @@ return [
             'route'       => 'admin.dashboard',
             'icon'        => 'fas fa-fw fa-tachometer-alt',
             'active'      => ['admin/dashboard'],
+            'can'         => 'view_admin_dashboard',
         ],
 
         // Users
@@ -336,24 +337,28 @@ return [
             'route'  => 'admin.users.index',
             'icon'   => 'fas fa-fw fa-users',
             'active' => ['admin/users*'],
+            'can'    => 'view_users',
         ],
         [
             'text'   => 'Commuters',
             'route'  => 'admin.commuters.index',
             'icon'   => 'fas fa-fw fa-user-friends',
             'active' => ['admin/commuters*'],
+            'can'    => 'access_commuters',
         ],
         [
             'text'   => 'Drivers',
             'route'  => 'admin.drivers.index',
             'icon'   => 'fas fa-fw fa-id-card',
             'active' => ['admin/drivers*'],
+            'can'    => 'access_drivers',
         ],
         [
             'text'   => 'Organizations',
             'route'  => 'admin.organizations.index',
             'icon'   => 'fas fa-fw fa-building',
             'active' => ['admin/organizations*'],
+            'can'    => 'view_organizations',
         ],
 
         // System
@@ -363,12 +368,14 @@ return [
             'route'  => 'admin.user-status.index',
             'icon'   => 'fas fa-fw fa-user-cog',
             'active' => ['admin/user-status*'],
+            'can'    => 'manage_users',
         ],
         [
             'text'   => 'User Authorization',
-            'route'  => 'admin.user-management.index',
+            'route'  => 'admin.user-authorization.index',
             'icon'   => 'fas fa-fw fa-user-shield',
-            'active' => ['admin/user-management*'],
+            'active' => ['admin/user-authorization*'],
+            'can'    => 'manage_authorization',
         ],
         [
             'text'   => 'Profile',
@@ -381,6 +388,7 @@ return [
             'route'  => 'admin.backups.index',
             'icon'   => 'fas fa-fw fa-save',
             'active' => ['admin/backup*'],
+            'can'    => 'view_backups',
         ],
         [
             'text'   => 'Logout',

@@ -19,6 +19,8 @@ class OrganizationController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorizePermissions($request, 'view_organizations');
+
         $showDeleted = $request->input('status') === 'deleted';
 
         $query = $showDeleted
@@ -55,8 +57,9 @@ class OrganizationController extends Controller
         return view('admin.organizations.index', compact('organizations', 'types', 'showDeleted'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $this->authorizePermissions($request, 'create_organizations');
         $this->authorize('create', Organization::class);
 
         $eligibleOwners = User::query()
@@ -87,6 +90,7 @@ class OrganizationController extends Controller
 
     public function store(StoreOrganizationRequest $request)
     {
+        $this->authorizePermissions($request, 'create_organizations');
         $this->authorize('create', Organization::class);
 
         $validated = $request->validated();
@@ -102,8 +106,9 @@ class OrganizationController extends Controller
             ->with('success', 'Organization created successfully.');
     }
 
-    public function edit(string $id)
+    public function edit(Request $request, string $id)
     {
+        $this->authorizePermissions($request, 'edit_organizations');
         $organization = Organization::findOrFail($id);
         $this->authorize('update', $organization);
 
@@ -135,6 +140,7 @@ class OrganizationController extends Controller
 
     public function update(UpdateOrganizationRequest $request, string $id)
     {
+        $this->authorizePermissions($request, 'edit_organizations');
         $organization = Organization::findOrFail($id);
         $this->authorize('update', $organization);
 
@@ -151,8 +157,9 @@ class OrganizationController extends Controller
             ->with('success', 'Organization updated successfully.');
     }
 
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
+        $this->authorizePermissions($request, 'delete_organizations');
         $organization = Organization::findOrFail($id);
         $this->authorize('delete', $organization);
 
@@ -162,8 +169,9 @@ class OrganizationController extends Controller
             ->with('success', 'Organization deleted successfully.');
     }
 
-    public function restore(string $id)
+    public function restore(Request $request, string $id)
     {
+        $this->authorizePermissions($request, 'delete_organizations');
         $organization = Organization::withTrashed()->findOrFail($id);
         $this->authorize('restore', $organization);
 

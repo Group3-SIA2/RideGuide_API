@@ -9,8 +9,7 @@
             <p class="rg-page-subtitle">Use the checkboxes below to set what this role can do.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            @include('admin.partials.header_status_badges')
-            <a href="{{ route('admin.user-management.index') }}" class="btn btn-sm btn-outline-secondary">
+            <a href="{{ route('admin.user-authorization.index') }}" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
         </div>
@@ -31,7 +30,7 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.user-management.update-role', $role) }}" method="POST">
+    <form action="{{ route('admin.user-authorization.update-role', $role) }}" method="POST">
         @csrf
         @method('PUT')
 
@@ -52,10 +51,10 @@
                             </button>
                         </div>
                     </div>
-                    <div class="rg-card-body">
+                    <div class="rg-card-body rg-permissions-body">
 
                         @foreach($permissionGroups as $group => $groupPermissions)
-                            <div class="mb-4">
+                            <div class="mb-4 rg-permission-group-block">
                                 <h6 class="text-uppercase text-muted font-weight-bold mb-3" style="letter-spacing:.5px; font-size:0.8rem;">
                                     <i class="fas fa-folder mr-1"></i> {{ ucwords(str_replace('_', ' ', $group)) }}
                                 </h6>
@@ -95,7 +94,7 @@
 
                     </div>
                     <div class="rg-card-footer d-flex justify-content-end">
-                        <a href="{{ route('admin.user-management.index') }}" class="btn btn-secondary mr-2">Cancel</a>
+                        <a href="{{ route('admin.user-authorization.index') }}" class="btn btn-secondary mr-2">Cancel</a>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save mr-1"></i> Save Permissions
                         </button>

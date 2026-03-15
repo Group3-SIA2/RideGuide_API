@@ -20,6 +20,8 @@ class UserController extends Controller
     // OLD (kept as-is)
     public function index(Request $request)
     {
+        $this->authorizePermissions($request, 'view_users');
+
         $totalActiveUsers = User::whereNotNull('email_verified_at')
             ->where('status', User::STATUS_ACTIVE)
             ->count();
@@ -68,8 +70,10 @@ class UserController extends Controller
     }
 
     // NEW
-    public function create()
+    public function create(Request $request)
     {
+        $this->authorizePermissions($request, 'create_users');
+
         $roles = Role::orderBy('name')->get();
         return view('admin.users.create', compact('roles'));
     }
@@ -77,6 +81,8 @@ class UserController extends Controller
     // NEW
     public function store(Request $request)
     {
+        $this->authorizePermissions($request, 'create_users');
+
         $validated = $request->validate([
             'first_name'   => ['required', 'string', 'max:255'],
             'middle_name'  => ['nullable', 'string', 'max:255'],
@@ -115,8 +121,10 @@ class UserController extends Controller
     }
 
     // NEW
-    public function edit(User $user)
+    public function edit(Request $request, User $user)
     {
+        $this->authorizePermissions($request, 'edit_users');
+
         $roles = Role::orderBy('name')->get();
         return view('admin.users.edit', compact('user', 'roles'));
     }
@@ -124,6 +132,8 @@ class UserController extends Controller
     // NEW
     public function update(Request $request, User $user)
     {
+        $this->authorizePermissions($request, 'edit_users');
+
         $validated = $request->validate([
             'first_name'   => ['required', 'string', 'max:255'],
             'middle_name'  => ['nullable', 'string', 'max:255'],
@@ -166,8 +176,10 @@ class UserController extends Controller
     }
 
     // NEW
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
+        $this->authorizePermissions($request, 'delete_users');
+
         if (auth()->id() === $user->id) {
             return back()->withErrors(['delete' => 'You cannot delete your own account.']);
         }

@@ -9,7 +9,7 @@
             <p class="rg-page-subtitle">Manage roles and what each role is allowed to do.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            @include('admin.partials.header_status_badges')
+            
             <span class="rg-badge">{{ $roles->count() }} roles</span>
         </div>
     </div>
@@ -76,13 +76,13 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($role->name !== \App\Models\Role::SUPER_ADMIN)
-                                            <a href="{{ route('admin.user-management.edit-role', $role) }}"
+                                        @if(in_array($role->name, $editableRoleNames, true))
+                                            <a href="{{ route('admin.user-authorization.edit-role', $role) }}"
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-edit"></i> Edit Permissions
                                             </a>
                                         @else
-                                            <span class="text-muted">—</span>
+                                            <span class="text-muted">Not allowed</span>
                                         @endif
                                     </td>
                                 </tr>
@@ -104,7 +104,7 @@
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">User Role Assignments</h6>
                     </div>
-                    <form id="rg-user-search-form" class="rg-filter-bar mt-2" method="GET" action="{{ route('admin.user-management.index') }}">
+                    <form id="rg-user-search-form" class="rg-filter-bar mt-2" method="GET" action="{{ route('admin.user-authorization.index') }}">
                         <input id="rg-user-search" type="text" name="user_search" class="rg-search-input" placeholder="Search user by name or email…" value="{{ request('user_search') }}">
                         <button type="submit" class="rg-btn-search"><i class="fas fa-search"></i> Search</button>
                     </form>
@@ -163,7 +163,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{{ route('admin.user-management.edit-user', $user) }}"
+                                                     <a href="{{ route('admin.user-authorization.edit-user', $user) }}"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-user-shield"></i> Manage Roles
                                         </a>

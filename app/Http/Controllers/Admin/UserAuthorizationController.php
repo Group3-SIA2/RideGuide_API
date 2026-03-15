@@ -18,30 +18,41 @@ class UserAuthorizationController extends Controller
     /**
      * Show the authorization management page – list roles with their permissions.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $this->authorizePermissions(request(), 'manage_authorization');
+        $this->authorizePermissions($request, 'manage_authorization');
 
+        $currentUser = $request->user();
         $roles = Role::with('permissions')->orderBy('name')->get();
         $permissions = Permission::orderBy('group')->orderBy('display_name')->get();
         $permissionGroups = $permissions->groupBy('group');
+        $editableRoleNames = $roles
+            ->filter(fn (Role $role) => $this->canEditRolePermissions($currentUser, $role))
+            ->pluck('name')
+            ->values()
+            ->all();
 
-        return view('admin.user-management.index', compact('roles', 'permissions', 'permissionGroups'));
+        return view('admin.user-authorization.index', compact('roles', 'permissions', 'permissionGroups', 'editableRoleNames'));
     }
 
     /**
      * Show the permission editor for a specific role (checkboxes).
      */
-    public function editRole(Role $role)
+    public function editRole(Request $request, Role $role)
     {
-        $this->authorizePermissions(request(), 'manage_authorization');
+        $this->authorizePermissions($request, 'manage_authorization');
+
+        if (!$this->canEditRolePermissions($request->user(), $role)) {
+            return redirect()->route('admin.user-authorization.index')
+                ->with('error', 'You are not allowed to edit permissions for this role.');
+        }
 
         $role->load('permissions');
         $permissions = Permission::orderBy('group')->orderBy('display_name')->get();
         $permissionGroups = $permissions->groupBy('group');
         $rolePermissionIds = $role->permissions->pluck('id')->toArray();
 
-        return view('admin.user-management.edit-role', compact('role', 'permissions', 'permissionGroups', 'rolePermissionIds'));
+        return view('admin.user-authorization.edit-role', compact('role', 'permissions', 'permissionGroups', 'rolePermissionIds'));
     }
 
     /**
@@ -51,10 +62,9 @@ class UserAuthorizationController extends Controller
     {
         $this->authorizePermissions($request, 'manage_authorization');
 
-        // Super admin cannot have permissions changed
-        if ($role->name === Role::SUPER_ADMIN) {
-            return redirect()->route('admin.user-management.index')
-                ->with('error', 'Super Admin permissions cannot be modified.');
+        if (!$this->canEditRolePermissions($request->user(), $role)) {
+            return redirect()->route('admin.user-authorization.index')
+                ->with('error', 'You are not allowed to edit permissions for this role.');
         }
 
         $validated = $request->validate([
@@ -64,16 +74,37 @@ class UserAuthorizationController extends Controller
 
         $role->permissions()->sync($validated['permissions'] ?? []);
 
-        return redirect()->route('admin.user-management.index')
+        return redirect()->route('admin.user-authorization.index')
             ->with('success', "Permissions for \"{$role->name}\" updated successfully.");
+    }
+
+    private function canEditRolePermissions(User $currentUser, Role $targetRole): bool
+    {
+        if ($targetRole->name === Role::SUPER_ADMIN) {
+            return false;
+        }
+
+        if ($currentUser->hasRole(Role::SUPER_ADMIN)) {
+            return true;
+        }
+
+        if ($currentUser->hasRole(Role::ADMIN)) {
+            return in_array($targetRole->name, [
+                Role::DRIVER,
+                Role::COMMUTER,
+                Role::ORGANIZATION,
+            ], true);
+        }
+
+        return false;
     }
 
     /**
      * Show per-user permission override page – manage individual user's role.
      */
-    public function editUser(User $user)
+    public function editUser(Request $request, User $user)
     {
-        $this->authorizePermissions(request(), 'manage_authorization');
+        $this->authorizePermissions($request, 'manage_authorization');
 
         $user->load('roles.permissions');
         $roles = Role::orderBy('name')->get();
@@ -89,7 +120,7 @@ class UserAuthorizationController extends Controller
         }
         $userPermissionIds = array_unique($userPermissionIds);
 
-        return view('admin.user-management.edit-user', compact('user', 'roles', 'permissions', 'permissionGroups', 'userPermissionIds'));
+        return view('admin.user-authorization.edit-user', compact('user', 'roles', 'permissions', 'permissionGroups', 'userPermissionIds'));
     }
 
     /**
@@ -116,40 +147,7 @@ class UserAuthorizationController extends Controller
             'status_changed_at' => $statusChanged ? now() : $user->status_changed_at,
         ]);
 
-        return redirect()->route('admin.user-management.index')
+        return redirect()->route('admin.user-authorization.index')
             ->with('success', "Roles for \"{$user->first_name} {$user->last_name}\" updated successfully.");
-    }
-
-    /**
-     * Authorization helper copied from CheckPermission middleware.
-     *
-     * Usage inside controller methods:
-     *     $this->authorizePermissions($request, 'manage_users');
-     *     $this->authorizePermissions($request, 'manage_users', 'manage_drivers'); // any of
-     *
-     * This will abort(403) if the current user is not authenticated or lacks the permission(s).
-     * Super admins bypass all checks.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  ...$permissions
-     * @return void
-     */
-    protected function authorizePermissions(Request $request, string ...$permissions): void
-    {
-        $user = $request->user();
-
-        if (!$user) {
-            abort(403, 'Unauthorized.');
-        }
-
-        // Super admins bypass all permission checks
-        if ($user->hasRole(Role::SUPER_ADMIN)) {
-            return;
-        }
-
-        // Check if the user has any of the required permissions
-        if (!$user->hasAnyPermission($permissions)) {
-            abort(403, 'You do not have permission to perform this action.');
-        }
     }
 }

@@ -8,7 +8,7 @@
             <h4 class="rg-page-title">My Profile</h4>
             <p class="rg-page-subtitle">Your account details.</p>
         </div>
-        @include('admin.partials.header_status_badges')
+       
     </div>
 @stop
 

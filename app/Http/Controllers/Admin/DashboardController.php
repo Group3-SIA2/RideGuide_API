@@ -25,6 +25,8 @@ class DashboardController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
+        $this->authorizePermissions($request, 'view_admin_dashboard');
+
         $totalVerifiedUsers = User::whereNotNull('email_verified_at')->count();
         $totalActiveUsers   = User::where('status', User::STATUS_ACTIVE)->count();
         $totalInactiveUsers = User::where('status', User::STATUS_INACTIVE)->count();

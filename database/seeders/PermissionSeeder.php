@@ -19,6 +19,7 @@ class PermissionSeeder extends Seeder
         $permissions = [
             // User Management
             ['name' => 'view_users',         'display_name' => 'View Users',            'group' => 'users',         'description' => 'Can view the list of users.'],
+            ['name' => 'manage_users',       'display_name' => 'Manage Users',          'group' => 'users',         'description' => 'Can manage user status and restoration workflows.'],
             ['name' => 'create_users',       'display_name' => 'Create Users',          'group' => 'users',         'description' => 'Can create new user accounts.'],
             ['name' => 'edit_users',         'display_name' => 'Edit Users',            'group' => 'users',         'description' => 'Can edit existing user accounts.'],
             ['name' => 'delete_users',       'display_name' => 'Delete Users',          'group' => 'users',         'description' => 'Can delete user accounts.'],

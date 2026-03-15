@@ -286,6 +286,23 @@ body,
     margin: 0;
 }
 
+/* ── User Authorization: Edit Permissions spacing fix ──── */
+.rg-permissions-body {
+    padding: 20px 22px !important;
+}
+
+.rg-permissions-body .rg-permission-group-block {
+    padding: 14px 14px 10px;
+    border: 1px solid var(--rg-table-border);
+    border-radius: 10px;
+    background: var(--rg-card);
+}
+
+.rg-permissions-body hr {
+    margin: 0 0 16px;
+    border-top: 0;
+}
+
 /* ── Table ──────────────────────────────────────────────── */
 .rg-table {
     width: 100%;

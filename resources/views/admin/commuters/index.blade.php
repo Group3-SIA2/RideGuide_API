@@ -9,7 +9,7 @@
             <p class="rg-page-subtitle">View all registered commuter profiles.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            @include('admin.partials.header_status_badges')
+        
             <span class="rg-badge" id="rg-total">{{ $commuters->total() }} total</span>
         </div>
     </div>

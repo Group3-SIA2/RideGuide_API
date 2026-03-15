@@ -9,7 +9,7 @@
             <p class="rg-page-subtitle">Welcome back, {{ auth()->user()->first_name }}.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            @include('admin.partials.header_status_badges')
+           
             <span class="rg-badge">{{ now()->format('l, F j Y') }}</span>
         </div>
     </div>
@@ -33,7 +33,7 @@
                     <div class="d-flex flex-wrap gap-1 mt-2">
                         <span class="rg-status-badge rg-status-active">Active: {{ number_format($totalActiveUsers) }}</span>
                         <span class="rg-status-badge rg-status-pending">Inactive: {{ number_format($totalInactiveUsers) }}</span>
-                        <span class="rg-status-badge rg-status-pending">Suspended: {{ number_format($totalSuspendedUsers) }}</span>
+                        <span class="rg-status-badge rg-status-error">Suspended: {{ number_format($totalSuspendedUsers) }}</span>
                     </div>
                 </div>
             </div>
