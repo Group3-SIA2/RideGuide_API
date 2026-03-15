@@ -359,6 +359,12 @@ return [
         // System
         ['header' => 'ACCOUNT'],
         [
+            'text'   => 'User Management',
+            'route'  => 'admin.user-status.index',
+            'icon'   => 'fas fa-fw fa-user-cog',
+            'active' => ['admin/user-status*'],
+        ],
+        [
             'text'   => 'User Authorization',
             'route'  => 'admin.user-management.index',
             'icon'   => 'fas fa-fw fa-user-shield',
