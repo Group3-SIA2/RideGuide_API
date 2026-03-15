@@ -35,7 +35,7 @@ Authorization: Bearer {your_token_here}
 
 > **Important:** The old `/api/users/*-profile` endpoints (birthdate, gender, profile image) are not part of the current routes.
 >
-> Admin note (users endpoints): Admins can list/view **non-admin** users, but cannot view other admins.
+> Admin note (users endpoints): `admin` and `super_admin` can list/view **non-admin** users, but cannot view another admin/super_admin account (except themselves).
 >
 > Commuter retention: Soft-deleted commuter profiles can only be restored within **30 days** of deletion.
 
@@ -45,8 +45,8 @@ Authorization: Bearer {your_token_here}
 
 | #  | Method   | Endpoint                              | Description                     | Access |
 |----|----------|---------------------------------------|---------------------------------|--------|
-| 1  | `GET`    | `/api/users`                          | List users                      | Admin (non-admin users) / Own only |
-| 2  | `GET`    | `/api/users/{id}`                     | Get specific user               | Owner or Admin (with admin limits) |
+| 1  | `GET`    | `/api/users`                          | List users                      | Admin/Super Admin (non-admin users) / Own only |
+| 2  | `GET`    | `/api/users/{id}`                     | Get specific user               | Owner or Admin/Super Admin (with admin limits) |
 | 3  | `POST`   | `/api/commuter/add-commuter`          | Create commuter profile         | Commuter only |
 | 4  | `GET`    | `/api/commuter/read-commuter/{id}`    | Read commuter profile           | Owner (commuter) or Admin |
 | 5  | `PUT`    | `/api/commuter/update-commuter/{id}`  | Update commuter classification  | Owner (commuter) or Admin |
@@ -59,13 +59,21 @@ Authorization: Bearer {your_token_here}
 
 **GET** `https://rideguide.test/api/users`
 
-Returns a list of users. Admins see all **driver and commuter** accounts (not other admins). Drivers and commuters only see their own account. This is useful for retrieving user IDs before calling profile endpoints.
+Returns a list of users. `admin` and `super_admin` see all **driver and commuter** accounts (not other admin/super_admin accounts). Drivers and commuters only see their own account. This is useful for retrieving user IDs before calling profile endpoints.
+
+Optional query parameter:
+- `status` = `active`, `inactive`, or `suspended` (applies only to admin/super_admin requests)
 
 No body is needed for this request.
 
 **Example**
 ```
 GET https://rideguide.test/api/users
+```
+
+**Example with status filter**
+```
+GET https://rideguide.test/api/users?status=active
 ```
 
 **Success Response — Admin (200)**
@@ -79,7 +87,10 @@ GET https://rideguide.test/api/users
             "last_name": "Dela Cruz",
             "middle_name": "Santos",
             "email": "juan@example.com",
-            "role": "commuter",
+            "role": ["commuter"],
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z",
             "email_verified_at": "2026-02-25T10:00:00.000000Z",
             "created_at": "2026-02-25T09:00:00.000000Z",
             "updated_at": "2026-02-25T09:00:00.000000Z"
@@ -90,7 +101,10 @@ GET https://rideguide.test/api/users
             "last_name": "Garcia",
             "middle_name": null,
             "email": "maria@example.com",
-            "role": "driver",
+            "role": ["driver"],
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z",
             "email_verified_at": "2026-02-25T11:00:00.000000Z",
             "created_at": "2026-02-25T10:30:00.000000Z",
             "updated_at": "2026-02-25T10:30:00.000000Z"
@@ -110,7 +124,10 @@ GET https://rideguide.test/api/users
             "last_name": "Dela Cruz",
             "middle_name": "Santos",
             "email": "juan@example.com",
-            "role": "commuter",
+            "role": ["commuter"],
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z",
             "email_verified_at": "2026-02-25T10:00:00.000000Z",
             "created_at": "2026-02-25T09:00:00.000000Z",
             "updated_at": "2026-02-25T09:00:00.000000Z"
@@ -128,7 +145,7 @@ GET https://rideguide.test/api/users
 Returns a single user by ID.
 
 - Drivers and commuters can only view themselves.
-- Admins can view drivers/commuters, but **cannot** view another admin’s account.
+- `admin` and `super_admin` can view drivers/commuters, but **cannot** view another admin/super_admin account.
 
 No body is needed for this request. Replace `{id}` with the user UUID.
 
@@ -147,7 +164,10 @@ GET https://rideguide.test/api/users/019c7a57-980d-715f-b7b6-67014c23b601
         "last_name": "Dela Cruz",
         "middle_name": "Santos",
         "email": "juan@example.com",
-        "role": "commuter",
+        "role": ["commuter"],
+        "status": "active",
+        "status_reason": null,
+        "status_changed_at": "2026-03-15T10:30:00.000000Z",
         "email_verified_at": "2026-02-25T10:00:00.000000Z",
         "created_at": "2026-02-25T09:00:00.000000Z",
         "updated_at": "2026-02-25T09:00:00.000000Z"
@@ -175,7 +195,7 @@ GET https://rideguide.test/api/users/019c7a57-980d-715f-b7b6-67014c23b601
 ```json
 {
     "success": false,
-    "message": "Unauthorized. You cannot view another admin's account."
+    "message": "Unauthorized. You cannot view another admin account."
 }
 ```
 
@@ -495,7 +515,8 @@ When a commuter profile is restored, its discount record (if any) is also restor
 1. **Login** — `POST /api/auth/login`.
 2. **Verify OTP** — `POST /api/auth/verify-otp` (type `login_2fa`) to get a Bearer Token.
 3. **Set Token** — In Postman, set **Authorization** → **Bearer Token**.
-4. **Users list** — `GET /api/users` (admin sees all drivers/commuters; non-admin sees only self).
+4. **Users list** — `GET /api/users` (admin/super_admin sees all drivers/commuters; non-admin sees only self).
+    Optional: `GET /api/users?status=active`.
 5. **Users show** — `GET /api/users/{id}`.
 6. **Create commuter profile** — `POST /api/commuter/add-commuter` (commuter role only).
 7. **Read commuter profile** — `GET /api/commuter/read-commuter/{id}`.
@@ -514,357 +535,3 @@ When a commuter profile is restored, its discount record (if any) is also restor
 | 404 | Not Found | User or commuter profile not found |
 | 400 | Bad Request | Profile already exists |
 | 422 | Validation Error | Missing required fields, invalid classification, duplicate ID number |
-
----
-
-## 2. Get Specific User
-
-**GET** `https://rideguide.test/api/users/{id}`
-
-Returns a single user by ID. Admins can view any driver or commuter (not other admins). Drivers and commuters can only view themselves.
-
-No body is needed for this request. Replace `{id}` with the user UUID.
-
-**Example**
-```
-GET https://rideguide.test/api/users/019c7a57-980d-715f-b7b6-67014c23b601
-```
-
-**Success Response (200)**
-```json
-{
-    "success": true,
-    "data": {
-        "id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "first_name": "Juan",
-        "last_name": "Dela Cruz",
-        "middle_name": "Santos",
-        "email": "juan@example.com",
-        "role": "commuter",
-        "email_verified_at": "2026-02-25T10:00:00.000000Z",
-        "created_at": "2026-02-25T09:00:00.000000Z",
-        "updated_at": "2026-02-25T09:00:00.000000Z"
-    }
-}
-```
-
-**Error Response — Not Found (404)**
-```json
-{
-    "success": false,
-    "message": "User not found."
-}
-```
-
-**Error Response — Unauthorized (403)**
-```json
-{
-    "success": false,
-    "message": "Unauthorized. You can only view your own account."
-}
-```
-
----
-
-## 3. Create User Profile
-
-**POST** `https://rideguide.test/api/users/create-profile`
-
-Creates a new user profile for the authenticated user. Each user can only have **one** profile.
-
-In Postman, go to the **Body** tab, select **form-data**, and fill in:
-
-```
-birthdate        1999-05-15
-gender           male
-profile_image    (optional — select a file)
-```
-
-**Field Rules**
-
-| Field            | Type   | Required | Rules                                    |
-|------------------|--------|----------|------------------------------------------|
-| `birthdate`      | date   | Yes      | Must be a valid date (e.g. `YYYY-MM-DD`) |
-| `gender`         | string | Yes      | Must be one of: `male`, `female`, `other` |
-| `profile_image`  | file   | No       | Image file, max 2 MB                     |
-
-**Success Response (201)**
-```json
-{
-    "success": true,
-    "message": "User profile created successfully.",
-    "data": {
-        "id": "9f1a2b3c-...",
-        "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "birthdate": "1999-05-15",
-        "gender": "male",
-        "profile_image": null,
-        "created_at": "2026-02-25T10:00:00.000000Z",
-        "updated_at": "2026-02-25T10:00:00.000000Z"
-    }
-}
-```
-
-**Error Response — Unauthorized (403)**
-```json
-{
-    "success": false,
-    "message": "Unauthorized. You can only add your own profile."
-}
-```
-
-**Error Response — Profile Already Exists (400)**
-```json
-{
-    "success": false,
-    "message": "You already have a profile. You can only have one profile."
-}
-```
-
-**Error Response — Validation Error (422)**
-```json
-{
-    "message": "The gender field is required.",
-    "errors": {
-        "gender": ["The gender field is required."]
-    }
-}
-```
-
----
-
-## 4. Read User Profile
-
-**GET** `https://rideguide.test/api/users/read-profile/{id}`
-
-Returns the user profile with the given ID. Only the profile owner or an admin can access this.
-
-No body is needed for this request. Replace `{id}` with the user profile UUID.
-
-**Example**
-```
-GET https://rideguide.test/api/users/read-profile/019c93de-1d75-713e-a51f-75fe61efcd73
-```
-
-**Success Response (200)**
-```json
-{
-    "success": true,
-    "data": {
-        "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
-        "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "birthdate": "1999-05-15",
-        "gender": "male",
-        "profile_image": null,
-        "created_at": "2026-02-25T10:00:00.000000Z",
-        "updated_at": "2026-02-25T10:00:00.000000Z"
-    }
-}
-```
-
-**Error Response — Not Found (404)**
-```json
-{
-    "success": false,
-    "message": "User profile not found."
-}
-```
-
-**Error Response — Unauthorized (403)**
-```json
-{
-    "success": false,
-    "message": "Unauthorized. You can only view your own profile."
-}
-```
-
----
-
-## 5. Update User Profile
-
-**PUT** `https://rideguide.test/api/users/update-profile/{id}`
-
-Updates an existing user profile. Only the profile owner or an admin can update it. All fields are optional (send only the ones you want to change).
-
-In Postman, go to the **Body** tab, select **raw** → **JSON**, and provide the fields to update:
-
-```json
-{
-    "birthdate": "2000-01-01",
-    "gender": "female"
-}
-```
-
-**Field Rules**
-
-| Field            | Type   | Required | Rules                                    |
-|------------------|--------|----------|------------------------------------------|
-| `birthdate`      | date   | No       | Must be a valid date (e.g. `YYYY-MM-DD`) |
-| `gender`         | string | No       | Must be one of: `male`, `female`, `other` |
-| `profile_image`  | file   | No       | Image file, max 2 MB                     |
-
-**Example**
-```
-PUT https://rideguide.test/api/users/update-profile/019c93de-1d75-713e-a51f-75fe61efcd73
-```
-
-**Success Response (200)**
-```json
-{
-    "success": true,
-    "message": "User profile updated successfully.",
-    "data": {
-        "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
-        "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "birthdate": "2000-01-01",
-        "gender": "female",
-        "profile_image": null,
-        "created_at": "2026-02-25T10:00:00.000000Z",
-        "updated_at": "2026-02-25T12:30:00.000000Z"
-    }
-}
-```
-
-**Error Response — Not Found (404)**
-```json
-{
-    "success": false,
-    "message": "User profile not found."
-}
-```
-
-**Error Response — Unauthorized (403)**
-```json
-{
-    "success": false,
-    "message": "Unauthorized. You can only update your own profile."
-}
-```
-
----
-
-## 6. Delete User Profile (Soft Delete)
-
-**DELETE** `https://rideguide.test/api/users/delete-profile/{id}`
-
-Soft-deletes a user profile. **Admin only.**
-
-No body is needed for this request. Replace `{id}` with the user profile UUID.
-
-**Example**
-```
-DELETE https://rideguide.test/api/users/delete-profile/019c93de-1d75-713e-a51f-75fe61efcd73
-```
-
-**Success Response (200)**
-```json
-{
-    "success": true,
-    "message": "User profile deleted successfully."
-}
-```
-
-**Error Response — Not Found (404)**
-```json
-{
-    "success": false,
-    "message": "User profile not found."
-}
-```
-
-**Error Response — Unauthorized (403)**
-```json
-{
-    "success": false,
-    "message": "Unauthorized. Only admins can delete user profiles."
-}
-```
-
----
-
-## 7. Restore User Profile
-
-**PUT** `https://rideguide.test/api/users/restore-profile/{id}`
-
-Restores a soft-deleted user profile. **Admin only.**
-
-No body is needed for this request. Replace `{id}` with the user profile UUID.
-
-**Example**
-```
-PUT https://rideguide.test/api/users/restore-profile/019c93de-1d75-713e-a51f-75fe61efcd73
-```
-
-**Success Response (200)**
-```json
-{
-    "success": true,
-    "message": "User profile restored successfully.",
-    "data": {
-        "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
-        "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "birthdate": "1999-05-15",
-        "gender": "male",
-        "profile_image": null,
-        "created_at": "2026-02-25T10:00:00.000000Z",
-        "updated_at": "2026-02-25T14:00:00.000000Z"
-    }
-}
-```
-
-**Error Response — Not Found (404)**
-```json
-{
-    "success": false,
-    "message": "User profile not found or not deleted."
-}
-```
-
-**Error Response — Unauthorized (403)**
-```json
-{
-    "success": false,
-    "message": "Unauthorized. Only admins can restore user profiles."
-}
-```
-
----
-
-## Postman Testing Workflow
-
-Follow these steps in order to test the user and profile endpoints:
-
-1. **Login** — `POST /api/auth/login` with your account credentials.
-2. **Verify OTP** — `POST /api/auth/verify-otp` with type `login_2fa` to get your Bearer Token.
-3. **Set Token** — In Postman, go to **Authorization** → **Bearer Token** and paste the token.
-4. **List Users** — `GET /api/users` to see available user IDs.
-5. **View User** — `GET /api/users/{id}` to view a specific user's details.
-6. **Create Profile** — `POST /api/users/create-profile` with birthdate & gender.
-7. **Read Profile** — `GET /api/users/read-profile/{id}` using the profile ID from step 6.
-8. **Update Profile** — `PUT /api/users/update-profile/{id}` with fields to change.
-9. **Delete Profile** — `DELETE /api/users/delete-profile/{id}` (requires admin token).
-10. **Restore Profile** — `PUT /api/users/restore-profile/{id}` (requires admin token).
-
----
-
-## Roles & Access Reference
-
-| Role       | List Users        | View User             | Create Profile | Read Profile          | Update Profile        | Delete Profile        | Restore Profile                |
-|------------|-------------------|-----------------------|----------------|-----------------------|-----------------------|-----------------------|--------------------------------|
-| `commuter` | Own only          | Own only              | ✅ Own         | ✅ Own                | ✅ Own                | ❌                    | ❌                             |
-| `driver`   | Own only          | Own only              | ✅ Own         | ✅ Own                | ✅ Own                | ❌                    | ❌                             |
-| `admin`    | All non-admin     | Own + Non-admin       | ✅ Own         | ✅ Own + Non-admin    | ✅ Own + Non-admin    | ✅ Non-admin only     | ✅ Non-admin (≤30 days)        |
-
-> **Data-Privacy Note:** Soft-deleted profiles are only restorable within a **30-day retention window**. After 30 days, the restore endpoint will reject the request. It is recommended to schedule a periodic job (`php artisan schedule:run`) to permanently purge (`forceDelete`) profiles that exceed this window, ensuring compliance with data-minimization principles (e.g. GDPR, DPA 2012).
-
----
-
-## Common Error Responses
-
-| Status | Meaning             | Example                                          |
-|--------|---------------------|--------------------------------------------------|
-| 401    | Unauthenticated     | Missing or invalid Bearer Token                  |
-| 403    | Unauthorized        | Wrong role or not the profile owner              |
-| 404    | Not Found           | User profile with given ID does not exist        |
-| 400    | Bad Request         | Profile already exists for this user             |
-| 422    | Validation Error    | Missing required fields or invalid gender value  |

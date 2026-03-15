@@ -69,7 +69,10 @@ Note: `first_name`, `last_name`, `middle_name`, and `roles` are handled in the s
     "data": {
         "user": {
             "id": "9f1a2b3c-...",
-            "email": "aslainiemaruhom19@gmail.com"
+            "email": "aslainiemaruhom19@gmail.com",
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z"
         }
     }
 }
@@ -124,6 +127,14 @@ password    password123
 }
 ```
 
+**Error Response — Inactive/Suspended Account (403)**
+```json
+{
+    "success": false,
+    "message": "Your account is not active."
+}
+```
+
 ---
 
 ### 2A. Social Signup/Login (Firebase Google/Facebook)
@@ -165,7 +176,10 @@ If the email exists, Laravel logs in that user.
         "user": {
             "id": "9f1a2b3c-...",
             "email": "user@gmail.com",
-            "email_verified_at": "2026-03-13T11:20:00.000000Z"
+            "email_verified_at": "2026-03-13T11:20:00.000000Z",
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z"
         },
         "token": "1|abc123xyz456...",
         "token_type": "Bearer"
@@ -182,7 +196,10 @@ If the email exists, Laravel logs in that user.
         "user": {
             "id": "9f1a2b3c-...",
             "email": "user@gmail.com",
-            "email_verified_at": "2026-03-13T11:20:00.000000Z"
+            "email_verified_at": "2026-03-13T11:20:00.000000Z",
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z"
         },
         "token": "1|abc123xyz456...",
         "token_type": "Bearer"
@@ -211,6 +228,14 @@ If the email exists, Laravel logs in that user.
 {
     "success": false,
     "message": "Provider mismatch between request and Firebase token."
+}
+```
+
+**Error Response — Inactive/Suspended Account (403)**
+```json
+{
+    "success": false,
+    "message": "Your account is not active."
 }
 ```
 
@@ -259,7 +284,10 @@ type     login_2fa
         "user": {
             "id": "9f1a2b3c-...",
             "email": "aslainiemaruhom19@gmail.com",
-            "email_verified_at": "2026-02-22T10:30:00.000000Z"
+            "email_verified_at": "2026-02-22T10:30:00.000000Z",
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z"
         },
         "token": "1|abc123xyz456...",
         "token_type": "Bearer"
@@ -276,7 +304,10 @@ type     login_2fa
         "user": {
             "id": "9f1a2b3c-...",
             "email": "aslainiemaruhom19@gmail.com",
-            "email_verified_at": "2026-02-22T10:30:00.000000Z"
+            "email_verified_at": "2026-02-22T10:30:00.000000Z",
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z"
         },
         "token": "1|abc123xyz456...",
         "token_type": "Bearer"
@@ -285,6 +316,14 @@ type     login_2fa
 ```
 
 Copy the `token` value from this response. You will need it for all protected routes.
+
+**Error Response — Inactive/Suspended Account (403)**
+```json
+{
+    "success": false,
+    "message": "Your account is not active."
+}
+```
 
 ---
 
@@ -416,11 +455,16 @@ Returns the profile of the currently logged-in user. No body is needed for this 
             "middle_name": "Lampac",
             "email": "aslainiemaruhom19@gmail.com",
             "role": "commuter",
+            "status": "active",
+            "status_reason": null,
+            "status_changed_at": "2026-03-15T10:30:00.000000Z",
             "email_verified_at": "2026-02-22T10:30:00.000000Z"
         }
     }
 }
 ```
+
+If the authenticated user account becomes inactive or suspended, protected endpoints return `403` and API tokens are revoked by middleware.
 
 ---
 
