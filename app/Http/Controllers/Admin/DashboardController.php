@@ -26,6 +26,9 @@ class DashboardController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         $totalVerifiedUsers = User::whereNotNull('email_verified_at')->count();
+        $totalActiveUsers   = User::where('status', User::STATUS_ACTIVE)->count();
+        $totalInactiveUsers = User::where('status', User::STATUS_INACTIVE)->count();
+        $totalSuspendedUsers = User::where('status', User::STATUS_SUSPENDED)->count();
         $totalAdmins        = User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->count();
         $totalSuperAdmins   = User::whereHas('roles', fn ($q) => $q->where('name', 'super_admin'))->count();
         $totalDrivers       = User::whereHas('roles', fn ($q) => $q->where('name', 'driver'))->count();
@@ -58,6 +61,9 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', compact(
             'totalVerifiedUsers',
+            'totalActiveUsers',
+            'totalInactiveUsers',
+            'totalSuspendedUsers',
             'totalAdmins',
             'totalDrivers',
             'totalCommuters',

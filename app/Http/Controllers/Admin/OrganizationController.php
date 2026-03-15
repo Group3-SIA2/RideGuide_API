@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Organization;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class OrganizationController extends Controller
@@ -27,7 +29,7 @@ class OrganizationController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('type', 'like', "%{$search}%")
-                  ->orWhere('address', 'like', "%{$search}%");
+                  ->orWhere('hq_address', 'like', "%{$search}%");
             });
         }
 
@@ -57,14 +59,44 @@ class OrganizationController extends Controller
     {
         $this->authorize('create', Organization::class);
 
-        return view('admin.organizations.create');
+        $eligibleOwners = User::query()
+            ->whereNull('deleted_at')
+            ->where('status', User::STATUS_ACTIVE)
+            ->whereHas('roles', function ($query) {
+                $query->whereIn('name', [Role::ADMIN, Role::SUPER_ADMIN, Role::ORGANIZATION]);
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'email']);
+
+        $existingNames = Organization::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->filter()
+            ->values();
+
+        $existingTypes = Organization::query()
+            ->orderBy('type')
+            ->distinct()
+            ->pluck('type')
+            ->filter()
+            ->values();
+
+        return view('admin.organizations.create', compact('eligibleOwners', 'existingNames', 'existingTypes'));
     }
 
     public function store(StoreOrganizationRequest $request)
     {
         $this->authorize('create', Organization::class);
 
-        Organization::create($request->validated());
+        $validated = $request->validated();
+
+        if (array_key_exists('owner_user_id', $validated)) {
+            $ownerUser = User::withTrashed()->find($validated['owner_user_id']);
+            $this->authorize('assignOwner', [Organization::class, $ownerUser]);
+        }
+
+        Organization::create($validated);
 
         return redirect()->route('admin.organizations.index')
             ->with('success', 'Organization created successfully.');
@@ -75,7 +107,30 @@ class OrganizationController extends Controller
         $organization = Organization::findOrFail($id);
         $this->authorize('update', $organization);
 
-        return view('admin.organizations.edit', compact('organization'));
+        $eligibleOwners = User::query()
+            ->whereNull('deleted_at')
+            ->where('status', User::STATUS_ACTIVE)
+            ->whereHas('roles', function ($query) {
+                $query->whereIn('name', [Role::ADMIN, Role::SUPER_ADMIN, Role::ORGANIZATION]);
+            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'email']);
+
+        $existingNames = Organization::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->filter()
+            ->values();
+
+        $existingTypes = Organization::query()
+            ->orderBy('type')
+            ->distinct()
+            ->pluck('type')
+            ->filter()
+            ->values();
+
+        return view('admin.organizations.edit', compact('organization', 'eligibleOwners', 'existingNames', 'existingTypes'));
     }
 
     public function update(UpdateOrganizationRequest $request, string $id)
@@ -83,7 +138,14 @@ class OrganizationController extends Controller
         $organization = Organization::findOrFail($id);
         $this->authorize('update', $organization);
 
-        $organization->update($request->validated());
+        $validated = $request->validated();
+
+        if (array_key_exists('owner_user_id', $validated)) {
+            $ownerUser = User::withTrashed()->find($validated['owner_user_id']);
+            $this->authorize('assignOwner', [Organization::class, $ownerUser]);
+        }
+
+        $organization->update($validated);
 
         return redirect()->route('admin.organizations.index')
             ->with('success', 'Organization updated successfully.');
