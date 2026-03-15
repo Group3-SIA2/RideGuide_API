@@ -16,6 +16,10 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, HasUuids, SoftDeletes;
 
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_INACTIVE = 'inactive';
+    public const STATUS_SUSPENDED = 'suspended';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -30,6 +34,9 @@ class User extends Authenticatable
         'facebook_id',
         'phone_number',
         'password',
+        'status',
+        'status_reason',
+        'status_changed_at',
     ];
 
     /**
@@ -52,8 +59,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
+            'status_changed_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isAccountActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE && !$this->trashed();
     }
 
     /**

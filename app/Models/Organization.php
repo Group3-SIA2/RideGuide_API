@@ -16,11 +16,20 @@ class Organization extends Model
         'name',
         'type',
         'description',
-        'address',
-        'contact_number',
+        'hq_address',
         'status',
         'owner_user_id',
     ];
+
+    public function getAddressAttribute(): ?string
+    {
+        return $this->hq_address;
+    }
+
+    public function setAddressAttribute(?string $value): void
+    {
+        $this->attributes['hq_address'] = $value;
+    }
 
     public function owner(): BelongsTo
     {

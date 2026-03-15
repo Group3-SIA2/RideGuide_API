@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Organization;
+use App\Models\Role;
 use App\Models\User;
 
 class OrganizationPolicy
@@ -59,6 +60,35 @@ class OrganizationPolicy
     public function restore(User $user, Organization $organization): bool
     {
         return $this->isAdmin($user);
+    }
+
+    public function assignOwner(User $user, ?User $ownerUser): bool
+    {
+        if (!$ownerUser) {
+            return true;
+        }
+
+        if ($ownerUser->trashed()) {
+            return false;
+        }
+
+        if ($ownerUser->status !== User::STATUS_ACTIVE) {
+            return false;
+        }
+
+        $ownerHasAllowedRole = $ownerUser->roles()
+            ->whereIn('name', [Role::ADMIN, Role::SUPER_ADMIN, Role::ORGANIZATION])
+            ->exists();
+
+        if (!$ownerHasAllowedRole) {
+            return false;
+        }
+
+        if ($this->isAdmin($user)) {
+            return true;
+        }
+
+        return $user->hasRole('organization') && $ownerUser->id === $user->id;
     }
 
     private function isAdmin(User $user): bool
