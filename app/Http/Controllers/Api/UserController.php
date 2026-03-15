@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -17,14 +19,25 @@ class UserController extends Controller
 
     // Get All Users
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
 
-        if ($user->hasRole('admin')) {
+        if ($user->hasRole('admin') || $user->hasRole('super_admin')) {
+            $validated = $request->validate([
+                'status' => ['nullable', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE, User::STATUS_SUSPENDED])],
+            ]);
+
             // Admin sees all non-admin users (drivers & commuters)
-            $users = User::with('roles')
+            $usersQuery = User::with('roles')
                 ->whereHas('roles', fn ($q) => $q->whereIn('name', ['driver', 'commuter']))
+                ->orderBy('first_name');
+
+            if (!empty($validated['status'])) {
+                $usersQuery->where('status', $validated['status']);
+            }
+
+            $users = $usersQuery
                 ->get()
                 ->map(fn ($u) => $this->formatUser($u));
 
@@ -57,7 +70,7 @@ class UserController extends Controller
         }
 
         // Driver/Commuter can only view themselves
-        if (!$user->hasRole('admin')) {
+        if (!$user->hasRole('admin') && !$user->hasRole('super_admin')) {
             if ($targetUser->id !== $user->id) {
                 return response()->json([
                     'success' => false,
@@ -66,10 +79,10 @@ class UserController extends Controller
             }
         } else {
             // Admin cannot view other admin accounts
-            if ($targetUser->hasRole('admin') && $targetUser->id !== $user->id) {
+            if (($targetUser->hasRole('admin') || $targetUser->hasRole('super_admin')) && $targetUser->id !== $user->id) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized. You cannot view another admin\'s account.',
+                    'message' => 'Unauthorized. You cannot view another admin account.',
                 ], 403);
             }
         }
@@ -82,7 +95,7 @@ class UserController extends Controller
 
     // Format user data for consistent response
 
-    private function formatUser(User $user): array
+    private function formatUser($user): array
     {
         return [
             'id'                => $user->id,
@@ -91,6 +104,9 @@ class UserController extends Controller
             'middle_name'       => $user->middle_name,
             'email'             => $user->email,
             'role'              => $user->roles->pluck('name'),
+            'status'            => $user->status,
+            'status_reason'     => $user->status_reason,
+            'status_changed_at' => $user->status_changed_at,
             'email_verified_at' => $user->email_verified_at,
             'created_at'        => $user->created_at,
             'updated_at'        => $user->updated_at,

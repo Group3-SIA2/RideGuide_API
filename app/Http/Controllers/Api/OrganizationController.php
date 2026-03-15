@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Models\Organization;
+use App\Models\User;
+use App\Rules\OrganizationOwnerEligible;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -24,7 +26,7 @@ class OrganizationController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('type', 'like', "%{$search}%")
-                  ->orWhere('address', 'like', "%{$search}%");
+                  ->orWhere('hq_address', 'like', "%{$search}%");
             });
         }
 
@@ -98,6 +100,11 @@ class OrganizationController extends Controller
             $data['owner_user_id'] = $user->id;
         }
 
+        if (array_key_exists('owner_user_id', $data)) {
+            $ownerUser = User::withTrashed()->find($data['owner_user_id']);
+            $this->authorize('assignOwner', [Organization::class, $ownerUser]);
+        }
+
         $organization = Organization::create($data);
 
         return response()->json([
@@ -116,6 +123,7 @@ class OrganizationController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $organization = Organization::find($id);
+        $user = auth()->user();
 
         if (!$organization) {
             return response()->json([
@@ -130,14 +138,25 @@ class OrganizationController extends Controller
             'name'           => ['sometimes', 'string', 'max:255', Rule::unique('organizations', 'name')->ignore($organization->id)],
             'type'           => ['sometimes', 'string', 'max:100'],
             'description'    => ['nullable', 'string', 'max:1000'],
-            'address'        => ['nullable', 'string', 'max:500'],
-            'contact_number' => ['nullable', 'string', 'max:20'],
-            'status'         => ['sometimes', Rule::in(['active', 'inactive'])],
+            'hq_address'     => ['nullable', 'string', 'max:500'],
+            'owner_user_id'  => [
+                'sometimes',
+                'nullable',
+                'uuid',
+                new OrganizationOwnerEligible(),
+            ],
+            'status' => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
 
         // Organization-role users cannot toggle their own status.
-        if (auth()->user()->hasRole('organization')) {
+        if ($user->hasRole('organization')) {
             unset($validated['status']);
+            unset($validated['owner_user_id']);
+        }
+
+        if (array_key_exists('owner_user_id', $validated)) {
+            $ownerUser = User::withTrashed()->find($validated['owner_user_id']);
+            $this->authorize('assignOwner', [Organization::class, $ownerUser]);
         }
 
         $organization->update($validated);

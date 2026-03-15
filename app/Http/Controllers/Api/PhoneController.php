@@ -115,6 +115,13 @@ class PhoneController extends Controller
             ], 401);
         }
 
+        if (! $user->isAccountActive()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is not active.',
+            ], 403);
+        }
+
         if (! $user->isPhoneVerified()) {
             // Resend phone verification OTP automatically
             $this->sendOtp($user, 'phone_verification');
@@ -184,6 +191,13 @@ class PhoneController extends Controller
                 'success' => false,
                 'message' => 'User not found.',
             ], 404);
+        }
+
+        if (! $user->isAccountActive()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is not active.',
+            ], 403);
         }
 
         // Ensure a dispatch record exists on our side before calling iProgSMS
