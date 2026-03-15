@@ -31,6 +31,10 @@ class Auth2faController extends Controller
             return back()->withErrors(['email' => 'Invalid credentials'])->withInput();
         }
 
+        if (!$user->isAccountActive()) {
+            return back()->withErrors(['email' => 'Your account is not active.'])->withInput();
+        }
+
         // invalidate old unused login_2fa otp
         Otp::where('user_id', $user->id)->where('type', 'login_2fa')->whereNull('used_at')->update(['used_at' => now()]);
 
@@ -87,6 +91,12 @@ class Auth2faController extends Controller
         $otp->update(['used_at' => now()]);
 
         $user = User::findOrFail($userId);
+
+        if (!$user->isAccountActive()) {
+            session()->forget(['2fa:user_id', '2fa:remember']);
+            return redirect()->route('login')->withErrors(['email' => 'Your account is not active.']);
+        }
+
         Auth::login($user, (bool) session('2fa:remember', false));
         $request->session()->regenerate();
 

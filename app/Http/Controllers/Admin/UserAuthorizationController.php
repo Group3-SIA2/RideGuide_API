@@ -102,9 +102,19 @@ class UserAuthorizationController extends Controller
         $validated = $request->validate([
             'roles'   => ['nullable', 'array'],
             'roles.*' => ['uuid', 'exists:roles,id'],
+            'status' => ['required', 'in:active,inactive,suspended'],
+            'status_reason' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user->roles()->sync($validated['roles'] ?? []);
+
+        $statusChanged = $user->status !== $validated['status'];
+
+        $user->update([
+            'status' => $validated['status'],
+            'status_reason' => $validated['status_reason'] ?? null,
+            'status_changed_at' => $statusChanged ? now() : $user->status_changed_at,
+        ]);
 
         return redirect()->route('admin.user-management.index')
             ->with('success', "Roles for \"{$user->first_name} {$user->last_name}\" updated successfully.");
