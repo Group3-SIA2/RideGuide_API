@@ -303,6 +303,87 @@ body,
     border-top: 0;
 }
 
+/* ── User Authorization: Manage Roles spacing fix ──────── */
+.rg-manage-roles-layout > [class*="col-"] {
+    margin-bottom: 16px;
+}
+
+.rg-manage-roles-body,
+.rg-effective-permissions-body {
+    padding: 20px 22px !important;
+}
+
+.rg-manage-roles-form {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--rg-table-border);
+}
+
+.rg-manage-role-list {
+    max-height: 330px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.rg-manage-role-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 0 !important;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--rg-table-border);
+}
+
+.rg-manage-role-item:last-child {
+    border-bottom: none;
+}
+
+.rg-manage-role-item-locked {
+    opacity: 0.75;
+}
+
+.rg-manage-role-checkbox {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.rg-manage-role-checkbox:disabled {
+    cursor: not-allowed;
+}
+
+.rg-manage-role-label {
+    margin: 0;
+    cursor: pointer;
+    line-height: 1.35;
+}
+
+.rg-manage-role-name {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--rg-text);
+    margin-bottom: 3px;
+}
+
+.rg-effective-permissions-body {
+    max-height: 620px;
+    overflow-y: auto;
+}
+
+.rg-effective-permission-group {
+    padding-bottom: 8px;
+    margin-bottom: 12px !important;
+    border-bottom: 1px solid var(--rg-table-border);
+}
+
+.rg-effective-permission-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0 !important;
+    padding-bottom: 0;
+}
+
 /* ── Table ──────────────────────────────────────────────── */
 .rg-table {
     width: 100%;

@@ -9,24 +9,6 @@
             <p class="rg-page-subtitle">Review accounts and update statuses across users, drivers, vehicles, and discounts.</p>
         </div>
         <div class="d-flex flex-column align-items-md-end">
-            <div class="d-flex flex-wrap gap-3 justify-content-md-end">
-                <div class="rg-metric">
-                    <span class="rg-metric-label">Active Users</span>
-                    <span class="rg-metric-value text-success">{{ number_format($stats['users']['active']) }}</span>
-                </div>
-                <div class="rg-metric">
-                    <span class="rg-metric-label">Inactive Users</span>
-                    <span class="rg-metric-value text-warning">{{ number_format($stats['users']['inactive']) }}</span>
-                </div>
-                <div class="rg-metric">
-                    <span class="rg-metric-label">Suspended Users</span>
-                    <span class="rg-metric-value text-danger">{{ number_format($stats['users']['suspended']) }}</span>
-                </div>
-                <div class="rg-metric">
-                    <span class="rg-metric-label">Pending Drivers</span>
-                    <span class="rg-metric-value text-info">{{ number_format($stats['drivers']['unverified']) }}</span>
-                </div>
-            </div>
             <button type="button" class="btn btn-outline-primary mt-3 align-self-md-end" data-toggle="modal" data-target="#restoreRecordsModal">
                 <i class="fas fa-history mr-1"></i>
                 Restore Deleted Records
