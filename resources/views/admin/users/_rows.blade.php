@@ -16,7 +16,11 @@
     </td>
     <td class="rg-td-muted">{{ $user->email }}</td>
     <td>
-        <span class="rg-role-badge">{{ ucfirst(str_replace('_', ' ', $user->roles->first()?->name ?? 'N/A')) }}</span>
+        @forelse($user->roles as $role)
+            <span class="rg-role-badge mr-1 mb-1 d-inline-block">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</span>
+        @empty
+            <span class="rg-td-muted">No role</span>
+        @endforelse
     </td>
     <td>
         <span class="rg-status-badge {{ $user->status === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
