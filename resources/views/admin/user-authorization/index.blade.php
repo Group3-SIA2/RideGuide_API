@@ -124,7 +124,26 @@
                             </thead>
                             <tbody>
                                 @php
-                                    $userQuery = \App\Models\User::with('roles')->whereNotNull('email_verified_at');
+                                    $authUser = request()->user();
+                                    $userQuery = \App\Models\User::with('roles')
+                                        ->whereNotNull('email_verified_at')
+                                        ->whereDoesntHave('roles', function ($q) {
+                                            $q->where('name', \App\Models\Role::SUPER_ADMIN);
+                                        });
+
+                                    if ($authUser && $authUser->hasRole(\App\Models\Role::ADMIN) && !$authUser->hasRole(\App\Models\Role::SUPER_ADMIN)) {
+                                        $userQuery->where(function ($query) use ($authUser) {
+                                            $query->where('id', $authUser->id)
+                                                ->orWhereHas('roles', function ($q) {
+                                                    $q->whereIn('name', [
+                                                        \App\Models\Role::COMMUTER,
+                                                        \App\Models\Role::DRIVER,
+                                                        \App\Models\Role::ORGANIZATION,
+                                                    ]);
+                                                });
+                                        });
+                                    }
+
                                     if (request('user_search')) {
                                         $s = request('user_search');
                                         $userQuery->where(function ($q) use ($s) {

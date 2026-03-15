@@ -31,7 +31,7 @@
         </div>
     @endif
 
-    <div class="row">
+    <div class="row rg-manage-roles-layout">
         {{-- Role Assignment --}}
         <div class="col-12 col-lg-5">
             <form action="{{ route('admin.user-authorization.update-user', $user) }}" method="POST">
@@ -45,39 +45,35 @@
                             <h6 class="rg-card-title mb-0">Assign Roles</h6>
                         </div>
                     </div>
-                    <div class="rg-card-body">
+                    <div class="rg-card-body rg-manage-roles-body">
                         <p class="text-muted mb-3">Select the roles for <strong>{{ $user->first_name }} {{ $user->last_name }}</strong> ({{ $user->email }}):</p>
 
-                        <div class="form-group mb-3">
-                            <label for="status" class="font-weight-bold">Account Status</label>
-                            <select id="status" name="status" class="form-control">
-                                <option value="active" {{ old('status', $user->status ?? 'active') === 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ old('status', $user->status) === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                                <option value="suspended" {{ old('status', $user->status) === 'suspended' ? 'selected' : '' }}>Suspended</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label for="status_reason" class="font-weight-bold">Status Reason (optional)</label>
-                            <input type="text" id="status_reason" name="status_reason" class="form-control" value="{{ old('status_reason', $user->status_reason) }}" maxlength="255" placeholder="e.g. Temporary restriction pending review">
-                        </div>
-
+                        <div class="rg-manage-role-list">
                         @foreach($roles as $role)
-                            <div class="custom-control custom-checkbox mb-2">
+                            @php
+                                $isLocked = in_array($role->id, $lockedRoleIds ?? [], true);
+                            @endphp
+
+                            <div class="rg-manage-role-item {{ $isLocked ? 'rg-manage-role-item-locked' : '' }}">
                                 <input type="checkbox"
-                                       class="custom-control-input role-checkbox"
+                                       class="rg-manage-role-checkbox role-checkbox"
                                        id="role_{{ $role->id }}"
                                        name="roles[]"
                                        value="{{ $role->id }}"
-                                       {{ $user->roles->contains('id', $role->id) ? 'checked' : '' }}>
-                                <label class="custom-control-label" for="role_{{ $role->id }}">
-                                    <strong>{{ ucwords(str_replace('_', ' ', $role->name)) }}</strong>
+                                       {{ $user->roles->contains('id', $role->id) ? 'checked' : '' }}
+                                       {{ $isLocked ? 'disabled' : '' }}>
+                                <label class="rg-manage-role-label" for="role_{{ $role->id }}">
+                                    <span class="rg-manage-role-name">{{ ucwords(str_replace('_', ' ', $role->name)) }}</span>
                                     @if($role->description)
-                                        <br><small class="text-muted">{{ $role->description }}</small>
+                                        <small class="text-muted d-block">{{ $role->description }}</small>
+                                    @endif
+                                    @if($isLocked)
+                                        <small class="text-muted d-block">Only Super Admin can change this role.</small>
                                     @endif
                                 </label>
                             </div>
                         @endforeach
+                        </div>
                     </div>
                     <div class="rg-card-footer d-flex justify-content-end">
                         <a href="{{ route('admin.user-authorization.index') }}" class="btn btn-secondary mr-2">Cancel</a>
@@ -101,7 +97,7 @@
                         {{ ucfirst($user->status ?? 'active') }}
                     </span>
                 </div>
-                <div class="rg-card-body">
+                <div class="rg-card-body rg-effective-permissions-body">
                     @if($user->hasRole(\App\Models\Role::SUPER_ADMIN))
                         <div class="alert alert-success mb-0">
                             <i class="fas fa-crown mr-1"></i>
@@ -109,7 +105,7 @@
                         </div>
                     @else
                         @foreach($permissionGroups as $group => $groupPermissions)
-                            <div class="mb-3">
+                            <div class="mb-3 rg-effective-permission-group">
                                 <h6 class="text-uppercase text-muted font-weight-bold mb-2" style="letter-spacing:.5px; font-size:0.8rem;">
                                     <i class="fas fa-folder mr-1"></i> {{ ucwords(str_replace('_', ' ', $group)) }}
                                 </h6>
