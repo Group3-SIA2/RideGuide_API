@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\LogoutController;
 use App\Http\Controllers\Admin\OrganizationController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\UserAuthorizationController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\Auth2faController;
 
 /*
@@ -82,6 +83,14 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::put('/user-management/role/{role}',         [UserAuthorizationController::class, 'updateRole'])->name('user-management.update-role');
         Route::get('/user-management/user/{user}/edit',    [UserAuthorizationController::class, 'editUser'])->name('user-management.edit-user');
         Route::put('/user-management/user/{user}',         [UserAuthorizationController::class, 'updateUser'])->name('user-management.update-user');
+
+        Route::get('/user-status', [UserManagementController::class, 'index'])->name('user-status.index');
+        Route::patch('/user-status/users/{user}', [UserManagementController::class, 'updateUserStatus'])->name('user-status.users.update');
+        Route::patch('/user-status/discounts/{discount}', [UserManagementController::class, 'updateDiscountStatus'])->name('user-status.discounts.update');
+        Route::patch('/user-status/vehicles/{vehicle}', [UserManagementController::class, 'updateVehicleStatus'])->name('user-status.vehicles.update');
+        Route::patch('/user-status/drivers/{driver}', [UserManagementController::class, 'updateDriverStatus'])->name('user-status.drivers.update');
+        Route::get('/user-status/restore/search', [UserManagementController::class, 'searchDeletedRecords'])->name('user-status.restore.search');
+        Route::post('/user-status/restore', [UserManagementController::class, 'restoreRecord'])->name('user-status.restore.record');
     });
 });
 
