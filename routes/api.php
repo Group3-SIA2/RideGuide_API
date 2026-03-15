@@ -43,7 +43,7 @@ Route::controller(PhoneController::class)->prefix('auth/phone')->group(function 
 | Protected Routes (Sanctum token required)
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth:sanctum')->group(function (): void {
+Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
 
     // Auth 
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');

@@ -45,7 +45,7 @@ Route::get('/facebook/data-deletion/status', [LegalController::class, 'dataDelet
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'active.user'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     Route::prefix('admin')->name('admin.')->group(function () {
