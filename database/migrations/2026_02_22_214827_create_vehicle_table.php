@@ -16,6 +16,9 @@ return new class extends Migration
             $table->uuid('driver_id')->notNull();
             $table->uuid('vehicle_type_id')->notNull();
             $table->uuid('plate_number_id')->notNull();
+            $table->enum('status', ['active', 'inactive'])->default('inactive');
+            $table->enum('verification_status', ['pending', 'verified', 'rejected'])->default('pending');
+            $table->string('rejection_reason')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

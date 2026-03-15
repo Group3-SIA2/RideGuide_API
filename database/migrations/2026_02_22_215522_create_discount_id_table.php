@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('discounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('ID_number')->notNull()->unique();
+            $table->enum('verification_status', ['pending', 'verified', 'rejected', 'expired'])->default('pending');
+            $table->string('rejection_reason')->nullable();
             $table->uuid('ID_image_id')->notNull();
             $table->uuid('classification_type_id')->nullable();
 

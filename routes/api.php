@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\SetUpController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\EmergencyContactController;
+use App\Http\Controllers\Api\VehicleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -108,5 +109,16 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         Route::put('/{id}',        'updateEmergencyContact')->name('api.emergency-contacts.update');
         Route::get('/',            'getEmergencyContacts')->name('api.emergency-contacts.get');
         Route::delete('/{id}',     'softDeleteEmergencyContact')->name('api.emergency-contacts.delete');
+    });
+
+
+
+    // Vehicle Routes
+    Route::controller(VehicleController::class)->prefix('vehicles')->group(function (): void {
+        Route::post('/',           'addVehicle')->name('api.vehicles.add');
+        Route::get('/my-vehicles', 'listVehicledPerDriver')->name   ('api.vehicles.list-per-driver');
+        Route::put('/update/{id}',      'updateVehicle')->name('api.vehicles.update');
+        Route::delete('/delete/{id}',   'deleteVehicle')->name('api.vehicles.delete');
+        Route::put('/restore/{id}', 'restoreVehicle')->name('api.vehicles.restore');
     });
 });
