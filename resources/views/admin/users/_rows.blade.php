@@ -16,7 +16,12 @@
     </td>
     <td class="rg-td-muted">{{ $user->email }}</td>
     <td>
-        <span class="rg-role-badge">{{ ucfirst($user->role?->name ?? 'N/A') }}</span>
+        <span class="rg-role-badge">{{ ucfirst(str_replace('_', ' ', $user->roles->first()?->name ?? 'N/A')) }}</span>
+    </td>
+    <td>
+        <span class="rg-status-badge {{ $user->status === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
+            {{ ucfirst($user->status ?? 'active') }}
+        </span>
     </td>
     <td>
         <span class="rg-status-badge {{ $user->email_verified_at ? 'rg-status-active' : 'rg-status-pending' }}">
@@ -27,6 +32,6 @@
 </tr>
 @empty
 <tr>
-    <td colspan="6" class="rg-empty">No users found.</td>
+    <td colspan="7" class="rg-empty">No users found.</td>
 </tr>
 @endforelse
