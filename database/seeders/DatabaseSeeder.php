@@ -21,40 +21,8 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleSeeder::class);
         $this->call(DiscountTypesSeeder::class);
         $this->call(PermissionSeeder::class);
-       // $this->call(OrganizationSeeder::class);
-
-        // Super Admin account
-        // Email   : superadmin@rideguide.com
-        // Password: SuperAdmin@2026
-        User::firstOrCreate(
-            ['email' => 'edriane.bangonon26@gmail.com'],
-            [
-                'first_name'        => 'Super',
-                'last_name'         => 'Admin',
-                'middle_name'       => null,
-                'birthdate'          => '1990-01-01',
-                'profile_picture'   => null,
-                'email_verified_at' => now(),
-                'password'          => Hash::make('SuperAdmin@2026'),
-            ]
-        );
-
-        // Admin account
-        // Email   : admin@rideguide.com
-        // Password: Admin@2026
-        User::firstOrCreate(
-            ['email' => 'admin@rideguide.com'],
-            [
-                'first_name'        => 'Admin',
-                'last_name'         => 'User',
-                'middle_name'       => null,
-                'birthdate'          => '1990-01-01',
-                'profile_picture'   => null,
-                'email_verified_at' => now(),
-                'password'          => Hash::make('Admin@2026'),
-            ]
-        );
-
+        $this->call(OrganizationSeeder::class);
+        $this->call(UserSeeder::class);
         $this->call(UserRoleSeeder::class);
     }
 }
