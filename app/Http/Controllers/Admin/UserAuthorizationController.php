@@ -7,6 +7,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class UserAuthorizationController extends Controller
 {
@@ -58,13 +59,19 @@ class UserAuthorizationController extends Controller
     /**
      * Update the permissions for a specific role.
      */
-    public function updateRole(Request $request, Role $role)
+        public function updateRole(Request $request, Role $role)
     {
         $this->authorizePermissions($request, 'manage_authorization');
 
         if (!$this->canEditRolePermissions($request->user(), $role)) {
             return redirect()->route('admin.user-authorization.index')
                 ->with('error', 'You are not allowed to edit permissions for this role.');
+        }
+
+        // prevent admin and super admin removing thier role's permissions to avoid locking themselves out
+        if (in_array($role->name, [Role::SUPER_ADMIN, Role::ADMIN], true) && empty($request->input('permissions'))) {
+            return redirect()->route('admin.user-authorization.edit-role', $role)
+                ->with('error', 'You cannot remove all permissions from this role. At least one permission must be assigned to prevent locking yourself out.');
         }
 
         $validated = $request->validate([
@@ -106,8 +113,31 @@ class UserAuthorizationController extends Controller
     {
         $this->authorizePermissions($request, 'manage_authorization');
 
+        $currentUser = $request->user();
+
+        if (!$this->canManageUserRoles($currentUser, $user)) {
+            return redirect()->route('admin.user-authorization.index')
+                ->with('error', 'You are not allowed to manage roles for this user.');
+        }
+
         $user->load('roles.permissions');
-        $roles = Role::orderBy('name')->get();
+        $assignableRoleNames = $this->assignableRoleNamesFor($currentUser, $user);
+        $displayRoleNames = $assignableRoleNames;
+
+        $isAdminEditingSelf = $currentUser->hasRole(Role::ADMIN)
+            && !$currentUser->hasRole(Role::SUPER_ADMIN)
+            && $currentUser->is($user);
+
+        if ($isAdminEditingSelf && !in_array(Role::ADMIN, $displayRoleNames, true)) {
+            $displayRoleNames[] = Role::ADMIN;
+        }
+
+        $roles = Role::whereIn('name', $displayRoleNames)->orderBy('name')->get();
+        $lockedRoleIds = $roles
+            ->filter(fn (Role $role) => $isAdminEditingSelf && $role->name === Role::ADMIN)
+            ->pluck('id')
+            ->values()
+            ->all();
         $permissions = Permission::orderBy('group')->orderBy('display_name')->get();
         $permissionGroups = $permissions->groupBy('group');
 
@@ -120,7 +150,7 @@ class UserAuthorizationController extends Controller
         }
         $userPermissionIds = array_unique($userPermissionIds);
 
-        return view('admin.user-authorization.edit-user', compact('user', 'roles', 'permissions', 'permissionGroups', 'userPermissionIds'));
+        return view('admin.user-authorization.edit-user', compact('user', 'roles', 'permissions', 'permissionGroups', 'userPermissionIds', 'lockedRoleIds'));
     }
 
     /**
@@ -130,24 +160,88 @@ class UserAuthorizationController extends Controller
     {
         $this->authorizePermissions($request, 'manage_authorization');
 
+        $currentUser = $request->user();
+
+        if (!$this->canManageUserRoles($currentUser, $user)) {
+            return redirect()->route('admin.user-authorization.index')
+                ->with('error', 'You are not allowed to manage roles for this user.');
+        }
+
+        $assignableRoleIds = Role::whereIn('name', $this->assignableRoleNamesFor($currentUser, $user))
+            ->pluck('id')
+            ->all();
+
         $validated = $request->validate([
             'roles'   => ['nullable', 'array'],
-            'roles.*' => ['uuid', 'exists:roles,id'],
-            'status' => ['required', 'in:active,inactive,suspended'],
-            'status_reason' => ['nullable', 'string', 'max:255'],
+            'roles.*' => ['uuid', Rule::in($assignableRoleIds)],
         ]);
+        $selectedRoleIds = $validated['roles'] ?? [];
 
-        $user->roles()->sync($validated['roles'] ?? []);
+        $isAdminEditingSelf = $currentUser->hasRole(Role::ADMIN)
+            && !$currentUser->hasRole(Role::SUPER_ADMIN)
+            && $currentUser->is($user);
 
-        $statusChanged = $user->status !== $validated['status'];
+        if ($isAdminEditingSelf) {
+            $adminRoleId = Role::getIdbyName(Role::ADMIN);
 
-        $user->update([
-            'status' => $validated['status'],
-            'status_reason' => $validated['status_reason'] ?? null,
-            'status_changed_at' => $statusChanged ? now() : $user->status_changed_at,
-        ]);
+            if ($adminRoleId && !in_array($adminRoleId, $selectedRoleIds, true)) {
+                $selectedRoleIds[] = $adminRoleId;
+            }
+        }
 
+        $user->roles()->sync($selectedRoleIds);
+        
         return redirect()->route('admin.user-authorization.index')
             ->with('success', "Roles for \"{$user->first_name} {$user->last_name}\" updated successfully.");
+    }
+
+    private function canManageUserRoles(User $currentUser, User $targetUser): bool
+    {
+        if ($targetUser->hasRole(Role::SUPER_ADMIN)) {
+            return false;
+        }
+
+        if ($currentUser->hasRole(Role::SUPER_ADMIN)) {
+            return true;
+        }
+
+        if ($currentUser->hasRole(Role::ADMIN)) {
+            if ($currentUser->is($targetUser)) {
+                return true;
+            }
+
+            if ($targetUser->hasRole(Role::ADMIN)) {
+                return false;
+            }
+
+            return $targetUser->roles()
+                ->whereIn('name', [Role::COMMUTER, Role::DRIVER, Role::ORGANIZATION])
+                ->exists();
+        }
+
+        return false;
+    }
+
+    private function assignableRoleNamesFor(User $currentUser, ?User $targetUser = null): array
+    {
+        if ($currentUser->hasRole(Role::SUPER_ADMIN)) {
+            return [
+                Role::SUPER_ADMIN,
+                Role::ADMIN,
+                Role::DRIVER,
+                Role::COMMUTER,
+                Role::ORGANIZATION,
+            ];
+        }
+
+        if ($currentUser->hasRole(Role::ADMIN)) {
+            return [
+                Role::DRIVER,
+                Role::COMMUTER,
+                Role::ORGANIZATION,
+            ];
+        }
+
+        return [];
     }
 }
