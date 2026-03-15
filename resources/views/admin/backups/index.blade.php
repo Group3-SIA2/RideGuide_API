@@ -9,6 +9,7 @@
             <p class="rg-page-subtitle">Manage database backups stored in Supabase Storage.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
             <span class="rg-badge" id="rg-total">{{ $backups->count() }} backup{{ $backups->count() !== 1 ? 's' : '' }}</span>
             <button type="button" id="rg-create-backup" class="rg-btn rg-btn-primary rg-btn-sm">
                 <i class="fas fa-plus"></i> Create Backup

@@ -9,6 +9,7 @@
             <p class="rg-page-subtitle">Manage TODA, MODA, and other driver organizations.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
             <span class="rg-badge" id="rg-total">{{ $organizations->total() }} total</span>
             <a href="{{ route('admin.organizations.create') }}" class="rg-btn rg-btn-primary rg-btn-sm">
                 <i class="fas fa-plus"></i> Add Organization
@@ -61,7 +62,6 @@
                                     <th>Type</th>
                                     <th>Description</th>
                                     <th>Address</th>
-                                    <th>Contact</th>
                                     <th>Drivers</th>
                                     <th>Status</th>
                                     <th>Actions</th>

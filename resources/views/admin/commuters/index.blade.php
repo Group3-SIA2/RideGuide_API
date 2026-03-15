@@ -8,7 +8,10 @@
             <h4 class="rg-page-title">Commuters</h4>
             <p class="rg-page-subtitle">View all registered commuter profiles.</p>
         </div>
-        <span class="rg-badge" id="rg-total">{{ $commuters->total() }} total</span>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
+            <span class="rg-badge" id="rg-total">{{ $commuters->total() }} total</span>
+        </div>
     </div>
 @stop
 

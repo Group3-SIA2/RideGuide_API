@@ -8,9 +8,12 @@
             <h4 class="rg-page-title">Edit Permissions: {{ ucwords(str_replace('_', ' ', $role->name)) }}</h4>
             <p class="rg-page-subtitle">Use the checkboxes below to set what this role can do.</p>
         </div>
-        <a href="{{ route('admin.user-management.index') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Back
-        </a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
+            <a href="{{ route('admin.user-management.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
     </div>
 @stop
 

@@ -8,9 +8,12 @@
             <h4 class="rg-page-title">Edit Organization</h4>
             <p class="rg-page-subtitle">Update details for {{ $organization->name }}.</p>
         </div>
-        <a href="{{ route('admin.organizations.index') }}" class="rg-btn rg-btn-secondary rg-btn-sm">
-            <i class="fas fa-arrow-left"></i> Back to List
-        </a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
+            <a href="{{ route('admin.organizations.index') }}" class="rg-btn rg-btn-secondary rg-btn-sm">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
     </div>
 @stop
 
@@ -45,10 +48,16 @@
                             <label class="rg-form-label" for="name">
                                 Name <span class="rg-required">*</span>
                             </label>
-                            <input id="name" name="name" type="text"
+                            <input id="name" name="name" type="text" list="name-options"
                                    class="rg-form-control @error('name') is-invalid @enderror"
                                    value="{{ old('name', $organization->name) }}"
                                    required>
+                            <datalist id="name-options">
+                                @foreach($existingNames as $existingName)
+                                    <option value="{{ $existingName }}">
+                                @endforeach
+                            </datalist>
+                            <p class="rg-form-hint">Choose an existing name or type a new one.</p>
                             @error('name')
                                 <p class="rg-form-error">{{ $message }}</p>
                             @enderror
@@ -63,9 +72,11 @@
                                    value="{{ old('type', $organization->type) }}"
                                    required>
                             <datalist id="type-options">
-                                <option value="TODA">
-                                <option value="MODA">
+                                @foreach($existingTypes as $existingType)
+                                    <option value="{{ $existingType }}">
+                                @endforeach
                             </datalist>
+                            <p class="rg-form-hint">Choose an existing type or type a custom value.</p>
                             @error('type')
                                 <p class="rg-form-error">{{ $message }}</p>
                             @enderror
@@ -82,23 +93,29 @@
                         </div>
 
                         <div class="rg-form-group">
-                            <label class="rg-form-label" for="address">Address</label>
-                            <input id="address" name="address" type="text"
-                                   class="rg-form-control @error('address') is-invalid @enderror"
-                                   value="{{ old('address', $organization->address) }}"
+                            <label class="rg-form-label" for="hq_address">Head Office Address</label>
+                            <input id="hq_address" name="hq_address" type="text"
+                                   class="rg-form-control @error('hq_address') is-invalid @enderror"
+                                   value="{{ old('hq_address', $organization->hq_address) }}"
                                    placeholder="e.g. Lagao, General Santos City">
-                            @error('address')
+                            @error('hq_address')
                                 <p class="rg-form-error">{{ $message }}</p>
                             @enderror
                         </div>
 
                         <div class="rg-form-group">
-                            <label class="rg-form-label" for="contact_number">Contact Number</label>
-                            <input id="contact_number" name="contact_number" type="text"
-                                   class="rg-form-control @error('contact_number') is-invalid @enderror"
-                                   value="{{ old('contact_number', $organization->contact_number) }}"
-                                   placeholder="e.g. 0912-345-6789">
-                            @error('contact_number')
+                            <label class="rg-form-label" for="owner_user_id">Owner User</label>
+                            <select id="owner_user_id" name="owner_user_id"
+                                    class="rg-form-control @error('owner_user_id') is-invalid @enderror">
+                                <option value="">No Owner</option>
+                                @foreach($eligibleOwners as $owner)
+                                    <option value="{{ $owner->id }}" {{ old('owner_user_id', $organization->owner_user_id) === $owner->id ? 'selected' : '' }}>
+                                        {{ trim($owner->first_name . ' ' . $owner->last_name) ?: $owner->email }} ({{ $owner->email }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="rg-form-hint">Only users with admin, super_admin, or organization role are listed.</p>
+                            @error('owner_user_id')
                                 <p class="rg-form-error">{{ $message }}</p>
                             @enderror
                         </div>

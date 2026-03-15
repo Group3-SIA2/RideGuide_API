@@ -8,9 +8,12 @@
             <h4 class="rg-page-title">Manage Roles: {{ $user->first_name }} {{ $user->last_name }}</h4>
             <p class="rg-page-subtitle">Assign roles to this user. Permissions are inherited from the assigned roles.</p>
         </div>
-        <a href="{{ route('admin.user-management.index') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Back
-        </a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
+            <a href="{{ route('admin.user-management.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
     </div>
 @stop
 
@@ -44,6 +47,20 @@
                     </div>
                     <div class="rg-card-body">
                         <p class="text-muted mb-3">Select the roles for <strong>{{ $user->first_name }} {{ $user->last_name }}</strong> ({{ $user->email }}):</p>
+
+                        <div class="form-group mb-3">
+                            <label for="status" class="font-weight-bold">Account Status</label>
+                            <select id="status" name="status" class="form-control">
+                                <option value="active" {{ old('status', $user->status ?? 'active') === 'active' ? 'selected' : '' }}>Active</option>
+                                <option value="inactive" {{ old('status', $user->status) === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                <option value="suspended" {{ old('status', $user->status) === 'suspended' ? 'selected' : '' }}>Suspended</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="status_reason" class="font-weight-bold">Status Reason (optional)</label>
+                            <input type="text" id="status_reason" name="status_reason" class="form-control" value="{{ old('status_reason', $user->status_reason) }}" maxlength="255" placeholder="e.g. Temporary restriction pending review">
+                        </div>
 
                         @foreach($roles as $role)
                             <div class="custom-control custom-checkbox mb-2">
@@ -80,6 +97,9 @@
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Effective Permissions (from roles)</h6>
                     </div>
+                    <span class="rg-status-badge {{ ($user->status ?? 'active') === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
+                        {{ ucfirst($user->status ?? 'active') }}
+                    </span>
                 </div>
                 <div class="rg-card-body">
                     @if($user->hasRole(\App\Models\Role::SUPER_ADMIN))

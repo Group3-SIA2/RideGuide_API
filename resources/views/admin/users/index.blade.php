@@ -8,7 +8,10 @@
             <h4 class="rg-page-title">All Users</h4>
             <p class="rg-page-subtitle">Manage all registered and verified users.</p>
         </div>
-        <span class="rg-badge" id="rg-total">{{ $users->total() }} total</span>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
+            <span class="rg-badge" id="rg-total">{{ $users->total() }} total</span>
+        </div>
     </div>
 @stop
 
@@ -26,9 +29,15 @@
                         <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name or email…" value="{{ request('search') }}">
                         <select id="rg-filter" name="role" class="rg-filter-select">
                             <option value="">All Roles</option>
-                            @foreach(['admin', 'super_admin', 'driver', 'commuter'] as $r)
+                            @foreach(['admin', 'super_admin', 'organization', 'driver', 'commuter'] as $r)
                                 <option value="{{ $r }}" {{ request('role') === $r ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $r)) }}</option>
                             @endforeach
+                        </select>
+                        <select id="rg-filter-status" name="status" class="rg-filter-select">
+                            <option value="">All Account Status</option>
+                            <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                            <option value="suspended" {{ request('status') === 'suspended' ? 'selected' : '' }}>Suspended</option>
                         </select>
                         <button type="submit" class="rg-btn-search"><i class="fas fa-search"></i> Search</button>
                         <button type="button" id="rg-clear" class="rg-btn-clear">Clear</button>
@@ -43,6 +52,7 @@
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Role</th>
+                                    <th>Account</th>
                                     <th>Verified</th>
                                     <th>Joined</th>
                                 </tr>
@@ -66,7 +76,12 @@
                                     </td>
                                     <td class="rg-td-muted">{{ $user->email }}</td>
                                     <td>
-                                        <span class="rg-role-badge">{{ ucfirst($user->role?->name ?? 'N/A') }}</span>
+                                        <span class="rg-role-badge">{{ ucfirst(str_replace('_', ' ', $user->roles->first()?->name ?? 'N/A')) }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="rg-status-badge {{ $user->status === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
+                                            {{ ucfirst($user->status ?? 'active') }}
+                                        </span>
                                     </td>
                                     <td>
                                         <span class="rg-status-badge {{ $user->email_verified_at ? 'rg-status-active' : 'rg-status-pending' }}">
@@ -77,7 +92,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="rg-empty">No users found.</td>
+                                    <td colspan="7" class="rg-empty">No users found.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -102,6 +117,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     var search = document.getElementById('rg-search');
     var filter = document.getElementById('rg-filter');
+    var filterStatus = document.getElementById('rg-filter-status');
     var tbody  = document.getElementById('rg-table-body');
     var pagin  = document.getElementById('rg-pagination');
     var total  = document.getElementById('rg-total');
@@ -111,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var p = new URLSearchParams();
         if (search && search.value.trim()) p.set('search', search.value.trim());
         if (filter && filter.value)        p.set('role', filter.value);
+        if (filterStatus && filterStatus.value) p.set('status', filterStatus.value);
         if (page)                          p.set('page', page);
         return p;
     }
@@ -152,9 +169,11 @@ document.addEventListener('DOMContentLoaded', function () {
         timer = setTimeout(function() { load(); }, 350);
     });
     if (filter) filter.addEventListener('change', function() { load(); });
+    if (filterStatus) filterStatus.addEventListener('change', function() { load(); });
     document.getElementById('rg-clear').addEventListener('click', function() {
         if (search) search.value = '';
         if (filter) filter.value = '';
+        if (filterStatus) filterStatus.value = '';
         load();
     });
     document.getElementById('rg-filter-form').addEventListener('submit', function(e) {

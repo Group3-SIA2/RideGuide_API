@@ -8,6 +8,7 @@
             <h4 class="rg-page-title">Logout</h4>
             <p class="rg-page-subtitle">Are you sure you want to leave?</p>
         </div>
+        @include('admin.partials.header_status_badges')
     </div>
 @stop
 

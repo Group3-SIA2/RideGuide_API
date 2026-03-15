@@ -13,12 +13,12 @@
     </td>
     <td class="rg-td-muted">{{ $user->email }}</td>
     <td>
-        <span class="rg-role-badge">{{ ucfirst($user->role?->name ?? 'N/A') }}</span>
+        <span class="rg-role-badge">{{ ucfirst(str_replace('_', ' ', $user->roles->first()?->name ?? 'N/A')) }}</span>
     </td>
     <td class="rg-td-muted">{{ $user->created_at->format('M d, Y') }}</td>
     <td>
-        <span class="rg-status-badge {{ $user->email_verified_at ? 'rg-status-active' : 'rg-status-pending' }}">
-            {{ $user->email_verified_at ? 'Verified' : 'Pending' }}
+        <span class="rg-status-badge {{ ($user->status ?? 'active') === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
+            {{ ucfirst($user->status ?? 'active') }}
         </span>
     </td>
 </tr>

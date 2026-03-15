@@ -8,7 +8,10 @@
             <h4 class="rg-page-title">Dashboard</h4>
             <p class="rg-page-subtitle">Welcome back, {{ auth()->user()->first_name }}.</p>
         </div>
-        <span class="rg-badge">{{ now()->format('l, F j Y') }}</span>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
+            <span class="rg-badge">{{ now()->format('l, F j Y') }}</span>
+        </div>
     </div>
 @stop
 
@@ -27,6 +30,11 @@
                     <p class="rg-stat-label">Total Users</p>
                     <h3 class="rg-stat-value">{{ number_format($totalVerifiedUsers) }}</h3>
                     <span class="rg-stat-sub">Verified accounts</span>
+                    <div class="d-flex flex-wrap gap-1 mt-2">
+                        <span class="rg-status-badge rg-status-active">Active: {{ number_format($totalActiveUsers) }}</span>
+                        <span class="rg-status-badge rg-status-pending">Inactive: {{ number_format($totalInactiveUsers) }}</span>
+                        <span class="rg-status-badge rg-status-pending">Suspended: {{ number_format($totalSuspendedUsers) }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -139,12 +147,12 @@
                                     </td>
                                     <td class="rg-td-muted">{{ $user->email }}</td>
                                     <td>
-                                        <span class="rg-role-badge">{{ ucfirst($user->role?->name ?? 'N/A') }}</span>
+                                        <span class="rg-role-badge">{{ ucfirst(str_replace('_', ' ', $user->roles->first()?->name ?? 'N/A')) }}</span>
                                     </td>
                                     <td class="rg-td-muted">{{ $user->created_at->format('M d, Y') }}</td>
                                     <td>
-                                        <span class="rg-status-badge {{ $user->email_verified_at ? 'rg-status-active' : 'rg-status-pending' }}">
-                                            {{ $user->email_verified_at ? 'Verified' : 'Pending' }}
+                                        <span class="rg-status-badge {{ ($user->status ?? 'active') === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
+                                            {{ ucfirst($user->status ?? 'active') }}
                                         </span>
                                     </td>
                                 </tr>

@@ -8,7 +8,10 @@
             <h4 class="rg-page-title">User Authorization</h4>
             <p class="rg-page-subtitle">Manage roles and what each role is allowed to do.</p>
         </div>
-        <span class="rg-badge">{{ $roles->count() }} roles</span>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            @include('admin.partials.header_status_badges')
+            <span class="rg-badge">{{ $roles->count() }} roles</span>
+        </div>
     </div>
 @stop
 
@@ -115,6 +118,7 @@
                                     <th>User</th>
                                     <th>Email</th>
                                     <th>Current Roles</th>
+                                    <th>Account</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -154,6 +158,11 @@
                                         @endforelse
                                     </td>
                                     <td>
+                                        <span class="rg-status-badge {{ ($user->status ?? 'active') === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
+                                            {{ ucfirst($user->status ?? 'active') }}
+                                        </span>
+                                    </td>
+                                    <td>
                                         <a href="{{ route('admin.user-management.edit-user', $user) }}"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-user-shield"></i> Manage Roles
@@ -162,7 +171,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="5" class="rg-empty">No users found.</td>
+                                    <td colspan="6" class="rg-empty">No users found.</td>
                                 </tr>
                                 @endforelse
                             </tbody>

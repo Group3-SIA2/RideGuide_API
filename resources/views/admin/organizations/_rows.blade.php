@@ -15,8 +15,7 @@
         <span class="rg-role-badge">{{ $org->type }}</span>
     </td>
     <td class="rg-td-muted" style="max-width:280px;">{{ $org->description ?? '—' }}</td>
-    <td class="rg-td-muted">{{ $org->address ?? '—' }}</td>
-    <td class="rg-td-muted">{{ $org->contact_number ?? '—' }}</td>
+    <td class="rg-td-muted">{{ $org->hq_address ?? '—' }}</td>
     <td class="rg-td-muted">{{ $org->drivers_count }}</td>
     <td>
         @if($showDeleted ?? false)
@@ -56,7 +55,7 @@
 </tr>
 @empty
 <tr>
-    <td colspan="9" class="rg-empty">
+    <td colspan="8" class="rg-empty">
         {{ ($showDeleted ?? false) ? 'No deleted organizations.' : 'No organizations found.' }}
     </td>
 </tr>
