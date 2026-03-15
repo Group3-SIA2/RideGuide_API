@@ -37,6 +37,9 @@ class AuthController extends Controller
         $user = User::create([
             'email'=> $validated['email'],
             'password'=> $validated['password'],
+            'status' => User::STATUS_ACTIVE,
+            'status_reason' => null,
+            'status_changed_at' => now(),
         ]);
 
         // Generate and send email verification OTP
@@ -49,6 +52,9 @@ class AuthController extends Controller
                 'user'=> [
                     'id'=> $user->id,
                     'email'=> $user->email,
+                    'status' => $user->status,
+                    'status_reason' => $user->status_reason,
+                    'status_changed_at' => $user->status_changed_at,
                 ],
             ],
         ], 201);
@@ -75,6 +81,13 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'The provided credentials are incorrect.',
             ], 401);
+        }
+
+        if (!$user->isAccountActive()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is not active.',
+            ], 403);
         }
 
         if (!$user->isEmailVerified()) {
@@ -197,6 +210,9 @@ class AuthController extends Controller
                 'first_name' => $nameParts['first_name'],
                 'last_name' => $nameParts['last_name'],
                 'password' => Str::random(40),
+                'status' => User::STATUS_ACTIVE,
+                'status_reason' => null,
+                'status_changed_at' => now(),
             ]);
 
             $isNewUser = true;
@@ -233,6 +249,13 @@ class AuthController extends Controller
             $user->refresh();
         }
 
+        if (!$user->isAccountActive()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is not active.',
+            ], 403);
+        }
+
         $user->tokens()->delete();
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -244,6 +267,9 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'email' => $user->email,
                     'email_verified_at' => $user->email_verified_at,
+                    'status' => $user->status,
+                    'status_reason' => $user->status_reason,
+                    'status_changed_at' => $user->status_changed_at,
                 ],
                 'token' => $token,
                 'token_type' => 'Bearer',
@@ -272,6 +298,13 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'User not found.',
             ], 404);
+        }
+
+        if (!$user->isAccountActive()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your account is not active.',
+            ], 403);
         }
 
         $otp = Otp::where('user_id', $user->id)
@@ -310,6 +343,9 @@ class AuthController extends Controller
                         'id'=> $user->id,
                         'email'=> $user->email,
                         'email_verified_at'=> $user->email_verified_at,
+                        'status' => $user->status,
+                        'status_reason' => $user->status_reason,
+                        'status_changed_at' => $user->status_changed_at,
                     ],
                     'token' => $token,
                     'token_type' => 'Bearer',
@@ -332,6 +368,9 @@ class AuthController extends Controller
                         'id'=> $user->id,
                         'email'=> $user->email,
                         'email_verified_at'=> $user->email_verified_at,
+                        'status' => $user->status,
+                        'status_reason' => $user->status_reason,
+                        'status_changed_at' => $user->status_changed_at,
                     ],
                     'token' => $token,
                     'token_type' => 'Bearer',

@@ -20,6 +20,16 @@ class UserController extends Controller
     // OLD (kept as-is)
     public function index(Request $request)
     {
+        $totalActiveUsers = User::whereNotNull('email_verified_at')
+            ->where('status', User::STATUS_ACTIVE)
+            ->count();
+        $totalInactiveUsers = User::whereNotNull('email_verified_at')
+            ->where('status', User::STATUS_INACTIVE)
+            ->count();
+        $totalSuspendedUsers = User::whereNotNull('email_verified_at')
+            ->where('status', User::STATUS_SUSPENDED)
+            ->count();
+
         $query = User::with('roles')
             ->whereNotNull('email_verified_at');
 
@@ -35,6 +45,10 @@ class UserController extends Controller
             $query->whereHas('roles', fn ($q) => $q->where('name', $role));
         }
 
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
         $users = $query->latest()->paginate(15)->withQueryString();
 
         if ($request->ajax()) {
@@ -45,7 +59,12 @@ class UserController extends Controller
             ]);
         }
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact(
+            'users',
+            'totalActiveUsers',
+            'totalInactiveUsers',
+            'totalSuspendedUsers'
+        ));
     }
 
     // NEW
@@ -66,7 +85,11 @@ class UserController extends Controller
             'phone_number' => ['nullable', 'string', 'max:20'],
             'password'     => ['required', 'string', 'min:8', 'confirmed'],
             'role'         => ['nullable', 'string', Rule::exists('roles', 'name')],
+            'status'       => ['nullable', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE, User::STATUS_SUSPENDED])],
+            'status_reason' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $status = $validated['status'] ?? User::STATUS_ACTIVE;
 
         $user = User::create([
             'first_name'   => $validated['first_name'],
@@ -75,6 +98,9 @@ class UserController extends Controller
             'email'        => $validated['email'],
             'phone_number' => $validated['phone_number'] ?? null,
             'password'     => Hash::make($validated['password']),
+            'status'       => $status,
+            'status_reason' => $validated['status_reason'] ?? null,
+            'status_changed_at' => $status !== User::STATUS_ACTIVE ? now() : null,
         ]);
 
         if (!empty($validated['role'])) {
@@ -106,7 +132,12 @@ class UserController extends Controller
             'phone_number' => ['nullable', 'string', 'max:20'],
             'password'     => ['nullable', 'string', 'min:8', 'confirmed'],
             'role'         => ['nullable', 'string', Rule::exists('roles', 'name')],
+            'status'       => ['nullable', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE, User::STATUS_SUSPENDED])],
+            'status_reason' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $status = $validated['status'] ?? $user->status;
+        $statusChanged = $status !== $user->status;
 
         $user->fill([
             'first_name'   => $validated['first_name'],
@@ -114,6 +145,9 @@ class UserController extends Controller
             'last_name'    => $validated['last_name'],
             'email'        => $validated['email'],
             'phone_number' => $validated['phone_number'] ?? null,
+            'status'       => $status,
+            'status_reason' => $validated['status_reason'] ?? $user->status_reason,
+            'status_changed_at' => $statusChanged ? now() : $user->status_changed_at,
         ]);
 
         if (!empty($validated['password'])) {
