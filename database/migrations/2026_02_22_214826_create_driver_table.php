@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('franchise_number')->notNull()->unique();
             $table->uuid('organization_id')->nullable();
             $table->enum('verification_status', ['unverified', 'verified', 'rejected'])->notNull()->default('unverified');
+            $table->string('rejection_reason')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
