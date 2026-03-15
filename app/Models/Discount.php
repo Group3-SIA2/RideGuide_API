@@ -10,6 +10,11 @@ class Discount extends Model
 {
     use HasUuids, SoftDeletes;
 
+    const VERIFICATION_PENDING = 'pending';
+    const VERIFICATION_VERIFIED = 'verified';
+    const VERIFICATION_REJECTED = 'rejected';
+    const VERIFICATION_EXPIRED = 'expired';
+
     protected $table = 'discounts';
 
     protected $fillable = [

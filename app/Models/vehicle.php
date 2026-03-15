@@ -10,6 +10,13 @@ class vehicle extends Model
 {
     use SoftDeletes, HasUuids;
 
+    const VERIFICATION_PENDING = 'pending';
+    const VERIFICATION_VERIFIED = 'verified';
+    const VERIFICATION_REJECTED = 'rejected';
+
+    const STATUS_ACTIVE = 'active';
+    const STATUS_INACTIVE = 'inactive';
+
     protected $table = 'vehicle';
 
     protected $fillable = [

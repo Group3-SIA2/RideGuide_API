@@ -10,7 +10,11 @@ use app\Models\User;
 class Driver extends Model
 {
     use HasUuids, SoftDeletes;
-    
+
+    const VERIFICATION_STATUS_UNVERIFIED = 'unverified';
+    const VERIFICATION_STATUS_VERIFIED = 'verified';
+    const VERIFICATION_STATUS_REJECTED = 'rejected';
+
     protected $table = 'driver';
 
     protected $primaryKey = 'id';
