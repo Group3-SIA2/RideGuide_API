@@ -5,15 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use app\Models\User;
+use App\Models\User;
 
 class Driver extends Model
 {
     use HasUuids, SoftDeletes;
-
-    const VERIFICATION_STATUS_UNVERIFIED = 'unverified';
-    const VERIFICATION_STATUS_VERIFIED = 'verified';
-    const VERIFICATION_STATUS_REJECTED = 'rejected';
 
     protected $table = 'driver';
 
@@ -23,10 +19,9 @@ class Driver extends Model
 
     protected $fillable = [
         'user_id',
-        'license_number',
         'franchise_number',
         'organization_id',
-        'verification_status',
+        'driver_license_id',
     ];
 
     public function user()
@@ -42,5 +37,40 @@ class Driver extends Model
     public function usersEmergencyContact()
     {
         return $this->hasOne(\App\Models\UsersEmergencyContact::class, 'user_id', 'user_id');
+    }
+
+    public function licenseId()
+    {
+        return $this->belongsTo(LicenseId::class, 'driver_license_id');
+    }
+
+    public function getVerificationStatusAttribute(): ?string
+    {
+        $license = $this->getRelationValue('licenseId');
+
+        if (! $license && $this->driver_license_id) {
+            $license = $this->licenseId()->first();
+
+            if ($license) {
+                $this->setRelation('licenseId', $license);
+            }
+        }
+
+        return $license?->verification_status;
+    }
+
+    public function getRejectionReasonAttribute(): ?string
+    {
+        $license = $this->getRelationValue('licenseId');
+
+        if (! $license && $this->driver_license_id) {
+            $license = $this->licenseId()->first();
+
+            if ($license) {
+                $this->setRelation('licenseId', $license);
+            }
+        }
+
+        return $license?->rejection_reason;
     }
 }
