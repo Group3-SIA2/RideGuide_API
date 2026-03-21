@@ -20,14 +20,6 @@ class SetUpController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // Check if user is already set up
-        if ($user->first_name && $user->last_name && $user->roles()->exists()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your profile is already set up.',
-            ], 400);
-        }
-
         $validated = $request->validate([
             'first_name'  => 'required|string|max:255|regex:/^[\p{L}\s]+$/u',
             'last_name'   => 'required|string|max:255|regex:/^[\p{L}\s]+$/u',
@@ -56,9 +48,11 @@ class SetUpController extends Controller
         $user->roles()->sync($roles->pluck('id')->toArray());
         DashboardCache::forgetUserDashboards($user->id);
 
+        $isFirstSetup = !$user->wasChanged('first_name') && !$user->wasChanged('last_name');
+
         return response()->json([
             'success' => true,
-            'message' => 'You\'re All Set Up.',
+            'message' => $isFirstSetup ? 'You\'re All Set Up.' : 'Your profile has been updated successfully.',
             'data' => [
                 'id'          => $user->id,
                 'first_name'  => $user->first_name,
