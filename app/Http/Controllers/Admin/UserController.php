@@ -1,5 +1,4 @@
 <?php
-// filepath: c:\Users\ACER\Herd\RideGuide\app\Http\Controllers\Admin\UserController.php
 
 namespace App\Http\Controllers\Admin;
 
