@@ -205,6 +205,13 @@
                             </thead>
                             <tbody>
                                 @forelse($drivers as $driver)
+                                @php
+                                    $license = $driver->licenseId;
+                                    $licenseImage = $license ? $license->image : null;
+                                    $licenseStatus = $license->verification_status ?? 'unverified';
+                                    $licenseModalId = 'driverLicenseModal_' . $driver->id;
+                                    $hasLicenseImages = $licenseImage && ($licenseImage->image_front || $licenseImage->image_back);
+                                @endphp
                                 <tr>
                                     <td>
                                         <p class="mb-0 font-weight-semibold">
@@ -213,14 +220,19 @@
                                         <small class="text-muted">{{ optional($driver->user)->email }}</small>
                                     </td>
                                     <td>
-                                        <span class="text-muted">{{ $driver->license_number }}</span>
+                                        <span class="text-muted d-block">{{ $driver->license_number }}</span>
+                                        @if($hasLicenseImages)
+                                            <button type="button" class="btn btn-link btn-sm px-0" data-toggle="modal" data-target="#{{ $licenseModalId }}">
+                                                <i class="fas fa-id-card mr-1"></i> View License
+                                            </button>
+                                        @endif
                                     </td>
                                     <td>
-                                        <span class="rg-status-badge {{ $driver->verification_status === 'verified' ? 'rg-status-active' : ($driver->verification_status === 'rejected' ? 'rg-status-danger' : 'rg-status-pending') }}">
-                                            {{ ucfirst($driver->verification_status) }}
+                                        <span class="rg-status-badge {{ $licenseStatus === 'verified' ? 'rg-status-active' : ($licenseStatus === 'rejected' ? 'rg-status-danger' : 'rg-status-pending') }}">
+                                            {{ ucfirst($licenseStatus) }}
                                         </span>
-                                        @if($driver->rejection_reason)
-                                            <small class="text-muted d-block mt-1">{{ $driver->rejection_reason }}</small>
+                                        @if($license && $license->rejection_reason)
+                                            <small class="text-muted d-block mt-1">{{ $license->rejection_reason }}</small>
                                         @endif
                                     </td>
                                     <td>
@@ -231,12 +243,12 @@
                                                 <div class="col-12 col-md-6 mb-2 mb-md-0">
                                                     <select name="verification_status" class="form-control form-control-sm">
                                                         @foreach($driverVerificationOptions as $value => $label)
-                                                            <option value="{{ $value }}" @selected($driver->verification_status === $value)>{{ $label }}</option>
+                                                            <option value="{{ $value }}" @selected($licenseStatus === $value)>{{ $label }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
                                                 <div class="col-12 col-md-6">
-                                                    <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Reason (optional)" value="{{ $driver->rejection_reason }}">
+                                                    <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Reason (optional)" value="{{ $license->rejection_reason ?? '' }}">
                                                 </div>
                                                 <div class="col-12 mt-2">
                                                     <button type="submit" class="btn btn-sm btn-primary btn-block">Update</button>
@@ -253,6 +265,44 @@
                             </tbody>
                         </table>
                     </div>
+                    @foreach($drivers as $driver)
+                        @php
+                            $license = $driver->licenseId;
+                            $licenseImage = $license ? $license->image : null;
+                            $hasLicenseImages = $licenseImage && ($licenseImage->image_front || $licenseImage->image_back);
+                            $licenseModalId = 'driverLicenseModal_' . $driver->id;
+                        @endphp
+                        @if($hasLicenseImages)
+                            <div class="modal fade" id="{{ $licenseModalId }}" tabindex="-1" role="dialog" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Driver License Images — {{ optional($driver->user)->first_name }} {{ optional($driver->user)->last_name }}</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                @if($licenseImage->image_front)
+                                                    <div class="col-md-6 mb-3">
+                                                        <img src="{{ asset('storage/' . $licenseImage->image_front) }}" class="img-fluid rounded shadow-sm" alt="Driver License Front">
+                                                        <small class="text-muted d-block mt-2">Front View</small>
+                                                    </div>
+                                                @endif
+                                                @if($licenseImage->image_back)
+                                                    <div class="col-md-6 mb-3">
+                                                        <img src="{{ asset('storage/' . $licenseImage->image_back) }}" class="img-fluid rounded shadow-sm" alt="Driver License Back">
+                                                        <small class="text-muted d-block mt-2">Back View</small>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    @endforeach
                 </div>
                 @if($drivers->hasPages())
                 <div class="rg-card-footer">

@@ -52,38 +52,7 @@
                                 </tr>
                             </thead>
                             <tbody id="rg-table-body">
-                                @forelse($drivers as $index => $driver)
-                                <tr>
-                                    <td class="rg-td-index">{{ $drivers->firstItem() + $index }}</td>
-                                    <td>
-                                        <div class="rg-user-cell">
-                                            <div class="rg-avatar">
-                                                {{ strtoupper(substr($driver->user->first_name ?? '?', 0, 1)) }}{{ strtoupper(substr($driver->user->last_name ?? '?', 0, 1)) }}
-                                            </div>
-                                            <div>
-                                                <p class="rg-user-name mb-0">{{ $driver->user->first_name ?? '—' }} {{ $driver->user->last_name ?? '' }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="rg-td-muted">{{ $driver->user->email ?? '—' }}</td>
-                                    <td class="rg-td-muted">{{ $driver->organization->name ?? '—' }}</td>
-                                    <td class="rg-td-muted">{{ $driver->license_number ?? '—' }}</td>
-                                    <td class="rg-td-muted">{{ $driver->franchise_number ?? '—' }}</td>
-                                    <td>
-                                        @php
-                                            $status = $driver->verification_status ?? 'pending';
-                                        @endphp
-                                        <span class="rg-status-badge {{ $status === 'verified' ? 'rg-status-active' : 'rg-status-pending' }}">
-                                            {{ ucfirst($status) }}
-                                        </span>
-                                    </td>
-                                    <td class="rg-td-muted">{{ $driver->created_at->format('M d, Y') }}</td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="8" class="rg-empty">No drivers found.</td>
-                                </tr>
-                                @endforelse
+                                @include('admin.drivers._rows', ['drivers' => $drivers])
                             </tbody>
                         </table>
                     </div>
@@ -99,6 +68,33 @@
         </div>
     </div>
 
+    <div class="modal fade" id="driverLicensePreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="driverLicenseModalTitle">Driver License Images</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3" id="driverLicenseFrontWrapper">
+                            <img src="" alt="Driver License Front" class="img-fluid rounded shadow-sm" id="driverLicenseFront">
+                            <small class="text-muted d-block mt-2">Front View</small>
+                        </div>
+                        <div class="col-md-6 mb-3" id="driverLicenseBackWrapper">
+                            <img src="" alt="Driver License Back" class="img-fluid rounded shadow-sm" id="driverLicenseBack">
+                            <small class="text-muted d-block mt-2">Back View</small>
+                        </div>
+                        <div class="col-12" id="driverLicenseEmptyState" style="display: none;">
+                            <p class="text-muted mb-0">No license images uploaded.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @stop
 
 @section('js')
@@ -109,7 +105,42 @@ document.addEventListener('DOMContentLoaded', function () {
     var tbody  = document.getElementById('rg-table-body');
     var pagin  = document.getElementById('rg-pagination');
     var total  = document.getElementById('rg-total');
+    var modal = document.getElementById('driverLicensePreviewModal');
+    var modalTitle = document.getElementById('driverLicenseModalTitle');
+    var frontWrapper = document.getElementById('driverLicenseFrontWrapper');
+    var backWrapper = document.getElementById('driverLicenseBackWrapper');
+    var frontImg = document.getElementById('driverLicenseFront');
+    var backImg = document.getElementById('driverLicenseBack');
+    var emptyState = document.getElementById('driverLicenseEmptyState');
     var timer;
+
+    function bindLicensePreview() {
+        document.querySelectorAll('.rg-view-license').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var driverName = this.dataset.driver || 'Driver License';
+                var front = this.dataset.front || '';
+                var back = this.dataset.back || '';
+
+                modalTitle.textContent = 'Driver License Images — ' + driverName;
+
+                if (front) {
+                    frontImg.src = front;
+                    frontWrapper.style.display = '';
+                } else {
+                    frontWrapper.style.display = 'none';
+                }
+
+                if (back) {
+                    backImg.src = back;
+                    backWrapper.style.display = '';
+                } else {
+                    backWrapper.style.display = 'none';
+                }
+
+                emptyState.style.display = (front || back) ? 'none' : '';
+            });
+        });
+    }
 
     function buildQS(page) {
         var p = new URLSearchParams();
@@ -137,6 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 pagin.style.display = (d.pagination || '').trim() ? '' : 'none';
                 bindPagin();
             }
+            bindLicensePreview();
         })
         .catch(function() { tbody.style.opacity = '1'; });
     }
@@ -166,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
         load();
     });
     bindPagin();
+    bindLicensePreview();
 });
 </script>
 @stop
