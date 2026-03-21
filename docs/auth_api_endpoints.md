@@ -9,6 +9,20 @@ The RideGuide API uses Laravel Sanctum for authentication with Two-Factor Authen
 https://rideguide.test/api/
 ```
 
+## Password Requirements
+
+All password fields must meet the following criteria:
+- **Minimum 8 characters**
+- **Uppercase letters** (at least one A-Z)
+- **Lowercase letters** (at least one a-z)
+- **Special characters** (at least one symbol: @, #, $, !, %, ^, &, *, etc.)
+
+**Valid Examples:**
+- `Password@123`
+- `Marjovic@123`
+- `SecureP@ss1`
+- `Test!Login99`
+
 ---
 
 ## Authentication Flow
@@ -56,8 +70,13 @@ In Postman, go to the **Body** tab, select **form-data**, and fill in the follow
 
 ```
 email                  aslainiemaruhom19@gmail.com
-password               password123
+password               Password@123
 ```
+
+**Password Requirements:**
+- Minimum 8 characters
+- Must contain uppercase, lowercase, and special characters
+- Example: `Password@123`
 
 Note: `first_name`, `last_name`, `middle_name`, and `roles` are handled in the setup step (`POST /api/setup/setup-users`) after OTP verification.
 
@@ -92,7 +111,7 @@ In Postman, go to the **Body** tab, select **form-data**, and fill in:
 
 ```
 email       aslainiemaruhom19@gmail.com
-password    password123
+password    Password@123
 ```
 
 **Success Response (200)**
@@ -368,9 +387,14 @@ In Postman, go to the **Body** tab, select **form-data**, and fill in:
 ```
 email                  aslainiemaruhom19@gmail.com
 otp                    789012
-password               newpassword123
-password_confirmation  newpassword123
+password               NewPass@456
+password_confirmation  NewPass@456
 ```
+
+**Password Requirements:**
+- Minimum 8 characters
+- Must contain uppercase, lowercase, and special characters
+- Example: `NewPass@456`
 
 **Success Response (200)**
 ```json
