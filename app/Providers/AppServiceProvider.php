@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use App\Models\User;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,11 +26,13 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole(\App\Models\Role::SUPER_ADMIN) ? true : null;
         });
 
-        Permission::query()->pluck('name')->each(function (string $permissionName) {
-            Gate::define($permissionName, function (User $user) use ($permissionName) {
-                return $user->hasPermission($permissionName);
+        if (Schema::hasTable('permissions')) {
+            Permission::query()->pluck('name')->each(function (string $permissionName) {
+                Gate::define($permissionName, function (User $user) use ($permissionName) {
+                    return $user->hasPermission($permissionName);
+                });
             });
-        });
+        }
 
         Gate::define('access_commuters', function (User $user) {
             return $user->hasAnyPermission(['view_commuters', 'manage_commuters']);
