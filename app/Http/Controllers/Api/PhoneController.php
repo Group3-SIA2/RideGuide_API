@@ -50,7 +50,7 @@ class PhoneController extends Controller
     {
         $validated = $request->validate([
             'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
-            'password'     => ['required', 'string', Password::min(8)],
+            'password'=> ['required', 'string', Password::min(8)->mixedCase()->symbols()],
         ]);
 
         $phone = $this->normalizePhone($validated['phone_number']);
@@ -269,6 +269,140 @@ class PhoneController extends Controller
                 'token'      => $token,
                 'token_type' => 'Bearer',
             ],
+        ], 200);
+    }
+
+    /**
+     * Request OTP for password reset.
+     * Subject to max 3 requests per day.
+     *
+     * POST /api/auth/phone/forgot-password
+     * Body: phone_number
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
+        ]);
+
+        $phone = $this->normalizePhone($validated['phone_number']);
+        $user  = User::where('phone_number', $phone)->first();
+
+        if (!$user) {
+            // Return success even if user not found to prevent phone number enumeration
+            return response()->json([
+                'success' => true,
+                'message' => 'If an account with that phone number exists, a password reset OTP has been sent.',
+            ], 200);
+        }
+
+        // Limit: max 3 forgot-password requests per day
+        $dailyCount = Otp::where('user_id', $user->id)
+            ->where('type', 'password_reset')
+            ->where('created_at', '>', now()->startOfDay())
+            ->count();
+
+        if ($dailyCount >= 3) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have reached the maximum of 3 password reset requests for today. Please try again tomorrow.',
+            ], 429);
+        }
+
+        $sent = $this->sendOtp($user, 'password_reset');
+
+        if (!$sent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'We could not send the password reset OTP. Please try again.',
+            ], 503);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'If an account with that phone number exists, a password reset OTP has been sent.',
+        ], 200);
+    }
+
+    /**
+     * Reset password using OTP.
+     *
+     * POST /api/auth/phone/reset-password
+     * Body: phone_number, otp, password, password_confirmation
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
+            'otp'          => ['required', 'string', 'size:6'],
+            'password'     => ['required', 'string', 'confirmed', Password::min(8)->mixedCase()->symbols()],
+        ]);
+
+        $phone = $this->normalizePhone($validated['phone_number']);
+        $user  = User::where('phone_number', $phone)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        $otp = Otp::where('user_id', $user->id)
+            ->where('code', 'iprogs')
+            ->where('type', 'password_reset')
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
+
+        if (!$otp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired OTP.',
+            ], 422);
+        }
+
+        // Verify OTP with iProgSMS
+        $verified = $this->verifyWithIProgSMS(
+            $this->toLocalPhone($phone),
+            $validated['otp']
+        );
+
+        if (!$verified) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired OTP.',
+            ], 422);
+        }
+
+        // Limit: max 3 reset-password attempts per day
+        $dailyResetAttempts = Otp::where('user_id', $user->id)
+            ->where('type', 'password_reset')
+            ->whereNotNull('used_at')
+            ->where('updated_at', '>', now()->startOfDay())
+            ->count();
+
+        if ($dailyResetAttempts >= 3) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have reached the maximum of 3 password reset attempts for today. Please try again tomorrow.',
+            ], 429);
+        }
+
+        $otp->markAsUsed();
+
+        // Update the password
+        $user->update([
+            'password' => $validated['password'],
+        ]);
+
+        // Revoke all existing tokens for security
+        $user->tokens()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset successfully. Please login with your new password.',
         ], 200);
     }
 

@@ -31,7 +31,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'email'=> ['required', 'string', 'email:rfc,filter', 'max:255', 'unique:users,email'],
-            'password'=> ['required', 'string', Password::min(8)],
+            'password'=> ['required', 'string', Password::min(8)->mixedCase()->symbols()],
         ]);
 
         $user = User::create([
@@ -455,7 +455,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email'=> ['required', 'string', 'email:rfc,filter'],
             'otp'=> ['required', 'string', 'size:6'],
-            'password'=> ['required', 'string', 'confirmed', Password::min(8)],
+            'password'=> ['required', 'string', 'confirmed', Password::min(8)->mixedCase()->symbols()],
         ]);
 
         $user = User::where('email', $validated['email'])->first();

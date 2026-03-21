@@ -33,10 +33,12 @@ Route::controller(AuthController::class)->prefix('auth')->group(function (): voi
 
 // Phone Number Authentication — iProgSMS (Philippine format: 09XXXXXXXXX | +639XXXXXXXXX)
 Route::controller(PhoneController::class)->prefix('auth/phone')->group(function (): void {
-    Route::post('/register',   'register')->name('api.auth.phone.register');
-    Route::post('/login',      'login')->name('api.auth.phone.login');
-    Route::post('/verify-otp', 'verifyOtp')->name('api.auth.phone.verify-otp');
-    Route::post('/resend-otp', 'resendOtp')->name('api.auth.phone.resend-otp');
+    Route::post('/register',        'register')->name('api.auth.phone.register');
+    Route::post('/login',           'login')->name('api.auth.phone.login');
+    Route::post('/verify-otp',      'verifyOtp')->name('api.auth.phone.verify-otp');
+    Route::post('/resend-otp',      'resendOtp')->name('api.auth.phone.resend-otp');
+    Route::post('/forgot-password', 'forgotPassword')->name('api.auth.phone.forgot-password');
+    Route::post('/reset-password',  'resetPassword')->name('api.auth.phone.reset-password');
 });
 
 /*
