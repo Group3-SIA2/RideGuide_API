@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Discount;
 use App\Models\Driver;
+use App\Models\LicenseId;
+use App\Models\LicenseImage;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\vehicle as Vehicle;
@@ -42,9 +44,15 @@ class UserManagementController extends Controller
                     ->count(),
             ],
             'drivers' => [
-                'unverified' => Driver::where('verification_status', Driver::VERIFICATION_STATUS_UNVERIFIED)->count(),
-                'verified' => Driver::where('verification_status', Driver::VERIFICATION_STATUS_VERIFIED)->count(),
-                'rejected' => Driver::where('verification_status', Driver::VERIFICATION_STATUS_REJECTED)->count(),
+                'unverified' => Driver::whereHas('licenseId', function ($query) {
+                    $query->where('verification_status', LicenseId::VERIFICATION_STATUS_UNVERIFIED);
+                })->count(),
+                'verified' => Driver::whereHas('licenseId', function ($query) {
+                    $query->where('verification_status', LicenseId::VERIFICATION_STATUS_VERIFIED);
+                })->count(),
+                'rejected' => Driver::whereHas('licenseId', function ($query) {
+                    $query->where('verification_status', LicenseId::VERIFICATION_STATUS_REJECTED);
+                })->count(),
             ],
             'vehicles' => [
                 'pending' => Vehicle::where('verification_status', Vehicle::VERIFICATION_PENDING)->count(),
@@ -74,7 +82,7 @@ class UserManagementController extends Controller
             ->paginate(10, ['*'], 'users_page')
             ->withQueryString();
 
-        $drivers = Driver::with(['user'])
+        $drivers = Driver::with(['user', 'licenseId.image'])
             ->latest()
             ->paginate(10, ['*'], 'drivers_page')
             ->withQueryString();
@@ -102,9 +110,9 @@ class UserManagementController extends Controller
                 User::STATUS_SUSPENDED => 'Suspended',
             ],
             'driverVerificationOptions' => [
-                Driver::VERIFICATION_STATUS_UNVERIFIED => 'Unverified',
-                Driver::VERIFICATION_STATUS_VERIFIED => 'Verified',
-                Driver::VERIFICATION_STATUS_REJECTED => 'Rejected',
+                LicenseId::VERIFICATION_STATUS_UNVERIFIED => 'Unverified',
+                LicenseId::VERIFICATION_STATUS_VERIFIED => 'Verified',
+                LicenseId::VERIFICATION_STATUS_REJECTED => 'Rejected',
             ],
             'vehicleStatusOptions' => [
                 Vehicle::STATUS_ACTIVE => 'Active',
@@ -203,16 +211,25 @@ class UserManagementController extends Controller
 
         $validated = $request->validate([
             'verification_status' => ['required', Rule::in([
-                Driver::VERIFICATION_STATUS_UNVERIFIED,
-                Driver::VERIFICATION_STATUS_VERIFIED,
-                Driver::VERIFICATION_STATUS_REJECTED,
+                LicenseId::VERIFICATION_STATUS_UNVERIFIED,
+                LicenseId::VERIFICATION_STATUS_VERIFIED,
+                LicenseId::VERIFICATION_STATUS_REJECTED,
             ])],
             'rejection_reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $driver->update([
+        $license = $driver->loadMissing('licenseId')->licenseId;
+
+        if (! $license) {
+            return redirect()->route('admin.user-status.index')
+                ->with('error', 'Driver license record not found, unable to update status.');
+        }
+
+        $license->update([
             'verification_status' => $validated['verification_status'],
-            'rejection_reason' => $validated['rejection_reason'] ?? null,
+            'rejection_reason' => $validated['verification_status'] === LicenseId::VERIFICATION_STATUS_REJECTED
+                ? ($validated['rejection_reason'] ?? null)
+                : null,
         ]);
 
         return redirect()->route('admin.user-status.index')
@@ -233,7 +250,10 @@ class UserManagementController extends Controller
     {
         $this->authorizePermissions($request, 'manage_users');
 
-        Driver::onlyTrashed()->restore();
+        Driver::onlyTrashed()->get()->each(function (Driver $driver) {
+            $this->restoreDriverLicenseData($driver);
+            $driver->restore();
+        });
 
         return redirect()->route('admin.user-status.index')
             ->with('success', 'All deleted drivers have been restored.');
@@ -306,11 +326,39 @@ class UserManagementController extends Controller
             return response()->json(['message' => 'Record not found or already restored.'], 404);
         }
 
+        if ($record instanceof Driver) {
+            $this->restoreDriverLicenseData($record);
+        }
+
         $record->restore();
 
         return response()->json([
             'message' => ucfirst($validated['entity']) . ' restored successfully.',
         ]);
+    }
+
+    private function restoreDriverLicenseData(Driver $driver): void
+    {
+        if (! $driver->driver_license_id) {
+            return;
+        }
+
+        $license = LicenseId::withTrashed()->find($driver->driver_license_id);
+
+        if (!$license) {
+            return;
+        }
+
+        if ($license->trashed()) {
+            $license->restore();
+        }
+
+        if ($license->image_id) {
+            $image = LicenseImage::withTrashed()->find($license->image_id);
+            if ($image && $image->trashed()) {
+                $image->restore();
+            }
+        }
     }
 
     private function searchDeletedUsers(?string $query): array

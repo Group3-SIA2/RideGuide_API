@@ -17,7 +17,7 @@ class DriverController extends Controller
     {
         $this->authorizePermissions($request, 'view_drivers', 'manage_drivers');
 
-        $query = Driver::with('user', 'organization');
+        $query = Driver::with(['user', 'organization', 'licenseId.image']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -32,7 +32,9 @@ class DriverController extends Controller
         }
 
         if ($status = $request->input('status')) {
-            $query->where('verification_status', $status);
+            $query->whereHas('licenseId', function ($q) use ($status) {
+                $q->where('verification_status', $status);
+            });
         }
 
         $drivers = $query->latest()->paginate(15)->withQueryString();
