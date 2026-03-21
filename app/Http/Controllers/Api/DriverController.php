@@ -33,7 +33,6 @@ class DriverController extends Controller
         }
         
         $validatedData = $request->validate([
-            'franchise_number' => ['required','string','max:255', Rule::unique('driver','franchise_number'), 'regex:/^[A-Za-z0-9\s]+$/'],
             'organization_id' => ['nullable','string','exists:organizations,id'],
             'license_id_number' => ['required','string','max:255', Rule::unique('license_id', 'license_id'), 'regex:/^[A-Za-z0-9\s-]+$/'],
             'license_image_front' => ['required', 'image', 'max:2048'],
@@ -57,7 +56,6 @@ class DriverController extends Controller
 
         $driver = Driver::create([
             'user_id' => $request->user()->id,
-            'franchise_number' => $validatedData['franchise_number'],
             'organization_id' => $validatedData['organization_id'] ?? null,
             'driver_license_id' => $licenseId->id,
         ]);
@@ -123,7 +121,6 @@ class DriverController extends Controller
         if ($user->hasRole('admin')) {
             $validatedData = $request->validate([
                 'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
-                'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
                 'organization_id' => ['nullable','string','exists:organizations,id'],
                 'license_id_number' => [
                     'sometimes','string','max:255','regex:/^[A-Za-z0-9\s-]+$/',
@@ -146,13 +143,12 @@ class DriverController extends Controller
 
             if (!empty($disallowedFields)) {
                 return response()->json([
-                    'error' => 'You can only update your franchise_number and license ID images.',
+                    'error' => 'You can only update your license ID images.',
                     'disallowed_fields' => array_values($disallowedFields),
                 ], 403);
             }
 
             $validatedData = $request->validate([
-                'franchise_number' => ['sometimes','string','max:255', Rule::unique('driver','franchise_number')->ignore($driver->id)],
                 'license_id_number' => [
                     'sometimes','string','max:255','regex:/^[A-Za-z0-9\s-]+$/',
                     Rule::unique('license_id', 'license_id')->ignore(optional($license)->id),
@@ -162,7 +158,7 @@ class DriverController extends Controller
             ]);
         }
 
-    $driverFields = ['license_number', 'franchise_number', 'organization_id'];
+    $driverFields = ['license_number', 'organization_id'];
         $driverUpdates = [];
         foreach ($driverFields as $field) {
             if (array_key_exists($field, $validatedData)) {
@@ -333,7 +329,6 @@ class DriverController extends Controller
                 'email'       => $driver->user->email,
             ] : null,
             'license_number'      => $driver->license_number,
-            'franchise_number'    => $driver->franchise_number,
             'organization'        => $driver->organization ? [
                 'id'   => $driver->organization->id,
                 'name' => $driver->organization->name,

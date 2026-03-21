@@ -47,7 +47,6 @@ class DashboardController extends Controller
             'id' => $driver->id,
             'user_id' => $driver->user_id,
             'license_number' => $driver->license_number,
-            'franchise_number' => $driver->franchise_number,
             'organization_id' => $driver->organization_id,
             'verification_status' => $driver->verification_status,
             'created_at' => $driver->created_at,

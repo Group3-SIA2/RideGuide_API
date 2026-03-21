@@ -35,7 +35,6 @@
             </button>
         @endif
     </td>
-    <td class="rg-td-muted">{{ $driver->franchise_number ?? '—' }}</td>
     <td>
         @php $status = $license ? $license->verification_status : 'unverified'; @endphp
         <span class="rg-status-badge {{ $status === 'verified' ? 'rg-status-active' : ($status === 'rejected' ? 'rg-status-danger' : 'rg-status-pending') }}">

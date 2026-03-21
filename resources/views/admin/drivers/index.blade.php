@@ -26,7 +26,7 @@
                         <h6 class="rg-card-title mb-0">Driver List</h6>
                     </div>
                     <form id="rg-filter-form" method="GET" action="{{ route('admin.drivers.index') }}" class="rg-filter-bar mt-2">
-                        <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name, email, license or franchise…" value="{{ request('search') }}">
+                        <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name, email, license…" value="{{ request('search') }}">
                         <select id="rg-filter" name="status" class="rg-filter-select">
                             <option value="">All Statuses</option>
                             <option value="verified" {{ request('status') === 'verified' ? 'selected' : '' }}>Verified</option>
@@ -46,7 +46,6 @@
                                     <th>Email</th>
                                     <th>Organization</th>
                                     <th>License No.</th>
-                                    <th>Franchise No.</th>
                                     <th>Verification</th>
                                     <th>Joined</th>
                                 </tr>

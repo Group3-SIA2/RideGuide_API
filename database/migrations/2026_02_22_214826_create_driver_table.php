@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('driver', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id')->notNull()->unique();
-            $table->string('franchise_number')->notNull()->unique();
             $table->uuid('organization_id')->nullable();
             $table->uuid('driver_license_id')->notNull();
 
