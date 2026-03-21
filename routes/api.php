@@ -84,7 +84,7 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
 
     //SetUp Routes
     Route::controller(SetUpController::class)->prefix('setup')->group(function (): void {
-        Route::post('/setup-users', 'setUpUsers')->name('api.setup.setUpUsers');
+        Route::match(['post', 'patch'], '/setup-users', 'setUpUsers')->name('api.setup.setUpUsers');
     });
 
     // Search Routes
