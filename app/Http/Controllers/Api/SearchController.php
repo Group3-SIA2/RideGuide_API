@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
 use App\Models\Commuter;
+use App\Models\LicenseId;
 
 class SearchController extends Controller
 {
@@ -40,11 +41,13 @@ class SearchController extends Controller
             ], 403);
         }
 
-        $query = Driver::with('user');
+    $query = Driver::with('user', 'licenseId');
 
         // Commuters can only see verified drivers
         if ($roleName === 'commuter') {
-            $query->where('verification_status', 'verified');
+            $query->whereHas('licenseId', function ($builder) {
+                $builder->where('verification_status', LicenseId::VERIFICATION_STATUS_VERIFIED);
+            });
         }
 
         // Search by license number, franchise number, or driver name/email
@@ -64,8 +67,14 @@ class SearchController extends Controller
         // Filter by verification status (admin only)
         if ($roleName === 'admin' && $request->filled('verification_status')) {
             $status = $request->input('verification_status');
-            if (in_array($status, ['unverified', 'verified', 'rejected'])) {
-                $query->where('verification_status', $status);
+            if (in_array($status, [
+                LicenseId::VERIFICATION_STATUS_UNVERIFIED,
+                LicenseId::VERIFICATION_STATUS_VERIFIED,
+                LicenseId::VERIFICATION_STATUS_REJECTED,
+            ])) {
+                $query->whereHas('licenseId', function ($builder) use ($status) {
+                    $builder->where('verification_status', $status);
+                });
             }
         }
 
@@ -75,7 +84,17 @@ class SearchController extends Controller
         $allowedSorts = ['license_number', 'franchise_number', 'verification_status', 'created_at'];
 
         if (in_array($sortBy, $allowedSorts)) {
-            $query->orderBy($sortBy, $sortOrder === 'asc' ? 'asc' : 'desc');
+            $direction = $sortOrder === 'asc' ? 'asc' : 'desc';
+
+            if ($sortBy === 'verification_status') {
+                $query->orderBy(
+                    LicenseId::select('verification_status')
+                        ->whereColumn('license_id.id', 'driver.driver_license_id'),
+                    $direction
+                );
+            } else {
+                $query->orderBy($sortBy, $direction);
+            }
         }
 
         $drivers = $query->get();
