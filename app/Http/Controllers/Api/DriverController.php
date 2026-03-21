@@ -120,7 +120,6 @@ class DriverController extends Controller
 
         if ($user->hasRole('admin')) {
             $validatedData = $request->validate([
-                'license_number' => ['sometimes','string','max:255', Rule::unique('driver','license_number')->ignore($driver->id), 'regex:/^[A-Za-z0-9\s]+$/'],
                 'organization_id' => ['nullable','string','exists:organizations,id'],
                 'license_id_number' => [
                     'sometimes','string','max:255','regex:/^[A-Za-z0-9\s-]+$/',
@@ -158,7 +157,7 @@ class DriverController extends Controller
             ]);
         }
 
-    $driverFields = ['license_number', 'organization_id'];
+        $driverFields = ['organization_id'];
         $driverUpdates = [];
         foreach ($driverFields as $field) {
             if (array_key_exists($field, $validatedData)) {
@@ -240,13 +239,13 @@ class DriverController extends Controller
 
     public function deleteProfile($id): JsonResponse
     {
-    $driver = Driver::with(['user','organization','licenseId.image','usersEmergencyContact.emergencyContact'])->find($id);
+        $driver = Driver::with(['user','organization','licenseId.image','usersEmergencyContact.emergencyContact'])->find($id);
 
         if (!$driver) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
-        // admin lungs
+        // admin only
         if (!auth()->user()->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -282,7 +281,7 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // admin lungs
+        // admin only
         if (!$user->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -328,7 +327,6 @@ class DriverController extends Controller
                 'middle_name' => $driver->user->middle_name,
                 'email'       => $driver->user->email,
             ] : null,
-            'license_number'      => $driver->license_number,
             'organization'        => $driver->organization ? [
                 'id'   => $driver->organization->id,
                 'name' => $driver->organization->name,
