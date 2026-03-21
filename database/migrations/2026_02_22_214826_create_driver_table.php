@@ -14,16 +14,15 @@ return new class extends Migration
         Schema::create('driver', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id')->notNull()->unique();
-            $table->string('license_number')->notNull()->unique();
             $table->string('franchise_number')->notNull()->unique();
             $table->uuid('organization_id')->nullable();
-            $table->enum('verification_status', ['unverified', 'verified', 'rejected'])->notNull()->default('unverified');
-            $table->string('rejection_reason')->nullable();
+            $table->uuid('driver_license_id')->notNull();
 
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->foreign('driver_license_id')->references('id')->on('license_id')->cascadeOnDelete();
             $table->foreign('organization_id')->references('id')->on('organizations')->nullOnDelete();
         });
     }
