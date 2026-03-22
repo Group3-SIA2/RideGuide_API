@@ -53,4 +53,18 @@ class Organization extends Model
             ->withTimestamps()
             ->withPivot('id');
     }
+
+    public function organizationUserRoles(): HasMany
+    {
+        return $this->hasMany(OrganizationUserRole::class, 'organization_id');
+    }
+
+    public function managerUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'organization_user_role', 'organization_id', 'user_id')
+            ->withTimestamps()
+            ->withPivot(['id', 'role_id', 'status', 'invited_by_user_id', 'deleted_at'])
+            ->wherePivotNull('deleted_at')
+            ->wherePivot('status', 'active');
+    }
 }

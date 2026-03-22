@@ -13,8 +13,8 @@ class UserController extends Controller
     /*
     | Access-control
     |
-    | Admin           : Can list and view all driver/commuter users (NOT other admins)
-    | Driver/Commuter : Can only view their own user record
+    | Admin                     : Can list and view all driver/commuter/organization users (NOT other admins)
+    | Driver/Commuter/Organization : Can only view their own user record
     */
 
     // Get All Users
@@ -28,9 +28,9 @@ class UserController extends Controller
                 'status' => ['nullable', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE, User::STATUS_SUSPENDED])],
             ]);
 
-            // Admin sees all non-admin users (drivers & commuters)
+            // Admin sees all non-admin users (drivers, commuters, and organizations)
             $usersQuery = User::with('roles')
-                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['driver', 'commuter']))
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['driver', 'commuter', 'organization']))
                 ->orderBy('first_name');
 
             if (!empty($validated['status'])) {
@@ -47,7 +47,7 @@ class UserController extends Controller
             ]);
         }
 
-        // Driver/Commuter only sees themselves
+        // Driver/Commuter/Organization only sees themselves
         return response()->json([
             'success' => true,
             'data'    => [$this->formatUser($user->load('roles'))],
@@ -69,7 +69,7 @@ class UserController extends Controller
             ], 404);
         }
 
-        // Driver/Commuter can only view themselves
+        // Driver/Commuter/Organization can only view themselves
         if (!$user->hasRole('admin') && !$user->hasRole('super_admin')) {
             if ($targetUser->id !== $user->id) {
                 return response()->json([
