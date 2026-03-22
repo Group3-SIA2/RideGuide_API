@@ -38,6 +38,7 @@ class PermissionSeeder extends Seeder
             ['name' => 'create_organizations','display_name' => 'Create Organizations', 'group' => 'organizations', 'description' => 'Can create new organizations.'],
             ['name' => 'edit_organizations', 'display_name' => 'Edit Organizations',    'group' => 'organizations', 'description' => 'Can edit existing organizations.'],
             ['name' => 'delete_organizations','display_name' => 'Delete Organizations', 'group' => 'organizations', 'description' => 'Can delete organizations.'],
+            ['name' => 'manage_organization_terminals','display_name' => 'Manage Organization Terminals', 'group' => 'organizations', 'description' => 'Can add terminals to owned organizations.'],
 
             // Dashboard
             ['name' => 'view_admin_dashboard',     'display_name' => 'View Admin Dashboard',  'group' => 'dashboard',     'description' => 'Can view the admin dashboard.'],
@@ -84,6 +85,7 @@ class PermissionSeeder extends Seeder
                 'view_drivers',
                 'assign_drivers_to_organization',
                 'view_organization_dashboard',
+                'manage_organization_terminals',
             ])->pluck('id')->toArray();
 
             $organizationRole->permissions()->sync($organizationPermissions);
