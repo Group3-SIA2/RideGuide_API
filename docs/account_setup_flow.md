@@ -253,12 +253,13 @@ roles[]       commuter
 
 > `middle_name` is optional.
 >
-> `roles[]` accepts `driver`, `commuter`, or **both** (a user can hold multiple roles simultaneously).
+> `roles[]` accepts `driver`, `commuter`, and/or `organization` (a user can hold multiple roles simultaneously).
 
-**To assign multiple roles, add both values:**
+**To assign multiple roles, add each value on its own line:**
 ```
 roles[]  driver
 roles[]  commuter
+roles[]  organization
 ```
 
 **Success Response (200)**
@@ -277,7 +278,7 @@ roles[]  commuter
 }
 ```
 
-**Example response with both roles:**
+**Example response with all roles:**
 ```json
 {
     "success": true,
@@ -288,7 +289,7 @@ roles[]  commuter
         "last_name": "Maruhom",
         "middle_name": null,
         "email": "aslainiemaruhom19@gmail.com",
-        "roles": ["driver", "commuter"]
+        "roles": ["driver", "commuter", "organization"]
     }
 }
 ```
@@ -335,8 +336,9 @@ POST /api/auth/phone/register
 |------|-------------|
 | `driver` | Can create a driver profile and access driver features |
 | `commuter` | Can create a commuter profile and access commuter features |
+| `organization` | Can create and manage a single organization profile |
 
-> A single user may hold both `driver` and `commuter` roles at the same time.
+> A single user may hold any combination of the supported roles.
 
 ---
 
