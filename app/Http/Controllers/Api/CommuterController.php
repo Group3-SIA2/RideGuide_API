@@ -16,6 +16,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use App\Support\DashboardCache;
+use App\Support\MediaStorage;
 
 class CommuterController extends Controller
 {
@@ -90,8 +91,8 @@ class CommuterController extends Controller
 
         if ($validated['classification_name'] !== 'Regular') {
             $discountImage = DiscountImage::create([
-                'image_front' => $request->file('image_front')->store('discount_ids', 'public'),
-                'image_back'  => $request->file('image_back')->store('discount_ids', 'public'),
+                'image_front' => MediaStorage::putFile('discount_ids', $request->file('image_front')),
+                'image_back'  => MediaStorage::putFile('discount_ids', $request->file('image_back')),
             ]);
 
             $discount = Discount::create([
@@ -277,10 +278,10 @@ class CommuterController extends Controller
                         if ($image) {
                             $imgUpdate = [];
                             if ($request->hasFile('image_front')) {
-                                $imgUpdate['image_front'] = $request->file('image_front')->store('discount_ids', 'public');
+                                $imgUpdate['image_front'] = MediaStorage::putFile('discount_ids', $request->file('image_front'));
                             }
                             if ($request->hasFile('image_back')) {
-                                $imgUpdate['image_back'] = $request->file('image_back')->store('discount_ids', 'public');
+                                $imgUpdate['image_back'] = MediaStorage::putFile('discount_ids', $request->file('image_back'));
                             }
                             if (!empty($imgUpdate)) {
                                 $image->update($imgUpdate);
@@ -298,8 +299,8 @@ class CommuterController extends Controller
                     }
 
                     $discountImage = DiscountImage::create([
-                        'image_front' => $request->file('image_front')->store('discount_ids', 'public'),
-                        'image_back'  => $request->file('image_back')->store('discount_ids', 'public'),
+                        'image_front' => MediaStorage::putFile('discount_ids', $request->file('image_front')),
+                        'image_back'  => MediaStorage::putFile('discount_ids', $request->file('image_back')),
                     ]);
 
                     $discount = Discount::create([
@@ -333,10 +334,10 @@ class CommuterController extends Controller
                     if ($image) {
                         $imgUpdate = [];
                         if ($request->hasFile('image_front')) {
-                            $imgUpdate['image_front'] = $request->file('image_front')->store('discount_ids', 'public');
+                            $imgUpdate['image_front'] = MediaStorage::putFile('discount_ids', $request->file('image_front'));
                         }
                         if ($request->hasFile('image_back')) {
-                            $imgUpdate['image_back'] = $request->file('image_back')->store('discount_ids', 'public');
+                            $imgUpdate['image_back'] = MediaStorage::putFile('discount_ids', $request->file('image_back'));
                         }
                         if (!empty($imgUpdate)) {
                             $image->update($imgUpdate);
@@ -492,7 +493,11 @@ class CommuterController extends Controller
     private function formatCommuter(Commuter $commuter): array
     {
         $emergencyContact = $commuter->usersEmergencyContact?->emergencyContact;
-        return [
+    $discountImage = $commuter->discount?->idImage;
+    $frontPath = $discountImage?->image_front;
+    $backPath = $discountImage?->image_back;
+
+    return [
             'id' => $commuter->id,
             'user_id' => $commuter->user_id,
             'user' => $commuter->user ? [
@@ -507,8 +512,10 @@ class CommuterController extends Controller
                 'id' => $commuter->discount->id,
                 'ID_number' => $commuter->discount->ID_number,
                 'images' => [
-                    'front' => $commuter->discount->idImage?->image_front,
-                    'back'  => $commuter->discount->idImage?->image_back,
+                    'front_path' => $frontPath,
+                    'front_url' => $frontPath ? MediaStorage::url($frontPath) : null,
+                    'back_path'  => $backPath,
+                    'back_url'  => $backPath ? MediaStorage::url($backPath) : null,
                 ],
                 'classification' => $commuter->discount->classificationType?->classification_name ?? 'Regular',
             ] : null,

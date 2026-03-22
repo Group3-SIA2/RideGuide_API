@@ -11,6 +11,7 @@ use App\Models\LicenseImage;
 use App\Models\Organization;
 use Illuminate\Validation\Rule;
 use App\Support\DashboardCache;
+use App\Support\MediaStorage;
 
 class DriverController extends Controller
 {
@@ -40,9 +41,9 @@ class DriverController extends Controller
         ]);
 
         $licenseImage = LicenseImage::create([
-            'image_front' => $request->file('license_image_front')->store('driver_license_ids', 'public'),
+            'image_front' => MediaStorage::putFile('driver_license_ids', $request->file('license_image_front')),
             'image_back' => $request->hasFile('license_image_back')
-                ? $request->file('license_image_back')->store('driver_license_ids', 'public')
+                ? MediaStorage::putFile('driver_license_ids', $request->file('license_image_back'))
                 : null,
         ]);
 
@@ -204,9 +205,9 @@ class DriverController extends Controller
                     }
 
                     $image = LicenseImage::create([
-                        'image_front' => $request->file('license_image_front')->store('driver_license_ids', 'public'),
+                        'image_front' => MediaStorage::putFile('driver_license_ids', $request->file('license_image_front')),
                         'image_back' => $request->hasFile('license_image_back')
-                            ? $request->file('license_image_back')->store('driver_license_ids', 'public')
+                            ? MediaStorage::putFile('driver_license_ids', $request->file('license_image_back'))
                             : null,
                     ]);
 
@@ -214,10 +215,10 @@ class DriverController extends Controller
                 } else {
                     $imageUpdates = [];
                     if ($request->hasFile('license_image_front')) {
-                        $imageUpdates['image_front'] = $request->file('license_image_front')->store('driver_license_ids', 'public');
+                        $imageUpdates['image_front'] = MediaStorage::putFile('driver_license_ids', $request->file('license_image_front'));
                     }
                     if ($request->hasFile('license_image_back')) {
-                        $imageUpdates['image_back'] = $request->file('license_image_back')->store('driver_license_ids', 'public');
+                        $imageUpdates['image_back'] = MediaStorage::putFile('driver_license_ids', $request->file('license_image_back'));
                     }
 
                     if (!empty($imageUpdates)) {
@@ -315,8 +316,11 @@ class DriverController extends Controller
 
     private function formatDriver(Driver $driver): array
     {
-        $emergency = $driver->usersEmergencyContact?->emergencyContact;
-        $license = $driver->licenseId;
+    $emergency = $driver->usersEmergencyContact?->emergencyContact;
+    $license = $driver->licenseId;
+    $image = $license?->image;
+    $frontPath = $image?->image_front;
+    $backPath = $image?->image_back;
         return [
             'id'                  => $driver->id,
             'user_id'             => $driver->user_id,
@@ -340,8 +344,10 @@ class DriverController extends Controller
                 'verification_status' => $license->verification_status,
                 'rejection_reason' => $license->rejection_reason,
                 'images' => [
-                    'front' => $license->image?->image_front,
-                    'back' => $license->image?->image_back,
+                    'front_path' => $frontPath,
+                    'front_url' => $frontPath ? MediaStorage::url($frontPath) : null,
+                    'back_path' => $backPath,
+                    'back_url' => $backPath ? MediaStorage::url($backPath) : null,
                 ],
             ] : null,
             'emergency_contact' => $emergency ? [

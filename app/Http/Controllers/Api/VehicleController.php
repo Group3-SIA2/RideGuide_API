@@ -10,6 +10,7 @@ use App\Models\vehicleImage;
 use App\Models\vehicleType;
 use App\Models\PlateNumber;
 use App\Models\Driver;
+use App\Support\MediaStorage;
 
 
 class VehicleController extends Controller
@@ -35,10 +36,10 @@ class VehicleController extends Controller
         ]);
 
         $vehicleImage = vehicleImage::create([
-            'image_front' => $request->file('image_front')->store('vehicle_images', 'public'),
-            'image_back' => $request->file('image_back')->store('vehicle_images', 'public'),
-            'image_left' => $request->file('image_left')->store('vehicle_images', 'public'),
-            'image_right' => $request->file('image_right')->store('vehicle_images', 'public'),
+            'image_front' => MediaStorage::putFile('vehicle_images', $request->file('image_front')),
+            'image_back' => MediaStorage::putFile('vehicle_images', $request->file('image_back')),
+            'image_left' => MediaStorage::putFile('vehicle_images', $request->file('image_left')),
+            'image_right' => MediaStorage::putFile('vehicle_images', $request->file('image_right')),
         ]);
 
         $vehicleType = vehicleType::create([
@@ -68,6 +69,8 @@ class VehicleController extends Controller
         $vehicleDetails = vehicle::with(['vehicleType', 'vehicleType.vehicleImage', 'plateNumber'])
             ->where('id', $vehicle->id)
             ->first();
+
+        $this->appendVehicleImageUrls($vehicleDetails);
         return response()->json(['message' => 'Vehicle added successfully', 'vehicle' => $vehicleDetails], 201);
     }
 
@@ -86,6 +89,8 @@ class VehicleController extends Controller
         $vehicles = vehicle::with(['vehicleType', 'vehicleType.vehicleImage'])
             ->where('driver_id', $driver->id)
             ->get();
+
+        $vehicles->each(fn ($vehicle) => $this->appendVehicleImageUrls($vehicle));
 
         return response()->json(['vehicles' => $vehicles], 200);
     }
@@ -124,16 +129,16 @@ class VehicleController extends Controller
             $vehicleImage = $vehicle->vehicleType->vehicleImage;
 
             if ($request->hasFile('image_front')) {
-                $vehicleImage->image_front = $request->file('image_front')->store('vehicle_images', 'public');
+                $vehicleImage->image_front = MediaStorage::putFile('vehicle_images', $request->file('image_front'));
             }
             if ($request->hasFile('image_back')) {
-                $vehicleImage->image_back = $request->file('image_back')->store('vehicle_images', 'public');
+                $vehicleImage->image_back = MediaStorage::putFile('vehicle_images', $request->file('image_back'));
             }
             if ($request->hasFile('image_left')) {
-                $vehicleImage->image_left = $request->file('image_left')->store('vehicle_images', 'public');
+                $vehicleImage->image_left = MediaStorage::putFile('vehicle_images', $request->file('image_left'));
             }
             if ($request->hasFile('image_right')) {
-                $vehicleImage->image_right = $request->file('image_right')->store('vehicle_images', 'public');
+                $vehicleImage->image_right = MediaStorage::putFile('vehicle_images', $request->file('image_right'));
             }
 
             $vehicleImage->save();
@@ -157,6 +162,8 @@ class VehicleController extends Controller
         $vehicleDetails = vehicle::with(['vehicleType', 'vehicleType.vehicleImage', 'plateNumber'])
             ->where('id', $vehicle->id)
             ->first();
+
+        $this->appendVehicleImageUrls($vehicleDetails);
         return response()->json(['message' => 'Vehicle updated successfully', 'vehicle' => $vehicleDetails], 200);
     }
 
@@ -216,7 +223,25 @@ class VehicleController extends Controller
 
         return response()->json([
             'message' => 'Vehicle restored successfully',
-            'vehicle' => $vehicle->fresh(['vehicleType.vehicleImage', 'plateNumber']),
+            'vehicle' => tap($vehicle->fresh(['vehicleType.vehicleImage', 'plateNumber']), function ($vehicle) {
+                $this->appendVehicleImageUrls($vehicle);
+            }),
         ]);
+    }
+
+    private function appendVehicleImageUrls(?vehicle $vehicle): void
+    {
+        if (! $vehicle) {
+            return;
+        }
+
+        $image = $vehicle->vehicleType?->vehicleImage;
+
+        if ($image) {
+            $image->setAttribute('image_front_url', $image->image_front ? MediaStorage::url($image->image_front) : null);
+            $image->setAttribute('image_back_url', $image->image_back ? MediaStorage::url($image->image_back) : null);
+            $image->setAttribute('image_left_url', $image->image_left ? MediaStorage::url($image->image_left) : null);
+            $image->setAttribute('image_right_url', $image->image_right ? MediaStorage::url($image->image_right) : null);
+        }
     }
 }

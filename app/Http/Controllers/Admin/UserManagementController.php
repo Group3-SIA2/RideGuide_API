@@ -10,6 +10,7 @@ use App\Models\LicenseImage;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\vehicle as Vehicle;
+use App\Support\MediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -87,15 +88,48 @@ class UserManagementController extends Controller
             ->paginate(10, ['*'], 'drivers_page')
             ->withQueryString();
 
+        $drivers->getCollection()->transform(function (Driver $driver) {
+            $image = $driver->licenseId?->image;
+            if ($image) {
+                $image->setAttribute('image_front_url', $image->image_front ? MediaStorage::url($image->image_front) : null);
+                $image->setAttribute('image_back_url', $image->image_back ? MediaStorage::url($image->image_back) : null);
+            }
+            return $driver;
+        });
+
         $vehicles = Vehicle::with(['driver.user', 'vehicleType.vehicleImage', 'plateNumber'])
             ->latest()
             ->paginate(10, ['*'], 'vehicles_page')
             ->withQueryString();
 
+        $vehicles->getCollection()->transform(function (Vehicle $vehicle) {
+            $image = $vehicle->vehicleType?->vehicleImage;
+
+            if ($image) {
+                foreach (['front', 'back', 'left', 'right'] as $side) {
+                    $path = $image->{"image_{$side}"};
+                    $attribute = "image_{$side}_url";
+
+                    $image->setAttribute($attribute, $path ? MediaStorage::url($path) : null);
+                }
+            }
+
+            return $vehicle;
+        });
+
         $discounts = Discount::with(['commuter.user', 'classificationType', 'idImage'])
             ->latest()
             ->paginate(10, ['*'], 'discounts_page')
             ->withQueryString();
+
+        $discounts->getCollection()->transform(function (Discount $discount) {
+            $image = $discount->idImage;
+            if ($image) {
+                $image->setAttribute('image_front_url', $image->image_front ? MediaStorage::url($image->image_front) : null);
+                $image->setAttribute('image_back_url', $image->image_back ? MediaStorage::url($image->image_back) : null);
+            }
+            return $discount;
+        });
 
         return view('admin.users.status-dashboard', [
             'users' => $users,
