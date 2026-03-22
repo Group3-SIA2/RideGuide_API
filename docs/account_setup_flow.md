@@ -312,6 +312,44 @@ roles[]  organization
 
 ---
 
+## Step 4 — Create Organization Profile (For Organization Users)
+
+If the user selected `organization` in Step 3, they can create their organization profile after setup.
+
+**POST** `https://rideguide.test/api/organizations/create-profile`
+
+Include Bearer token in Authorization.
+
+Sample body:
+```
+name        Lagao TODA
+type        TODA
+description Association-owned tricycle operators.
+hq_address  Lagao, General Santos City
+roles[]     driver
+roles[]     commuter
+```
+
+Notes:
+- Automatically assigns the authenticated user as `owner_user_id`.
+- Automatically ensures the user has the `organization` role.
+- Keeps existing roles and can attach `driver` and/or `commuter`.
+- One organization profile per owner user.
+- Access is restricted to users who already have `organization`, `admin`, or `super_admin` role.
+
+### Multi-role Scenarios (QA/Frontend)
+
+| User Roles after Step 3 (`/api/setup/setup-users`) | Can create organization profile? | Result |
+|---|---|---|
+| `driver` only | No | `403 Unauthorized` |
+| `commuter` only | No | `403 Unauthorized` |
+| `driver` + `commuter` | No | `403 Unauthorized` |
+| `organization` only | Yes | `201 Created` |
+| `driver` + `commuter` + `organization` | Yes | `201 Created` |
+| `admin` or `super_admin` | Yes | `201 Created` |
+
+---
+
 ## Complete Flow Summary
 
 ### Email Registration
@@ -319,6 +357,7 @@ roles[]  organization
 POST /api/auth/register
   → POST /api/auth/verify-otp        (type: email_verification)  → Bearer Token
     → POST /api/setup/setup-users    (Protected — Bearer Token required)
+            → POST /api/organizations/create-profile (If organization role is selected)
 ```
 
 ### Phone Registration
@@ -326,6 +365,7 @@ POST /api/auth/register
 POST /api/auth/phone/register
   → POST /api/auth/phone/verify-otp  (type: phone_verification)  → Bearer Token
     → POST /api/setup/setup-users    (Protected — Bearer Token required)
+            → POST /api/organizations/create-profile (If organization role is selected)
 ```
 
 ---

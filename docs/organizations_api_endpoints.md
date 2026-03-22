@@ -34,6 +34,7 @@ Authorization: Bearer {token}
 | Method   | Endpoint                          | Description                 |
 |----------|-----------------------------------|-----------------------------|
 | `GET`    | `/api/organizations`              | List active organizations   |
+| `GET`    | `/api/organizations/assigned-drivers` | List drivers assigned to managed organization |
 | `GET`    | `/api/organizations/{id}`         | Show one organization       |
 | `POST`   | `/api/organizations`              | Create organization         |
 | `POST`   | `/api/organizations/create-profile` | Create organization profile as the authenticated user |
@@ -156,8 +157,19 @@ Rules:
 - Same validation as the standard create endpoint (`name`, `type`, etc.).
 - `roles` (optional): array limited to `driver` and/or `commuter`.
 - Automatically assigns the `organization` role to the caller (if missing) and keeps existing roles intact.
-- Caller must already hold at least one of: `driver`, `commuter`, `admin`, `super_admin`, or `organization`.
+- Caller must already hold one of: `organization`, `admin`, or `super_admin`.
 - One organization per owner — returns `409` if the user already owns one.
+
+### Multi-role Scenarios (QA/Frontend)
+
+| User Roles | Can call `POST /api/organizations/create-profile`? | Reason |
+|------------|------------------------------------------------------|--------|
+| `driver` only | No | Missing `organization`/`admin`/`super_admin` role |
+| `commuter` only | No | Missing `organization`/`admin`/`super_admin` role |
+| `driver` + `commuter` | No | Missing `organization`/`admin`/`super_admin` role |
+| `organization` only | Yes | Has allowed owner role |
+| `driver` + `commuter` + `organization` | Yes | Allowed because `organization` role is present |
+| `admin` or `super_admin` | Yes | Allowed owner roles |
 
 Success (201):
 ```json
@@ -172,6 +184,27 @@ Success (201):
 ```
 
 Use this endpoint from the mobile/web client when the logged-in user needs to self-manage an organization profile while keeping multi-role access (e.g., driver + organization).
+
+## 3c) Get Assigned Drivers (Managed Organization)
+
+**GET** `/api/organizations/assigned-drivers`
+
+Returns drivers assigned to the authenticated user's managed organization.
+
+Access:
+- organization owner users
+- active organization managers (via `organization_user_role`)
+
+Query params:
+- `per_page` (default `20`, max `100`)
+
+Not found (404):
+```json
+{
+  "success": false,
+  "message": "Organization not found for this user."
+}
+```
 
 ## 4) Update Organization
 
@@ -233,6 +266,8 @@ Success (200):
 
 - Use `organization_id` on driver endpoints to link a driver to an organization.
 - For organizations, use `hq_address` (not `address`) and do not use `contact_number`.
+- Flutter onboarding flow: register/login -> `POST /api/setup/setup-users` (include `organization` in `roles`) -> `POST /api/organizations/create-profile`.
+- `GET /api/users` now includes non-admin users with `driver`, `commuter`, and `organization` roles for admin/super_admin callers.
 | TODA - City Heights Terminal        | TODA   | City Heights                    |
 | TODA - Dadiangas Terminal           | TODA   | Dadiangas                       |
 | TODA - Lagao Terminal               | TODA   | Lagao                           |
