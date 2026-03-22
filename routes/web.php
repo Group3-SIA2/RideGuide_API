@@ -69,6 +69,11 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::put('/organizations/{id}',           [OrganizationController::class, 'update'])->name('organizations.update');
         Route::delete('/organizations/{id}',        [OrganizationController::class, 'destroy'])->name('organizations.destroy');
         Route::post('/organizations/{id}/restore',  [OrganizationController::class, 'restore'])->name('organizations.restore');
+        Route::get('/organizations/manager/dashboard', [OrganizationController::class, 'managerDashboard'])->name('organizations.manager-dashboard');
+        Route::get('/organizations/manager/assignments', [OrganizationController::class, 'assignmentIndex'])->name('organizations.assignments.index');
+        Route::post('/organizations/manager/assignments/drivers/{driver}/assign', [OrganizationController::class, 'assignDriver'])->name('organizations.assignments.assign');
+        Route::put('/organizations/manager/assignments/drivers/{driver}', [OrganizationController::class, 'updateDriverAssignment'])->name('organizations.assignments.update');
+        Route::delete('/organizations/manager/assignments/drivers/{driver}', [OrganizationController::class, 'unassignDriver'])->name('organizations.assignments.unassign');
         Route::get('/profile',         [ProfileController::class,      'index'])->name('profile.index');
         Route::get('/logout',     [LogoutController::class,    'confirm'])->name('logout.confirm');
         Route::post('/logout',    [LogoutController::class,    'logout'])->name('logout');

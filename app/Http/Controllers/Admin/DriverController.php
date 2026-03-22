@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
+use App\Models\Role;
 use Illuminate\Http\Request;
 
 class DriverController extends Controller
@@ -16,8 +17,19 @@ class DriverController extends Controller
     public function index(Request $request)
     {
         $this->authorizePermissions($request, 'view_drivers', 'manage_drivers');
+        $currentUser = $request->user();
 
         $query = Driver::with(['user', 'organization', 'licenseId.image']);
+
+        // Organization managers can only view drivers assigned to organizations they own.
+        if ($currentUser->hasRole(Role::ORGANIZATION)
+            && !$currentUser->hasRole(Role::ADMIN)
+            && !$currentUser->hasRole(Role::SUPER_ADMIN)
+        ) {
+            $query->whereHas('organization', function ($organizationQuery) use ($currentUser) {
+                $organizationQuery->where('owner_user_id', $currentUser->id);
+            });
+        }
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
