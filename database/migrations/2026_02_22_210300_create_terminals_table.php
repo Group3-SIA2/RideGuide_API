@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('terminal_name')->notNull();
             $table->string('barangay')->notNull();
             $table->string('city')->notNull();
-            $table->decimal('latitude', 10, 8)->notNull();
-            $table->decimal('longitude', 11, 8)->notNull();
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
             $table->timestamps();
             $table->softDeletes();
 

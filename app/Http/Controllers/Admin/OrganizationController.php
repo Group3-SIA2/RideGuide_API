@@ -8,7 +8,9 @@ use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Driver;
 use App\Models\DriverOrganizationAssignmentLog;
 use App\Models\Organization;
+use App\Models\OrganizationTerminal;
 use App\Models\Role;
+use App\Models\Terminal;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -145,6 +147,9 @@ class OrganizationController extends Controller
             $managedOrganization = $this->managedOrganizationFor($currentUser);
         }
 
+        $organizationTerminals = collect();
+        $allTerminals = collect();
+
         if (!$managedOrganization) {
             return view('admin.organizations.assignments', [
                 'managedOrganization' => null,
@@ -152,6 +157,8 @@ class OrganizationController extends Controller
                 'availableDrivers' => Driver::query()->whereRaw('1 = 0')->paginate(10, ['*'], 'available_page'),
                 'organizationsForAdmin' => $organizationsForAdmin,
                 'selectedOrganizationId' => $selectedOrganizationId,
+                'organizationTerminals' => $organizationTerminals,
+                'allTerminals' => $allTerminals,
             ]);
         }
 
@@ -206,13 +213,70 @@ class OrganizationController extends Controller
             ->paginate(10, ['*'], 'available_page')
             ->withQueryString();
 
+        $organizationTerminals = $managedOrganization->terminals()->orderBy('terminal_name')->get();
+        $allTerminals = Terminal::orderBy('terminal_name')->get(['id', 'terminal_name']);
+
         return view('admin.organizations.assignments', compact(
             'managedOrganization',
             'assignedDrivers',
             'availableDrivers',
             'organizationsForAdmin',
-            'selectedOrganizationId'
+            'selectedOrganizationId',
+            'organizationTerminals',
+            'allTerminals'
         ));
+    }
+
+    public function storeTerminal(Request $request)
+    {
+        $this->authorizePermissions($request, 'manage_organization_terminals');
+
+        $organization = $this->resolveTargetOrganizationForAssignment($request);
+
+        $validated = $request->validate([
+            'terminal_id'   => ['nullable', 'uuid', Rule::exists('terminals', 'id')],
+            'terminal_name' => ['required_without:terminal_id', 'nullable', 'string', 'max:255'],
+            'barangay'      => ['required_without:terminal_id', 'nullable', 'string', 'max:255'],
+            'city'          => ['required_without:terminal_id', 'nullable', 'string', 'max:255'],
+        ], [
+            'terminal_name.required_without' => 'Terminal name is required when not selecting an existing terminal.',
+            'barangay.required_without' => 'Barangay is required when not selecting an existing terminal.',
+            'city.required_without' => 'City is required when not selecting an existing terminal.',
+        ]);
+
+        if (empty($validated['terminal_id']) && empty($validated['terminal_name'])) {
+            return redirect()->route('admin.organizations.assignments.index', $this->buildOrganizationQuery($request))
+                ->with('error', 'Please select an existing terminal or provide details for a new one.');
+        }
+
+        if (empty($validated['terminal_id'])) {
+            $terminal = Terminal::create([
+                'terminal_name' => $validated['terminal_name'],
+                'barangay'      => $validated['barangay'],
+                'city'          => $validated['city'],
+                'latitude'      => null,
+                'longitude'     => null,
+            ]);
+        } else {
+            $terminal = Terminal::findOrFail($validated['terminal_id']);
+        }
+
+        $alreadyLinked = OrganizationTerminal::where('organization_id', $organization->id)
+            ->where('terminal_id', $terminal->id)
+            ->exists();
+
+        if ($alreadyLinked) {
+            return redirect()->route('admin.organizations.assignments.index', $this->buildOrganizationQuery($request))
+                ->with('error', 'This terminal is already linked to your organization.');
+        }
+
+        OrganizationTerminal::create([
+            'organization_id' => $organization->id,
+            'terminal_id'     => $terminal->id,
+        ]);
+
+        return redirect()->route('admin.organizations.assignments.index', $this->buildOrganizationQuery($request))
+            ->with('success', 'Terminal added to your organization successfully.');
     }
 
     public function assignDriver(Request $request, Driver $driver)
@@ -496,5 +560,14 @@ class OrganizationController extends Controller
             'acted_by_user_id' => $actedByUserId,
             'action' => $action,
         ]);
+    }
+
+    private function buildOrganizationQuery(Request $request): array
+    {
+        if ($request->filled('organization_id')) {
+            return ['organization_id' => $request->input('organization_id')];
+        }
+
+        return [];
     }
 }
