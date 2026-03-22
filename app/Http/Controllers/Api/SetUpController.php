@@ -23,7 +23,7 @@ class SetUpController extends Controller
             'last_name'   => 'required|string|max:255|regex:/^[\p{L}\s]+$/u',
             'middle_name' => 'nullable|string|max:255|regex:/^[\p{L}\s]+$/u',
             'roles'       => 'required|array|min:1',
-            'roles.*'     => 'string|in:driver,commuter|distinct',
+            'roles.*'     => 'string|in:driver,commuter,organization|distinct',
         ]);
 
         $wasSetupBefore = !empty($user->first_name)
