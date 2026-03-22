@@ -13,7 +13,10 @@ return [
     |
     */
 
-    'default' => env('FILESYSTEM_DISK', 'local'),
+    //'default' => env('FILESYSTEM_DISK', 'local'),
+
+    'uploads_disk' => env('FILESYSTEM_UPLOADS_DISK'),
+    'temporary_url_ttl' => env('FILESYSTEMS_TEMPORARY_URL_TTL', 15),
 
     /*
     |--------------------------------------------------------------------------
