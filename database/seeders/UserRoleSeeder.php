@@ -22,7 +22,12 @@ class UserRoleSeeder extends Seeder
             [ 
                 'role_id' => Role::getIdbyName(Role::ADMIN),
                 'user_id' => User::getIdByFirstName('Admin'),
+            ],
+            [ 
+                'role_id' => Role::getIdbyName(Role::ORGANIZATION),
+                'user_id' => User::getIdByFirstName('Org'),
             ]
+            
         ];
 
         foreach ($UserRoles as $userRole) {
