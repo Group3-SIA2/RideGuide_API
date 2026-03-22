@@ -6,7 +6,7 @@
     <div class="rg-page-header">
         <div>
             <h4 class="rg-page-title">Dashboard</h4>
-            <p class="rg-page-subtitle">Welcome back, {{ auth()->user()->first_name }}.</p>
+            <p class="rg-page-subtitle">Welcome back, {{ trim((auth()->user()->first_name ?? '') . ' ' . (auth()->user()->last_name ?? '')) }}.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
            
@@ -18,11 +18,11 @@
 @section('content')
 
     {{-- Stats Row --}}
-    <div class="row">
+    <div class="row align-items-stretch">
 
         {{-- Total Users --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="rg-stat-card">
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="rg-stat-card rg-stat-card-equal h-100">
                 <div class="rg-stat-icon">
                     <i class="fas fa-users"></i>
                 </div>
@@ -40,8 +40,8 @@
         </div>
 
         {{-- Commuters --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="rg-stat-card">
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="rg-stat-card rg-stat-card-equal h-100">
                 <div class="rg-stat-icon">
                     <i class="fas fa-user-friends"></i>
                 </div>
@@ -54,8 +54,8 @@
         </div>
 
         {{-- Drivers --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="rg-stat-card">
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="rg-stat-card rg-stat-card-equal h-100">
                 <div class="rg-stat-icon">
                     <i class="fas fa-id-card"></i>
                 </div>
@@ -68,8 +68,8 @@
         </div>
 
         {{-- Admins --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="rg-stat-card">
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="rg-stat-card rg-stat-card-equal h-100">
                 <div class="rg-stat-icon">
                     <i class="fas fa-shield-alt"></i>
                 </div>
@@ -82,8 +82,8 @@
         </div>
 
         {{-- Super Admins --}}
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="rg-stat-card">
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="rg-stat-card rg-stat-card-equal h-100">
                 <div class="rg-stat-icon">
                     <i class="fas fa-shield-alt"></i>
                 </div>
