@@ -14,7 +14,9 @@ class DriverPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $this->isAdmin($user) || $user->hasRole(Role::ORGANIZATION);
+        return $this->isAdmin($user)
+            || $user->hasRole(Role::ORGANIZATION)
+            || $user->hasAnyActiveOrganizationManagement();
     }
 
     /**
@@ -26,10 +28,14 @@ class DriverPolicy
             return true;
         }
 
-        return $user->hasRole(Role::ORGANIZATION)
-            && $driver->organization()
-                ->where('owner_user_id', $user->id)
-                ->exists();
+        if (! $driver->organization_id) {
+            return false;
+        }
+
+        return (
+            $user->hasRole(Role::ORGANIZATION)
+            && $driver->organization()->where('owner_user_id', $user->id)->exists()
+        ) || $user->isOrganizationManagerFor($driver->organization_id);
     }
 
     public function assignToOwnedOrganization(User $user, Driver $driver, Organization $organization): bool
@@ -38,11 +44,10 @@ class DriverPolicy
             return true;
         }
 
-        if (!$user->hasRole(Role::ORGANIZATION)) {
-            return false;
-        }
+        $isOwnerByRole = $user->hasRole(Role::ORGANIZATION) && $organization->owner_user_id === $user->id;
+        $isOrganizationManager = $user->isOrganizationManagerFor($organization->id);
 
-        if ($organization->owner_user_id !== $user->id) {
+        if (! $isOwnerByRole && ! $isOrganizationManager) {
             return false;
         }
 
@@ -55,8 +60,10 @@ class DriverPolicy
             return true;
         }
 
-        return $user->hasRole(Role::ORGANIZATION)
-            && $organization->owner_user_id === $user->id
+        return (
+            ($user->hasRole(Role::ORGANIZATION) && $organization->owner_user_id === $user->id)
+            || $user->isOrganizationManagerFor($organization->id)
+        )
             && $driver->organization_id === $organization->id;
     }
 

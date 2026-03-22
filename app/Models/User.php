@@ -110,7 +110,13 @@ class User extends Authenticatable
             ->whereHas('permissions', function ($q) use ($permissionName) {
                 $q->where('name', $permissionName);
             })
-            ->exists();
+            ->exists()
+            || $this->organizationUserRoles()
+                ->where('status', 'active')
+                ->whereHas('role.permissions', function ($q) use ($permissionName) {
+                    $q->where('name', $permissionName);
+                })
+                ->exists();
     }
 
     /**
@@ -131,8 +137,14 @@ class User extends Authenticatable
      */
     public function getAllPermissions(): \Illuminate\Support\Collection
     {
-        return Permission::whereHas('roles', function ($q) {
-            $q->whereIn('roles.id', $this->roles()->pluck('roles.id'));
+        $globalRoleIds = $this->roles()->pluck('roles.id');
+        $organizationRoleIds = $this->organizationUserRoles()
+            ->where('status', 'active')
+            ->pluck('role_id');
+
+        return Permission::whereHas('roles', function ($q) use ($globalRoleIds, $organizationRoleIds) {
+            $q->whereIn('roles.id', $globalRoleIds)
+                ->orWhereIn('roles.id', $organizationRoleIds);
         })->get();
     }
 
@@ -167,5 +179,34 @@ class User extends Authenticatable
     public function commuter(): HasOne
     {
         return $this->hasOne(Commuter::class);
+    }
+
+    public function organizationUserRoles(): HasMany
+    {
+        return $this->hasMany(OrganizationUserRole::class, 'user_id');
+    }
+
+    public function managedOrganizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'organization_user_role', 'user_id', 'organization_id')
+            ->withTimestamps()
+            ->withPivot(['id', 'role_id', 'status', 'invited_by_user_id', 'deleted_at'])
+            ->wherePivotNull('deleted_at')
+            ->wherePivot('status', 'active');
+    }
+
+    public function isOrganizationManagerFor(string $organizationId): bool
+    {
+        return $this->organizationUserRoles()
+            ->where('organization_id', $organizationId)
+            ->where('status', 'active')
+            ->exists();
+    }
+
+    public function hasAnyActiveOrganizationManagement(): bool
+    {
+        return $this->organizationUserRoles()
+            ->where('status', 'active')
+            ->exists();
     }
 }
