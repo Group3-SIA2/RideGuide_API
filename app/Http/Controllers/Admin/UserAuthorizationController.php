@@ -133,8 +133,14 @@ class UserAuthorizationController extends Controller
         }
 
         $roles = Role::whereIn('name', $displayRoleNames)->orderBy('name')->get();
+        $disabledRoleNames = $this->disabledRoleNamesForEdit($request->user(), $user);
         $lockedRoleIds = $roles
             ->filter(fn (Role $role) => $isAdminEditingSelf && $role->name === Role::ADMIN)
+            ->pluck('id')
+            ->values()
+            ->all();
+        $disabledRoleIds = $roles
+            ->filter(fn (Role $role) => in_array($role->name, $disabledRoleNames, true))
             ->pluck('id')
             ->values()
             ->all();
@@ -150,7 +156,7 @@ class UserAuthorizationController extends Controller
         }
         $userPermissionIds = array_unique($userPermissionIds);
 
-        return view('admin.user-authorization.edit-user', compact('user', 'roles', 'permissions', 'permissionGroups', 'userPermissionIds', 'lockedRoleIds'));
+        return view('admin.user-authorization.edit-user', compact('user', 'roles', 'permissions', 'permissionGroups', 'userPermissionIds', 'lockedRoleIds', 'disabledRoleIds'));
     }
 
     /**
@@ -187,6 +193,30 @@ class UserAuthorizationController extends Controller
             if ($adminRoleId && !in_array($adminRoleId, $selectedRoleIds, true)) {
                 $selectedRoleIds[] = $adminRoleId;
             }
+        }
+
+        $selectedRoleNames = Role::query()
+            ->whereIn('id', $selectedRoleIds)
+            ->pluck('name')
+            ->all();
+
+        $disabledRoleNames = $this->disabledRoleNamesForEdit($currentUser, $user);
+        $blockedSelections = array_values(array_intersect($selectedRoleNames, $disabledRoleNames));
+
+        if (!empty($blockedSelections)) {
+            $label = collect($blockedSelections)
+                ->map(fn (string $roleName) => ucwords(str_replace('_', ' ', $roleName)))
+                ->implode(', ');
+
+            return redirect()->route('admin.user-authorization.edit-user', $user)
+                ->withInput()
+                ->with('error', "These roles are not allowed for this user context: {$label}.");
+        }
+
+        if ($roleCombinationError = $this->roleCombinationError($selectedRoleIds)) {
+            return redirect()->route('admin.user-authorization.edit-user', $user)
+                ->withInput()
+                ->with('error', $roleCombinationError);
         }
 
         $user->roles()->sync($selectedRoleIds);
@@ -243,5 +273,71 @@ class UserAuthorizationController extends Controller
         }
 
         return [];
+    }
+
+    private function roleCombinationError(array $selectedRoleIds): ?string
+    {
+        $selectedRoleNames = Role::query()
+            ->whereIn('id', $selectedRoleIds)
+            ->pluck('name')
+            ->all();
+
+        if (in_array(Role::SUPER_ADMIN, $selectedRoleNames, true) && count($selectedRoleNames) > 1) {
+            return 'Super Admin cannot be combined with other roles.';
+        }
+
+        if (in_array(Role::ADMIN, $selectedRoleNames, true)) {
+            $adminConflicts = array_values(array_intersect($selectedRoleNames, [
+                Role::DRIVER,
+                Role::COMMUTER,
+                Role::ORGANIZATION,
+            ]));
+
+            if (!empty($adminConflicts)) {
+                $label = collect($adminConflicts)
+                    ->map(fn (string $roleName) => ucwords(str_replace('_', ' ', $roleName)))
+                    ->implode(', ');
+
+                return "Admin cannot be combined with: {$label}.";
+            }
+        }
+
+        return null;
+    }
+
+    private function disabledRoleNamesForEdit(User $currentUser, User $targetUser): array
+    {
+        $disabled = [];
+
+        // Admin-profile users should only stay within admin track.
+        if ($targetUser->hasRole(Role::ADMIN)) {
+            $disabled = array_merge($disabled, [
+                Role::DRIVER,
+                Role::COMMUTER,
+                Role::ORGANIZATION,
+            ]);
+        }
+
+        // Organization-profile users can combine with driver/commuter but not admin tracks.
+        if ($targetUser->hasRole(Role::ORGANIZATION)) {
+            $disabled = array_merge($disabled, [
+                Role::SUPER_ADMIN,
+                Role::ADMIN,
+            ]);
+        }
+
+        // When a plain admin edits self, keep admin role isolated.
+        if ($currentUser->hasRole(Role::ADMIN)
+            && !$currentUser->hasRole(Role::SUPER_ADMIN)
+            && $currentUser->is($targetUser)
+        ) {
+            $disabled = array_merge($disabled, [
+                Role::DRIVER,
+                Role::COMMUTER,
+                Role::ORGANIZATION,
+            ]);
+        }
+
+        return array_values(array_unique($disabled));
     }
 }
