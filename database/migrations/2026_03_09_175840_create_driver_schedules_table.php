@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('driver_schedules', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('driver_assign_id')->notNull();
-            $table->string('day_of_week')->notNull();
-            $table->time('start_time')->notNull();
-            $table->time('end_time')->notNull();
+            $table->string('day_of_week')->nullable();
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();
             $table->timestamps();
 
             $table->foreign('driver_assign_id')->references('id')->on('drv_assign_term')->onDelete('cascade');

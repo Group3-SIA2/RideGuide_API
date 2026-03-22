@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -39,5 +40,17 @@ class Organization extends Model
     public function drivers(): HasMany
     {
         return $this->hasMany(Driver::class, 'organization_id');
+    }
+
+    public function organizationTerminals(): HasMany
+    {
+        return $this->hasMany(OrganizationTerminal::class, 'organization_id');
+    }
+
+    public function terminals(): BelongsToMany
+    {
+        return $this->belongsToMany(Terminal::class, 'organization_terminals', 'organization_id', 'terminal_id')
+            ->withTimestamps()
+            ->withPivot('id');
     }
 }
