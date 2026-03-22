@@ -36,6 +36,7 @@ Authorization: Bearer {token}
 | `GET`    | `/api/organizations`              | List active organizations   |
 | `GET`    | `/api/organizations/{id}`         | Show one organization       |
 | `POST`   | `/api/organizations`              | Create organization         |
+| `POST`   | `/api/organizations/create-profile` | Create organization profile as the authenticated user |
 | `PUT`    | `/api/organizations/{id}`         | Update organization         |
 | `DELETE` | `/api/organizations/{id}`         | Soft-delete organization    |
 | `PUT`    | `/api/organizations/{id}/restore` | Restore soft-deleted org    |
@@ -114,6 +115,7 @@ Body (JSON):
 ```
 
 Rules:
+
 - `name`: required, unique, max 255
 - `type`: required, max 100
 - `description`: nullable, max 1000
@@ -132,6 +134,44 @@ Already has org (organization role, 409):
   "message": "You already have a registered organization."
 }
 ```
+
+## 3b) Create Organization Profile (Multi-Role)
+
+**POST** `/api/organizations/create-profile`
+
+Creates an organization that is automatically owned by the authenticated user and optionally attaches driver/commuter roles.
+
+Body (JSON/Form):
+```json
+{
+  "name": "Lagao TODA",
+  "type": "TODA",
+  "description": "Association-owned tricycle operators.",
+  "hq_address": "Lagao, General Santos City",
+  "roles": ["driver", "commuter"]
+}
+```
+
+Rules:
+- Same validation as the standard create endpoint (`name`, `type`, etc.).
+- `roles` (optional): array limited to `driver` and/or `commuter`.
+- Automatically assigns the `organization` role to the caller (if missing) and keeps existing roles intact.
+- Caller must already hold at least one of: `driver`, `commuter`, `admin`, `super_admin`, or `organization`.
+- One organization per owner — returns `409` if the user already owns one.
+
+Success (201):
+```json
+{
+  "success": true,
+  "message": "Organization profile created successfully.",
+  "data": {
+    "organization": { "id": "019f...", "name": "Lagao TODA", ... },
+    "roles": ["driver", "organization"]
+  }
+}
+```
+
+Use this endpoint from the mobile/web client when the logged-in user needs to self-manage an organization profile while keeping multi-role access (e.g., driver + organization).
 
 ## 4) Update Organization
 
