@@ -112,7 +112,7 @@ class AppServiceProvider extends ServiceProvider
                 return false;
             }
 
-            return $user->hasRole(\App\Models\Role::ORGANIZATION)
+            return ($user->hasRole(\App\Models\Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
                 && $user->hasPermission('view_organization_dashboard');
         });
 
@@ -121,7 +121,7 @@ class AppServiceProvider extends ServiceProvider
                 return false;
             }
 
-            return $user->hasRole(\App\Models\Role::ORGANIZATION)
+            return ($user->hasRole(\App\Models\Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
                 && $user->hasPermission('assign_drivers_to_organization');
         });
 

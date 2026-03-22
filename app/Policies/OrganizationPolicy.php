@@ -37,8 +37,8 @@ class OrganizationPolicy
             return true;
         }
 
-        return $user->hasRole('organization')
-            && $organization->owner_user_id === $user->id;
+        return ($user->hasRole('organization') && $organization->owner_user_id === $user->id)
+            || $user->isOrganizationManagerFor($organization->id);
     }
 
     /**
@@ -50,8 +50,8 @@ class OrganizationPolicy
             return true;
         }
 
-        return $user->hasRole('organization')
-            && $organization->owner_user_id === $user->id;
+        return ($user->hasRole('organization') && $organization->owner_user_id === $user->id)
+            || $user->isOrganizationManagerFor($organization->id);
     }
 
     /**
