@@ -209,5 +209,93 @@
             </div>
         </div>
     </div>
+
+    <div class="row mt-4">
+        <div class="col-12 col-xl-6 mb-3 mb-xl-0">
+            <div class="rg-card h-100">
+                <div class="rg-card-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rg-card-dot"></span>
+                        <h6 class="rg-card-title mb-0">Assigned Terminals</h6>
+                    </div>
+                    <span class="rg-badge">{{ $organizationTerminals->count() }} total</span>
+                </div>
+                <div class="rg-card-body p-0">
+                    @if($organizationTerminals->isEmpty())
+                        <p class="rg-empty mb-0 p-3">No terminals linked yet.</p>
+                    @else
+                        <div class="table-responsive">
+                            <table class="rg-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($organizationTerminals as $terminal)
+                                        <tr>
+                                            <td>{{ $terminal->terminal_name }}</td>
+                                            <td class="rg-td-muted">{{ $terminal->barangay }}, {{ $terminal->city }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <div class="rg-card h-100">
+                <div class="rg-card-header d-flex align-items-center gap-2">
+                    <span class="rg-card-dot"></span>
+                    <h6 class="rg-card-title mb-0">Add Terminal</h6>
+                </div>
+                <div class="rg-card-body pt-3">
+                    <form method="POST" action="{{ route('admin.organizations.terminals.store') }}">
+                        @csrf
+                        @if(!empty($selectedOrganizationId))
+                            <input type="hidden" name="organization_id" value="{{ $selectedOrganizationId }}">
+                        @endif
+
+                        <div class="form-group mb-3 p-3">
+                            <label for="terminal_id">Use Existing Terminal</label>
+                            <select name="terminal_id" id="terminal_id" class="form-control">
+                                <option value="">-- Select terminal --</option>
+                                @foreach($allTerminals as $terminalOption)
+                                    <option value="{{ $terminalOption->id }}" {{ old('terminal_id') === $terminalOption->id ? 'selected' : '' }}>
+                                        {{ $terminalOption->terminal_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">Select an existing terminal or complete the form below to create a new one.</small>
+                        </div>
+
+                        <div class="form-group mb-3 p-3">
+                            <label for="terminal_name">Terminal Name</label>
+                            <input type="text" id="terminal_name" name="terminal_name" class="form-control" value="{{ old('terminal_name') }}" placeholder="Lagao TODA Main Terminal">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6 p-3">
+                                <label for="barangay">Barangay</label>
+                                <input type="text" id="barangay" name="barangay" class="form-control" value="{{ old('barangay') }}">
+                            </div>
+                            <div class="form-group col-md-6 p-3">
+                                <label for="city">City</label>
+                                <input type="text" id="city" name="city" class="form-control" value="{{ old('city') }}">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="rg-btn rg-btn-primary mb-3" style="margin-left: 1rem;">
+                            <i class="fas fa-plus-circle mr-1"></i> Add Terminal
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
     @endif
 @stop
