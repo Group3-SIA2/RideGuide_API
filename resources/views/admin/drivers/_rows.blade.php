@@ -18,9 +18,13 @@
         @php
             $license = $driver->licenseId;
             $licenseImage = $license ? $license->image : null;
-            $hasLicenseImages = $licenseImage && ($licenseImage->image_front || $licenseImage->image_back);
-            $licenseFront = $licenseImage && $licenseImage->image_front ? asset('storage/' . $licenseImage->image_front) : '';
-            $licenseBack = $licenseImage && $licenseImage->image_back ? asset('storage/' . $licenseImage->image_back) : '';
+            $licenseFront = $licenseImage && $licenseImage->image_front
+                ? ($licenseImage->image_front_url ?? \App\Support\MediaStorage::url($licenseImage->image_front))
+                : '';
+            $licenseBack = $licenseImage && $licenseImage->image_back
+                ? ($licenseImage->image_back_url ?? \App\Support\MediaStorage::url($licenseImage->image_back))
+                : '';
+            $hasLicenseImages = $licenseFront || $licenseBack;
             $driverName = trim(($driver->user->first_name ?? '') . ' ' . ($driver->user->last_name ?? '')) ?: 'Driver License';
         @endphp
         @if($hasLicenseImages)

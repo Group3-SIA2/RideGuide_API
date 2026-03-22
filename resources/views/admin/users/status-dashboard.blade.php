@@ -52,7 +52,15 @@
                     $discountImage = optional($discount->idImage);
                     $discountModalId = 'discountImagesModal_' . $discount->id;
                 @endphp
-                @if($discountImage && ($discountImage->image_front || $discountImage->image_back))
+                @php
+                    $discountFrontUrl = $discountImage && $discountImage->image_front
+                        ? ($discountImage->image_front_url ?? \App\Support\MediaStorage::url($discountImage->image_front))
+                        : null;
+                    $discountBackUrl = $discountImage && $discountImage->image_back
+                        ? ($discountImage->image_back_url ?? \App\Support\MediaStorage::url($discountImage->image_back))
+                        : null;
+                @endphp
+                @if($discountFrontUrl || $discountBackUrl)
                     <div class="modal fade" id="{{ $discountModalId }}" tabindex="-1" role="dialog" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                             <div class="modal-content">
@@ -65,17 +73,17 @@
                                 <div class="modal-body">
                                     <div class="row">
                                         @php $hasDiscountImages = false; @endphp
-                                        @if($discountImage->image_front)
+                                        @if($discountFrontUrl)
                                             @php $hasDiscountImages = true; @endphp
                                             <div class="col-md-6 mb-3">
-                                                <img src="{{ asset('storage/' . $discountImage->image_front) }}" class="img-fluid rounded shadow-sm" alt="Front ID Image">
+                                                <img src="{{ $discountFrontUrl }}" class="img-fluid rounded shadow-sm" alt="Front ID Image">
                                                 <small class="text-muted d-block mt-2">Front View</small>
                                             </div>
                                         @endif
-                                        @if($discountImage->image_back)
+                                        @if($discountBackUrl)
                                             @php $hasDiscountImages = true; @endphp
                                             <div class="col-md-6 mb-3">
-                                                <img src="{{ asset('storage/' . $discountImage->image_back) }}" class="img-fluid rounded shadow-sm" alt="Back ID Image">
+                                                <img src="{{ $discountBackUrl }}" class="img-fluid rounded shadow-sm" alt="Back ID Image">
                                                 <small class="text-muted d-block mt-2">Back View</small>
                                             </div>
                                         @endif
@@ -210,7 +218,13 @@
                                     $licenseImage = $license ? $license->image : null;
                                     $licenseStatus = $license->verification_status ?? 'unverified';
                                     $licenseModalId = 'driverLicenseModal_' . $driver->id;
-                                    $hasLicenseImages = $licenseImage && ($licenseImage->image_front || $licenseImage->image_back);
+                                    $licenseFrontUrl = $licenseImage && $licenseImage->image_front
+                                        ? ($licenseImage->image_front_url ?? \App\Support\MediaStorage::url($licenseImage->image_front))
+                                        : null;
+                                    $licenseBackUrl = $licenseImage && $licenseImage->image_back
+                                        ? ($licenseImage->image_back_url ?? \App\Support\MediaStorage::url($licenseImage->image_back))
+                                        : null;
+                                    $hasLicenseImages = $licenseFrontUrl || $licenseBackUrl;
                                 @endphp
                                 <tr>
                                     <td>
@@ -269,7 +283,13 @@
                         @php
                             $license = $driver->licenseId;
                             $licenseImage = $license ? $license->image : null;
-                            $hasLicenseImages = $licenseImage && ($licenseImage->image_front || $licenseImage->image_back);
+                            $licenseFrontUrl = $licenseImage && $licenseImage->image_front
+                                ? ($licenseImage->image_front_url ?? \App\Support\MediaStorage::url($licenseImage->image_front))
+                                : null;
+                            $licenseBackUrl = $licenseImage && $licenseImage->image_back
+                                ? ($licenseImage->image_back_url ?? \App\Support\MediaStorage::url($licenseImage->image_back))
+                                : null;
+                            $hasLicenseImages = $licenseFrontUrl || $licenseBackUrl;
                             $licenseModalId = 'driverLicenseModal_' . $driver->id;
                         @endphp
                         @if($hasLicenseImages)
@@ -284,15 +304,15 @@
                                         </div>
                                         <div class="modal-body">
                                             <div class="row">
-                                                @if($licenseImage->image_front)
+                                                @if($licenseFrontUrl)
                                                     <div class="col-md-6 mb-3">
-                                                        <img src="{{ asset('storage/' . $licenseImage->image_front) }}" class="img-fluid rounded shadow-sm" alt="Driver License Front">
+                                                        <img src="{{ $licenseFrontUrl }}" class="img-fluid rounded shadow-sm" alt="Driver License Front">
                                                         <small class="text-muted d-block mt-2">Front View</small>
                                                     </div>
                                                 @endif
-                                                @if($licenseImage->image_back)
+                                                @if($licenseBackUrl)
                                                     <div class="col-md-6 mb-3">
-                                                        <img src="{{ asset('storage/' . $licenseImage->image_back) }}" class="img-fluid rounded shadow-sm" alt="Driver License Back">
+                                                        <img src="{{ $licenseBackUrl }}" class="img-fluid rounded shadow-sm" alt="Driver License Back">
                                                         <small class="text-muted d-block mt-2">Back View</small>
                                                     </div>
                                                 @endif
@@ -411,12 +431,22 @@
                     @endphp
                     @if($vehicleImage && ($vehicleImage->image_front || $vehicleImage->image_back || $vehicleImage->image_left || $vehicleImage->image_right))
                         @php
-                            $vehicleImages = [
-                                'Front' => $vehicleImage->image_front,
-                                'Back' => $vehicleImage->image_back,
-                                'Left' => $vehicleImage->image_left,
-                                'Right' => $vehicleImage->image_right,
-                            ];
+                            $vehicleImages = collect([
+                                'Front' => 'image_front',
+                                'Back' => 'image_back',
+                                'Left' => 'image_left',
+                                'Right' => 'image_right',
+                            ])->mapWithKeys(function ($field, $label) use ($vehicleImage) {
+                                $path = $vehicleImage->{$field};
+                                $urlAttribute = $field . '_url';
+
+                                return [
+                                    $label => [
+                                        'path' => $path,
+                                        'url' => $vehicleImage->{$urlAttribute} ?? ($path ? \App\Support\MediaStorage::url($path) : null),
+                                    ],
+                                ];
+                            })->toArray();
                         @endphp
                         <div class="modal fade" id="{{ $vehicleModalId }}" tabindex="-1" role="dialog" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -430,12 +460,20 @@
                                     <div class="modal-body">
                                         <div class="row">
                                             @php $hasVehicleImages = false; @endphp
-                                            @foreach($vehicleImages as $label => $imagePath)
-                                                @if($imagePath)
+                                            @foreach($vehicleImages as $label => $imageData)
+                                                @php
+                                                    $imagePath = $imageData['path'];
+                                                    $imageUrl = $imageData['url'] ?? null;
+
+                                                    if (!$imageUrl && $imagePath) {
+                                                        $imageUrl = asset('storage/' . $imagePath);
+                                                    }
+                                                @endphp
+                                                @if($imageUrl)
                                                     @php $hasVehicleImages = true; @endphp
                                                     <div class="col-md-6 mb-3">
                                                         <div class="rg-image-preview">
-                                                            <img src="{{ asset('storage/' . $imagePath) }}" class="img-fluid rounded shadow-sm" alt="{{ $label }} view">
+                                                            <img src="{{ $imageUrl }}" class="img-fluid rounded shadow-sm" alt="{{ $label }} view">
                                                             <small class="text-muted d-block mt-2">{{ $label }} View</small>
                                                         </div>
                                                     </div>
@@ -498,7 +536,13 @@
                                 @php
                                     $discountImage = optional($discount->idImage);
                                     $discountModalId = 'discountImagesModal_' . $discount->id;
-                                    $discountHasImages = $discountImage && ($discountImage->image_front || $discountImage->image_back);
+                                    $discountFrontUrl = $discountImage && $discountImage->image_front
+                                        ? ($discountImage->image_front_url ?? \App\Support\MediaStorage::url($discountImage->image_front))
+                                        : null;
+                                    $discountBackUrl = $discountImage && $discountImage->image_back
+                                        ? ($discountImage->image_back_url ?? \App\Support\MediaStorage::url($discountImage->image_back))
+                                        : null;
+                                    $discountHasImages = $discountFrontUrl || $discountBackUrl;
                                 @endphp
                                 @if($discountHasImages)
                                     <button type="button" class="btn btn-link btn-sm px-0 mt-2" data-toggle="modal" data-target="#{{ $discountModalId }}">
