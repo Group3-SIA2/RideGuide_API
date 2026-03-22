@@ -215,6 +215,9 @@ body,
     border: 1px solid var(--rg-card-border);
     box-shadow: var(--rg-card-shadow);
 }
+.rg-stat-card-equal {
+    min-height: 148px;
+}
 .rg-stat-card:hover {
     box-shadow: 0 4px 16px var(--rg-accent-dim);
     border-color: var(--rg-accent-light);
@@ -248,11 +251,27 @@ body,
     margin: 0;
     line-height: 1.15;
 }
+.rg-stat-value-name {
+    font-size: clamp(1.1rem, 1.1vw + 0.75rem, 1.6rem);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
 .rg-stat-sub {
     font-size: 0.7rem;
     color: var(--rg-text-subtle);
     margin-top: 6px;
     display: block;
+}
+.rg-stat-sub-org {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 }
 
 /* ── Card ───────────────────────────────────────────────── */

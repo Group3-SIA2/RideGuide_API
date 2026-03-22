@@ -64,6 +64,10 @@ class OrganizationPolicy
 
     public function assignOwner(User $user, ?User $ownerUser): bool
     {
+        if (!$this->isAdmin($user)) {
+            return false;
+        }
+
         if (!$ownerUser) {
             return true;
         }
@@ -84,11 +88,7 @@ class OrganizationPolicy
             return false;
         }
 
-        if ($this->isAdmin($user)) {
-            return true;
-        }
-
-        return $user->hasRole('organization') && $ownerUser->id === $user->id;
+        return true;
     }
 
     private function isAdmin(User $user): bool

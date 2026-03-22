@@ -31,6 +31,7 @@ class PermissionSeeder extends Seeder
             // Driver Management
             ['name' => 'view_drivers',       'display_name' => 'View Drivers',          'group' => 'drivers',       'description' => 'Can view the list of drivers.'],
             ['name' => 'manage_drivers',     'display_name' => 'Manage Drivers',        'group' => 'drivers',       'description' => 'Can manage driver records.'],
+            ['name' => 'assign_drivers_to_organization', 'display_name' => 'Assign Drivers To Organization', 'group' => 'drivers', 'description' => 'Can assign and unassign drivers for owned organization.'],
 
             // Organization Management
             ['name' => 'view_organizations', 'display_name' => 'View Organizations',    'group' => 'organizations', 'description' => 'Can view the list of organizations.'],
@@ -40,8 +41,7 @@ class PermissionSeeder extends Seeder
 
             // Dashboard
             ['name' => 'view_admin_dashboard',     'display_name' => 'View Admin Dashboard',  'group' => 'dashboard',     'description' => 'Can view the admin dashboard.'],
-            ['name' => 'view_driver_dashboard',    'display_name' => 'View Driver Dashboard', 'group' => 'dashboard',     'description' => 'Can view the driver dashboard.'],
-            ['name' => 'view_commuter_dashboard',  'display_name' => 'View Commuter Dashboard','group' => 'dashboard',     'description' => 'Can view the commuter dashboard.'],
+            ['name' => 'view_organization_dashboard',  'display_name' => 'View Organization Dashboard','group' => 'dashboard',     'description' => 'Can view the organization manager dashboard.'],
 
 
             // Backup & Restore
@@ -65,11 +65,28 @@ class PermissionSeeder extends Seeder
             );
         }
 
-        // Give all permissions to the admin role by default
+        $seededPermissionNames = collect($permissions)->pluck('name')->all();
+
+        // Admin can manage users but cannot create/register new user accounts.
         $adminRole = Role::where('name', Role::ADMIN)->first();
         if ($adminRole) {
-            $allPermissions = Permission::pluck('id')->toArray();
-            $adminRole->permissions()->sync($allPermissions);
+            $adminPermissions = Permission::whereIn('name', $seededPermissionNames)
+                ->where('name', '!=', 'create_users')
+                ->pluck('id')
+                ->toArray();
+            $adminRole->permissions()->sync($adminPermissions);
+        }
+
+        $organizationRole = Role::where('name', Role::ORGANIZATION)->first();
+        if ($organizationRole) {
+            $organizationPermissions = Permission::whereIn('name', [
+                'view_organizations',
+                'view_drivers',
+                'assign_drivers_to_organization',
+                'view_organization_dashboard',
+            ])->pluck('id')->toArray();
+
+            $organizationRole->permissions()->sync($organizationPermissions);
         }
     }
 }

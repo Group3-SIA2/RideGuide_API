@@ -19,6 +19,13 @@
 
 @section('content')
 
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle mr-1"></i> {{ session('error') }}
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+        </div>
+    @endif
+
     {{-- Flash Messages --}}
     @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -47,21 +54,28 @@
                     </div>
                     <div class="rg-card-body rg-manage-roles-body">
                         <p class="text-muted mb-3">Select the roles for <strong>{{ $user->first_name }} {{ $user->last_name }}</strong> ({{ $user->email }}):</p>
+                        <div class="alert alert-info py-2 px-3 mb-3">
+                            <small>
+                                Role rules: <strong>Super Admin</strong> must be standalone. <strong>Admin</strong> cannot be combined with Driver, Commuter, or Organization.
+                            </small>
+                        </div>
 
                         <div class="rg-manage-role-list">
                         @foreach($roles as $role)
                             @php
                                 $isLocked = in_array($role->id, $lockedRoleIds ?? [], true);
+                                $isRuleDisabled = in_array($role->id, $disabledRoleIds ?? [], true);
+                                $isDisabled = $isLocked || $isRuleDisabled;
                             @endphp
 
-                            <div class="rg-manage-role-item {{ $isLocked ? 'rg-manage-role-item-locked' : '' }}">
+                            <div class="rg-manage-role-item {{ $isDisabled ? 'rg-manage-role-item-locked' : '' }}">
                                 <input type="checkbox"
                                        class="rg-manage-role-checkbox role-checkbox"
                                        id="role_{{ $role->id }}"
                                        name="roles[]"
                                        value="{{ $role->id }}"
                                        {{ $user->roles->contains('id', $role->id) ? 'checked' : '' }}
-                                       {{ $isLocked ? 'disabled' : '' }}>
+                                       {{ $isDisabled ? 'disabled' : '' }}>
                                 <label class="rg-manage-role-label" for="role_{{ $role->id }}">
                                     <span class="rg-manage-role-name">{{ ucwords(str_replace('_', ' ', $role->name)) }}</span>
                                     @if($role->description)
@@ -69,6 +83,8 @@
                                     @endif
                                     @if($isLocked)
                                         <small class="text-muted d-block">Only Super Admin can change this role.</small>
+                                    @elseif($isRuleDisabled)
+                                        
                                     @endif
                                 </label>
                             </div>
