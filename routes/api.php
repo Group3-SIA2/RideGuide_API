@@ -100,6 +100,8 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         Route::get('/',            'index')->name('api.organizations.index');
         Route::get('/{id}',        'show')->name('api.organizations.show');
         Route::post('/',           'store')->name('api.organizations.store');
+        Route::post('/create-profile', 'createProfile')->name('api.organizations.create-profile');
+    Route::get('/assigned-drivers', 'getAssignedDrivers')->name('api.organizations.assigned-drivers');
         Route::put('/{id}',        'update')->name('api.organizations.update');
         Route::delete('/{id}',     'destroy')->name('api.organizations.destroy');
         Route::put('/{id}/restore','restore')->name('api.organizations.restore');
