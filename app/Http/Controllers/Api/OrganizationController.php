@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Models\Organization;
+use App\Models\OrganizationUserRole;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Driver;
@@ -112,6 +113,24 @@ class OrganizationController extends Controller
 
         $organization = Organization::create($data);
 
+        if (!empty($organization->owner_user_id)) {
+            $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
+
+            if ($organizationRoleId) {
+                OrganizationUserRole::query()->updateOrCreate(
+                    [
+                        'organization_id' => $organization->id,
+                        'user_id' => $organization->owner_user_id,
+                        'role_id' => $organizationRoleId,
+                    ],
+                    [
+                        'status' => 'active',
+                        'invited_by_user_id' => $user->id,
+                    ]
+                );
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Organization created successfully.',
@@ -122,21 +141,20 @@ class OrganizationController extends Controller
     /**
      * Create an organization profile for the authenticated user while supporting multi-role assignments.
      * POST /api/organizations/create-profile
-     * Access: driver/commuter/admin/super_admin/organization. Automatically attaches the organization role.
+     * Access: admin/super_admin/organization. Automatically attaches/keeps the organization role.
      */
     public function createProfile(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        $hasEligibleRole = $user->hasRole(Role::DRIVER)
-            || $user->hasRole(Role::ORGANIZATION)
+        $hasEligibleRole = $user->hasRole(Role::ORGANIZATION)
             || $user->hasRole(Role::ADMIN)
             || $user->hasRole(Role::SUPER_ADMIN);
 
         if (!$hasEligibleRole) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized. You need a driver or admin-related role to create an organization profile.',
+                'message' => 'Unauthorized. Only organization, admin, or super_admin users can create an organization profile.',
             ], 403);
         }
 
@@ -153,7 +171,7 @@ class OrganizationController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'hq_address'  => ['nullable', 'string', 'max:500'],
             'roles'       => ['sometimes', 'array', 'min:1'],
-            'roles.*'     => ['string', Rule::in([Role::DRIVER])],
+            'roles.*'     => ['string', Rule::in([Role::DRIVER, Role::COMMUTER])],
         ]);
 
         $additionalRoles = array_unique($validated['roles'] ?? []);
@@ -178,6 +196,21 @@ class OrganizationController extends Controller
                 'status'         => 'active',
                 'owner_user_id'  => $user->id,
             ]);
+
+            $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
+            if ($organizationRoleId) {
+                OrganizationUserRole::query()->updateOrCreate(
+                    [
+                        'organization_id' => $organization->id,
+                        'user_id' => $user->id,
+                        'role_id' => $organizationRoleId,
+                    ],
+                    [
+                        'status' => 'active',
+                        'invited_by_user_id' => $user->id,
+                    ]
+                );
+            }
 
             $user->roles()->syncWithoutDetaching($roles->pluck('id')->toArray());
 
@@ -232,8 +265,8 @@ class OrganizationController extends Controller
             'status' => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
 
-        // Organization-role users cannot toggle their own status.
-        if ($user->hasRole('organization')) {
+        // Organization-role users and organization managers cannot toggle owner or status.
+        if ($user->hasRole('organization') || $user->isOrganizationManagerFor($organization->id)) {
             unset($validated['status']);
             unset($validated['owner_user_id']);
         }
@@ -244,6 +277,24 @@ class OrganizationController extends Controller
         }
 
         $organization->update($validated);
+
+        if (array_key_exists('owner_user_id', $validated) && !empty($validated['owner_user_id'])) {
+            $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
+
+            if ($organizationRoleId) {
+                OrganizationUserRole::query()->updateOrCreate(
+                    [
+                        'organization_id' => $organization->id,
+                        'user_id' => $validated['owner_user_id'],
+                        'role_id' => $organizationRoleId,
+                    ],
+                    [
+                        'status' => 'active',
+                        'invited_by_user_id' => $user->id,
+                    ]
+                );
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -306,9 +357,9 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Get drivers assigned by the logged-in organization owner.
+     * Get drivers assigned to the logged-in user's managed organization.
      * GET /api/organizations/assigned-drivers
-     * Access: organization role only (owner).
+     * Access: organization role owner OR active organization manager.
      */
     public function getAssignedDrivers(Request $request): JsonResponse
     {
@@ -318,11 +369,19 @@ class OrganizationController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
-        if (! $user->hasRole('organization')) {
+        if (! $user->hasRole(Role::ORGANIZATION) && ! $user->hasAnyActiveOrganizationManagement()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
-        $organization = Organization::where('owner_user_id', $user->id)->first();
+        $organization = Organization::query()
+            ->where(function ($organizationScope) use ($user) {
+                $organizationScope->where('owner_user_id', $user->id)
+                    ->orWhereHas('organizationUserRoles', function ($organizationUserRoleQuery) use ($user) {
+                        $organizationUserRoleQuery->where('user_id', $user->id)
+                            ->where('status', 'active');
+                    });
+            })
+            ->first();
 
         if (! $organization) {
             return response()->json(['success' => false, 'message' => 'Organization not found for this user.'], 404);
@@ -330,26 +389,7 @@ class OrganizationController extends Controller
 
         $perPage = min((int) $request->input('per_page', 20), 100);
 
-        // Find driver IDs that this user acted on (assign / reassign)
-        $driverIds = DriverOrganizationAssignmentLog::where('acted_by_user_id', $user->id)
-            ->whereIn('action', [
-                DriverOrganizationAssignmentLog::ACTION_ASSIGN,
-                DriverOrganizationAssignmentLog::ACTION_REASSIGN,
-            ])
-            ->pluck('driver_id')
-            ->unique()
-            ->values()
-            ->all();
-
-        if (empty($driverIds)) {
-            return response()->json([
-                'success' => true,
-                'data' => [],
-            ], 200);
-        }
-
         $drivers = Driver::with(['user', 'organization'])
-            ->whereIn('id', $driverIds)
             ->where('organization_id', $organization->id)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);

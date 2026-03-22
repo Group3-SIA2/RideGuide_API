@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Driver;
 use App\Models\DriverOrganizationAssignmentLog;
 use App\Models\Organization;
+use App\Models\OrganizationUserRole;
 use App\Models\OrganizationTerminal;
 use App\Models\Role;
 use App\Models\Terminal;
@@ -49,12 +50,21 @@ class OrganizationController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        // Organization managers can only view organizations they own.
-        if ($currentUser->hasRole(Role::ORGANIZATION)
+        // Non-admin organization managers can only view organizations they own/manage.
+        if ((
+                $currentUser->hasRole(Role::ORGANIZATION)
+                || $currentUser->hasAnyActiveOrganizationManagement()
+            )
             && !$currentUser->hasRole(Role::ADMIN)
             && !$currentUser->hasRole(Role::SUPER_ADMIN)
         ) {
-            $query->where('owner_user_id', $currentUser->id);
+            $query->where(function ($managerScope) use ($currentUser) {
+                $managerScope->where('owner_user_id', $currentUser->id)
+                    ->orWhereHas('organizationUserRoles', function ($orgUserRoleQuery) use ($currentUser) {
+                        $orgUserRoleQuery->where('user_id', $currentUser->id)
+                            ->where('status', 'active');
+                    });
+            });
         }
 
         $organizations = $query->orderBy('name')->paginate(15)->withQueryString();
@@ -413,7 +423,25 @@ class OrganizationController extends Controller
             $this->ensureOwnerHasOrganizationRole($validated['owner_user_id']);
         }
 
-        Organization::create($validated);
+        $organization = Organization::create($validated);
+
+        if (!empty($organization->owner_user_id)) {
+            $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
+
+            if ($organizationRoleId) {
+                OrganizationUserRole::query()->updateOrCreate(
+                    [
+                        'organization_id' => $organization->id,
+                        'user_id' => $organization->owner_user_id,
+                        'role_id' => $organizationRoleId,
+                    ],
+                    [
+                        'status' => 'active',
+                        'invited_by_user_id' => $request->user()->id,
+                    ]
+                );
+            }
+        }
 
         return redirect()->route('admin.organizations.index')
             ->with('success', 'Organization created successfully.');
@@ -466,6 +494,24 @@ class OrganizationController extends Controller
         }
 
         $organization->update($validated);
+
+        if (array_key_exists('owner_user_id', $validated) && !empty($validated['owner_user_id'])) {
+            $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
+
+            if ($organizationRoleId) {
+                OrganizationUserRole::query()->updateOrCreate(
+                    [
+                        'organization_id' => $organization->id,
+                        'user_id' => $validated['owner_user_id'],
+                        'role_id' => $organizationRoleId,
+                    ],
+                    [
+                        'status' => 'active',
+                        'invited_by_user_id' => $request->user()->id,
+                    ]
+                );
+            }
+        }
 
         return redirect()->route('admin.organizations.index')
             ->with('success', 'Organization updated successfully.');
@@ -520,9 +566,21 @@ class OrganizationController extends Controller
             return null;
         }
 
-        return Organization::query()
+        $ownedOrganization = Organization::query()
             ->where('owner_user_id', $user->id)
             ->whereNull('deleted_at')
+            ->first();
+
+        if ($ownedOrganization) {
+            return $ownedOrganization;
+        }
+
+        return Organization::query()
+            ->whereNull('deleted_at')
+            ->whereHas('organizationUserRoles', function ($orgUserRoleQuery) use ($user) {
+                $orgUserRoleQuery->where('user_id', $user->id)
+                    ->where('status', 'active');
+            })
             ->first();
     }
 
