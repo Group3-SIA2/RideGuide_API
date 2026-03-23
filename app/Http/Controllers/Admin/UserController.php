@@ -32,7 +32,9 @@ class UserController extends Controller
             ->count();
 
         $query = User::with('roles')
-            ->whereNotNull('email_verified_at');
+            ->whereNotNull('first_name');
+
+            // dd($request->all());
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {

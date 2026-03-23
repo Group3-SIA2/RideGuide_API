@@ -35,6 +35,7 @@ class DashboardController extends Controller
         $totalSuperAdmins   = User::whereHas('roles', fn ($q) => $q->where('name', 'super_admin'))->count();
         $totalDrivers       = User::whereHas('roles', fn ($q) => $q->where('name', 'driver'))->count();
         $totalCommuters     = User::whereHas('roles', fn ($q) => $q->where('name', 'commuter'))->count();
+        $totalOrganizations   = User::whereHas('roles', fn ($q) => $q->where('name', 'organization'))->count();
         $totalDriverProfiles = Driver::count();
 
         $recentQuery = User::with('roles')
@@ -69,9 +70,11 @@ class DashboardController extends Controller
             'totalAdmins',
             'totalDrivers',
             'totalCommuters',
+            'totalOrganizations',
             'totalSuperAdmins',
             'totalDriverProfiles',
             'recentUsers',
+            
         ));
     }
 }
