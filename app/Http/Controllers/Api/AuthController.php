@@ -214,7 +214,12 @@ class AuthController extends Controller
                 'status_reason' => null,
                 'status_changed_at' => now(),
             ]);
-
+            
+            if ($emailVerified) {
+                $user->forceFill([
+                    'email_verified_at' => now(),
+                ])->save();
+            }
             $isNewUser = true;
         }
 
