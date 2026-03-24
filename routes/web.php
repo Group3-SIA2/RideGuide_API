@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\UserAuthorizationController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\Auth2faController;
+use App\Http\Controllers\Admin\TransactionLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,6 +84,8 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/backups', [BackupController::class, 'create'])->name('backups.create');
         Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
         Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])->name('backups.restore');
+
+        Route::get('/transactions', [TransactionLogController::class, 'index'])->name('transactions.index');
 
         Route::get('/user-authorization',                     [UserAuthorizationController::class, 'index'])->name('user-authorization.index');
         Route::get('/user-authorization/role/{role}/edit',    [UserAuthorizationController::class, 'editRole'])->name('user-authorization.edit-role');

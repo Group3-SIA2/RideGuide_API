@@ -53,6 +53,9 @@ class PermissionSeeder extends Seeder
 
             // Authorization Management
             ['name' => 'manage_authorization', 'display_name' => 'Manage Authorization', 'group' => 'authorization', 'description' => 'Can manage role permissions and user roles.'],
+
+            // Transaction Logbook
+            ['name' => 'view_transactions', 'display_name' => 'View Transactions', 'group' => 'audit', 'description' => 'Can view transaction logbook.'],
         ];
 
         foreach ($permissions as $perm) {
