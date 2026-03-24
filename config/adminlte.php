@@ -456,6 +456,13 @@ return [
             'can'    => 'view_backups',
         ],
         [
+            'text'   => 'Transaction Logbook',
+            'route'  => 'admin.transactions.index',
+            'icon'   => 'fas fa-fw fa-book',
+            'active' => ['admin/transactions*'],
+            'can'    => 'view_transactions',
+        ],
+        [
             'text'   => 'Logout',
             'route'  => 'admin.logout.confirm',
             'icon'   => 'fas fa-fw fa-sign-out-alt',
