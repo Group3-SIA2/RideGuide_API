@@ -17,12 +17,13 @@ return new class extends Migration
             $table->string('type'); 
             $table->text('description')->nullable();
             $table->uuid('owner_user_id')->nullable();
-            $table->string('hq_address')->nullable();
+            $table->uuid('hq_address')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('owner_user_id')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('hq_address')->references('id')->on('hq_address')->onDelete('set null');
         });
     }
 
