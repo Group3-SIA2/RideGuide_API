@@ -63,24 +63,6 @@
                             @enderror
                         </div>
 
-                        <div class="rg-form-group">
-                            <label class="rg-form-label" for="type">
-                                Type <span class="rg-required">*</span>
-                            </label>
-                            <input id="type" name="type" type="text" list="type-options"
-                                   class="rg-form-control @error('type') is-invalid @enderror"
-                                   value="{{ old('type', $organization->type) }}"
-                                   required>
-                            <datalist id="type-options">
-                                @foreach($existingTypes as $existingType)
-                                    <option value="{{ $existingType }}">
-                                @endforeach
-                            </datalist>
-                            <p class="rg-form-hint">Choose an existing type or type a custom value.</p>
-                            @error('type')
-                                <p class="rg-form-error">{{ $message }}</p>
-                            @enderror
-                        </div>
 
                         <div class="rg-form-group">
                             <label class="rg-form-label" for="description">Description</label>
@@ -92,15 +74,96 @@
                             @enderror
                         </div>
 
+                        {{-- ── Head Office Address ── --}}
+                        @php
+                            $addr = $organization->hqAddress;
+                        @endphp
                         <div class="rg-form-group">
-                            <label class="rg-form-label" for="hq_address">Head Office Address</label>
-                            <input id="hq_address" name="hq_address" type="text"
-                                   class="rg-form-control @error('hq_address') is-invalid @enderror"
-                                   value="{{ old('hq_address', $organization->hq_address) }}"
-                                   placeholder="e.g. Lagao, General Santos City">
-                            @error('hq_address')
-                                <p class="rg-form-error">{{ $message }}</p>
-                            @enderror
+                            <label class="rg-form-label">
+                                <i class="fas fa-map-marker-alt mr-1" style="color:var(--rg-accent);"></i>
+                                Head Office Address
+                            </label>
+                            <div class="rg-address-block">
+                                <div class="row">
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-2">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_street">
+                                                Street <span class="rg-required">*</span>
+                                            </label>
+                                            <input id="hq_street" name="hq_street" type="text"
+                                                   class="rg-form-control @error('hq_street') is-invalid @enderror"
+                                                   value="{{ old('hq_street', $addr->street ?? '') }}"
+                                                   placeholder="e.g. J. Catolico Ave">
+                                            @error('hq_street')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-2">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_barangay">
+                                                Barangay <span class="rg-required">*</span>
+                                            </label>
+                                            <input id="hq_barangay" name="hq_barangay" type="text"
+                                                   class="rg-form-control @error('hq_barangay') is-invalid @enderror"
+                                                   value="{{ old('hq_barangay', $addr->barangay ?? '') }}"
+                                                   placeholder="e.g. Lagao">
+                                            @error('hq_barangay')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-2">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_subdivision">Subdivision</label>
+                                            <input id="hq_subdivision" name="hq_subdivision" type="text"
+                                                   class="rg-form-control @error('hq_subdivision') is-invalid @enderror"
+                                                   value="{{ old('hq_subdivision', $addr->subdivision ?? '') }}"
+                                                   placeholder="e.g. Heritage Homes (optional)">
+                                            @error('hq_subdivision')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-2">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_floor_unit_room">Floor / Unit / Room</label>
+                                            <input id="hq_floor_unit_room" name="hq_floor_unit_room" type="text"
+                                                   class="rg-form-control @error('hq_floor_unit_room') is-invalid @enderror"
+                                                   value="{{ old('hq_floor_unit_room', $addr->floor_unit_room ?? '') }}"
+                                                   placeholder="e.g. Unit 3B (optional)">
+                                            @error('hq_floor_unit_room')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-0">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_lat">Latitude</label>
+                                            <input id="hq_lat" name="hq_lat" type="text"
+                                                   class="rg-form-control @error('hq_lat') is-invalid @enderror"
+                                                   value="{{ old('hq_lat', $addr->lat ?? '') }}"
+                                                   placeholder="e.g. 6.1164 (optional)">
+                                            @error('hq_lat')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-0">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_lng">Longitude</label>
+                                            <input id="hq_lng" name="hq_lng" type="text"
+                                                   class="rg-form-control @error('hq_lng') is-invalid @enderror"
+                                                   value="{{ old('hq_lng', $addr->lng ?? '') }}"
+                                                   placeholder="e.g. 125.1716 (optional)">
+                                            @error('hq_lng')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="rg-form-hint">Street and Barangay are required if you want to set a head office address.</p>
                         </div>
 
                         <div class="rg-form-group">
