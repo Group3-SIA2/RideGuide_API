@@ -76,6 +76,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/organizations/manager/assignments/drivers/{driver}/assign', [OrganizationController::class, 'assignDriver'])->name('organizations.assignments.assign');
         Route::put('/organizations/manager/assignments/drivers/{driver}', [OrganizationController::class, 'updateDriverAssignment'])->name('organizations.assignments.update');
         Route::delete('/organizations/manager/assignments/drivers/{driver}', [OrganizationController::class, 'unassignDriver'])->name('organizations.assignments.unassign');
+        Route::patch('organizations/{id}/address', [OrganizationController::class, 'updateAddress'])->name('admin.organizations.address.update');
         Route::get('/profile',         [ProfileController::class,      'index'])->name('profile.index');
         Route::get('/logout',     [LogoutController::class,    'confirm'])->name('logout.confirm');
         Route::post('/logout',    [LogoutController::class,    'logout'])->name('logout');
