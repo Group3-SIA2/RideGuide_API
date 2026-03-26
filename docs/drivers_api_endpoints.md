@@ -1,348 +1,534 @@
-# RideGuide Driver API
+# RideGuide Driver API Endpoints
 
 ## Overview
 
-The Driver API allows authenticated **driver** users to manage their driver profiles. All endpoints are **protected** and require a valid Bearer Token obtained via login + 2FA OTP verification.
+The Driver API manages the authenticated user's driver profile, license details, and license images.
 
-**Base URL**
+These endpoints are under:
+
 ```
 https://rideguide.test/api/drivers
 ```
 
+All Driver API routes are protected by:
+- `auth:sanctum`
+- `active.user`
+
+This means requests require a valid Sanctum Bearer token and the authenticated user must pass your active-user middleware checks.
+
 ---
 
-## Headers
+## Authentication & Headers
 
-Include these headers in **all** requests:
+### Required Header (all endpoints)
 
 ```
 Accept: application/json
-Content-Type: application/json
 Authorization: Bearer {your_token_here}
 ```
 
-> **Note:** You must be logged in as a user with the `driver` role to create a profile. Admin users can read, update, delete, and restore any driver profile.
+### Content-Type
+
+- For endpoints that upload files (`create-profile`, `update-profile` when sending images), use:
+
+```
+Content-Type: multipart/form-data
+```
+
+- For endpoints without file upload, JSON is fine:
+
+```
+Content-Type: application/json
+```
+
+---
+
+## Access Rules (High-level)
+
+- **Create profile**: `driver` role only.
+- **Read profile**: owner of the profile or `admin`.
+- **Update profile**: owner of the profile or `admin`.
+- **Delete profile**: `admin` only.
+- **Restore profile**: `admin` only.
+
+> Notes:
+> - A user can only have one driver profile (`driver.user_id` is unique).
+> - Driver verification status is stored in the related license record (`license_id` table), not directly in `driver` table.
 
 ---
 
 ## Endpoints Summary
 
-| #  | Method   | Endpoint                              | Description              | Access           |
-|----|----------|---------------------------------------|--------------------------|------------------|
-| 1  | `POST`   | `/api/drivers/create-profile`         | Create driver profile    | Driver only      |
-| 2  | `GET`    | `/api/drivers/read-profile/{id}`      | Get driver profile       | Owner or Admin   |
-| 3  | `PUT`    | `/api/drivers/update-profile/{id}`    | Update driver profile    | Owner or Admin   |
-| 4  | `DELETE` | `/api/drivers/delete-profile/{id}`    | Soft-delete profile      | Admin only       |
-| 5  | `PUT`    | `/api/drivers/restore-profile/{id}`   | Restore deleted profile  | Admin only       |
+| # | Method | Endpoint | Description | Access |
+|---|--------|----------|-------------|--------|
+| 1 | `POST` | `/api/drivers/create-profile` | Create a driver profile with license ID and images | Driver only |
+| 2 | `GET` | `/api/drivers/read-profile/{id}` | Get one driver profile | Owner or Admin |
+| 3 | `PUT` | `/api/drivers/update-profile/{id}` | Update driver/license fields and/or images | Owner or Admin |
+| 4 | `DELETE` | `/api/drivers/delete-profile/{id}` | Soft-delete driver profile (and related license/image) | Admin only |
+| 5 | `PUT` | `/api/drivers/restore-profile/{id}` | Restore soft-deleted driver profile and related records | Admin only |
 
 ---
 
-## 1. Create Driver Profile
+## Driver Profile Response Shape
 
-**POST** `https://rideguide.test/api/drivers/create-profile`
+Most success responses return this object under `driver_profile`:
 
-Creates a new driver profile for the authenticated user. Each driver can only have **one** profile. The `verification_status` is automatically set to `unverified` — only an admin can change it later via the update endpoint.
-
-In Postman, go to the **Body** tab, select **form-data**, and fill in:
-
-```
-license_number    D01 00 000001
-franchise_number  1984516156
-```
-
-**Field Rules**
-
-| Field              | Type   | Required | Rules                                                              |
-|--------------------|--------|----------|--------------------------------------------------------------------|
-| `license_number`   | string | Yes      | Max 255 chars, unique, alphanumeric and spaces only                |
-| `franchise_number` | string | Yes      | Max 255 chars, unique, alphanumeric and spaces only                |
-
-> **Note:** Both fields only accept letters, numbers, and spaces (regex: `^[A-Za-z0-9\s]+$`). The `verification_status` is **not** a user input — it defaults to `unverified`.
-
-**Success Response (201)**
 ```json
 {
-    "message": "Driver profile created successfully",
-    "driver_profile": {
-        "id": "9f1a2b3c-...",
-        "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "license_number": "D01 00 000001",
-        "franchise_number": "1984516156",
-        "verification_status": "unverified",
-        "created_at": "2026-02-25T10:00:00.000000Z",
-        "updated_at": "2026-02-25T10:00:00.000000Z"
+  "id": "uuid",
+  "user_id": "uuid",
+  "user": {
+    "id": "uuid",
+    "first_name": "string|null",
+    "last_name": "string|null",
+    "middle_name": "string|null",
+    "email": "string|null"
+  },
+  "organization": {
+    "id": "uuid",
+    "name": "string",
+    "type": "string"
+  },
+  "verification_status": "unverified|verified|rejected|null",
+  "rejection_reason": "string|null",
+  "driver_license": {
+    "id": "uuid",
+    "number": "string",
+    "verification_status": "unverified|verified|rejected",
+    "rejection_reason": "string|null",
+    "images": {
+      "front_path": "string|null",
+      "front_url": "string|null",
+      "back_path": "string|null",
+      "back_url": "string|null"
     }
+  },
+  "emergency_contact": {
+    "id": "uuid",
+    "contact_name": "string",
+    "contact_phone_number": "string",
+    "contact_relationship": "string"
+  },
+  "created_at": "timestamp",
+  "updated_at": "timestamp",
+  "deleted_at": "timestamp|null"
 }
 ```
 
-**Error Response — Not a Driver (403)**
+Fields like `organization` and `emergency_contact` may be `null`.
+
+---
+
+## 1) Create Driver Profile
+
+### Endpoint
+
+**POST** `/api/drivers/create-profile`
+
+### Purpose
+
+Creates the authenticated driver's profile, creates a license image record, creates a license record with default status `unverified`, then links everything in the `driver` table.
+
+### Request Type
+
+`multipart/form-data`
+
+### Request Fields
+
+| Field | Type | Required | Rules |
+|------|------|----------|------|
+| `organization_id` | string (UUID) | No | Must exist in `organizations.id` |
+| `license_id_number` | string | Yes | max 255, unique in `license_id.license_id`, regex `^[A-Za-z0-9\s-]+$` |
+| `license_image_front` | file image | Yes | image, max 2048 KB |
+| `license_image_back` | file image | No | image, max 2048 KB |
+
+### Example (Postman form-data)
+
+```
+organization_id      019dxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+license_id_number    D01 00-000001
+license_image_front  <file>
+license_image_back   <file>   (optional)
+```
+
+### Success Response (201)
+
 ```json
 {
-    "error": "Unauthorized."
+  "message": "Driver profile created successfully",
+  "driver_profile": {
+    "id": "019...",
+    "user_id": "019...",
+    "user": {
+      "id": "019...",
+      "first_name": "Juan",
+      "last_name": "Dela Cruz",
+      "middle_name": null,
+      "email": "juan@example.com"
+    },
+    "organization": null,
+    "verification_status": "unverified",
+    "rejection_reason": null,
+    "driver_license": {
+      "id": "019...",
+      "number": "D01 00-000001",
+      "verification_status": "unverified",
+      "rejection_reason": null,
+      "images": {
+        "front_path": "driver_license_ids/xxx.jpg",
+        "front_url": "https://rideguide.test/storage/driver_license_ids/xxx.jpg",
+        "back_path": null,
+        "back_url": null
+      }
+    },
+    "emergency_contact": null,
+    "created_at": "2026-03-26T10:00:00.000000Z",
+    "updated_at": "2026-03-26T10:00:00.000000Z",
+    "deleted_at": null
+  }
 }
 ```
 
-**Error Response — Profile Already Exists (400)**
+### Common Errors
+
+**401 Unauthenticated**
+```json
+{ "error": "Unauthenticated" }
+```
+
+**403 Not Driver Role**
+```json
+{ "error": "Unauthorized." }
+```
+
+**400 Profile Already Exists**
+```json
+{ "error": "You already have a driver profile." }
+```
+
+**422 Validation Error**
 ```json
 {
-    "error": "You already have a driver profile."
+  "message": "The license id number field is required.",
+  "errors": {
+    "license_id_number": ["The license id number field is required."]
+  }
 }
 ```
 
-**Error Response — Validation Error (422)**
+---
+
+## 2) Read Driver Profile
+
+### Endpoint
+
+**GET** `/api/drivers/read-profile/{id}`
+
+### Purpose
+
+Returns a single driver profile by profile UUID.
+
+### Access
+
+- Profile owner
+- Admin
+
+### Success Response (200)
+
 ```json
 {
-    "message": "The license number has already been taken.",
-    "errors": {
-        "license_number": ["The license number has already been taken."]
+  "driver_profile": {
+    "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
+    "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
+    "verification_status": "unverified",
+    "driver_license": {
+      "number": "D01 00-000001"
     }
+  }
 }
+```
+
+### Common Errors
+
+**404 Not Found**
+```json
+{ "error": "Driver profile not found" }
+```
+
+**403 Unauthorized**
+```json
+{ "error": "Unauthorized" }
+```
+
+**401 Unauthenticated**
+```json
+{ "error": "Unauthenticated" }
 ```
 
 ---
 
-## 2. Read Driver Profile
+## 3) Update Driver Profile
 
-**GET** `https://rideguide.test/api/drivers/read-profile/{id}`
+### Endpoint
 
-Returns the driver profile with the given ID. Only the profile owner or an admin can access this.
+**PUT** `/api/drivers/update-profile/{id}`
 
-No body is needed for this request. Replace `{id}` with the driver profile UUID.
+### Purpose
 
-**Example**
+Updates the driver profile and/or related license data/images.
+
+### Request Type
+
+- If uploading images: `multipart/form-data`
+- If no files: `application/json` is acceptable
+
+---
+
+### 3A) Admin Update Rules
+
+Admins can update:
+- `organization_id`
+- `license_id_number`
+- `license_image_front`
+- `license_image_back`
+- `license_verification_status` (`unverified`, `verified`, `rejected`)
+- `license_rejection_reason`
+
+#### Admin Field Rules
+
+| Field | Type | Required | Rules |
+|------|------|----------|------|
+| `organization_id` | string (UUID) | No | Must exist in `organizations.id` |
+| `license_id_number` | string | No | max 255, unique in `license_id.license_id` (current record ignored), regex `^[A-Za-z0-9\s-]+$` |
+| `license_image_front` | file image | No | image, max 2048 KB |
+| `license_image_back` | file image | No | image, max 2048 KB |
+| `license_verification_status` | string | No | `unverified`, `verified`, `rejected` |
+| `license_rejection_reason` | string | No | max 255, nullable |
+
+> Behavior: if `license_verification_status` is set to `verified` or `unverified`, rejection reason is auto-cleared.
+
+---
+
+### 3B) Driver (Owner) Update Rules
+
+Drivers (owners) can update:
+- `license_id_number`
+- `license_image_front`
+- `license_image_back`
+
+Drivers cannot update:
+- `organization_id`
+- `license_number` (legacy/disallowed key)
+- `verification_status` (legacy/disallowed key)
+
+If disallowed fields are sent, API returns 403.
+
+#### Driver Field Rules
+
+| Field | Type | Required | Rules |
+|------|------|----------|------|
+| `license_id_number` | string | No | max 255, unique in `license_id.license_id` (current record ignored), regex `^[A-Za-z0-9\s-]+$` |
+| `license_image_front` | file image | No | image, max 2048 KB |
+| `license_image_back` | file image | No | image, max 2048 KB |
+
+---
+
+### Example Request (Admin)
+
 ```
-GET https://rideguide.test/api/drivers/read-profile/019c93de-1d75-713e-a51f-75fe61efcd73
+organization_id             019dxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+license_id_number           D01 00-000002
+license_verification_status verified
+license_rejection_reason    
+license_image_front         <file>
 ```
 
-**Success Response (200)**
+### Example Request (Driver)
+
+```
+license_id_number  D01 00-000003
+license_image_back <file>
+```
+
+### Success Response (200)
+
 ```json
 {
-    "driver_profile": {
-        "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
-        "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "license_number": "D01-00-000001",
-        "franchise_number": "1984516156",
-        "verification_status": "unverified",
-        "created_at": "2026-02-25T10:00:00.000000Z",
-        "updated_at": "2026-02-25T10:00:00.000000Z"
+  "message": "Driver profile updated successfully",
+  "driver_profile": {
+    "id": "019...",
+    "verification_status": "verified",
+    "rejection_reason": null,
+    "driver_license": {
+      "number": "D01 00-000002",
+      "verification_status": "verified",
+      "rejection_reason": null
     }
+  }
 }
 ```
 
-**Error Response — Not Found (404)**
+### Common Errors
+
+**404 Not Found**
+```json
+{ "error": "Driver profile not found" }
+```
+
+**403 Unauthorized (not owner/admin)**
+```json
+{ "error": "Unauthorized" }
+```
+
+**403 Disallowed fields (driver)**
 ```json
 {
-    "error": "Driver profile not found"
+  "error": "You can only update your license ID images.",
+  "disallowed_fields": ["organization_id"]
 }
 ```
 
-**Error Response — Unauthorized (403)**
+**422 Validation Error**
 ```json
 {
-    "error": "Unauthorized"
+  "message": "The license id number has already been taken.",
+  "errors": {
+    "license_id_number": ["The license id number has already been taken."]
+  }
 }
 ```
 
 ---
 
-## 3. Update Driver Profile
+## 4) Delete Driver Profile
 
-**PUT** `https://rideguide.test/api/drivers/update-profile/{id}`
+### Endpoint
 
-Updates an existing driver profile. **Drivers** can only update their own `franchise_number`. **Admins** can update all fields including `license_number`, `franchise_number`, and `verification_status`. All fields are optional (send only the ones you want to change).
+**DELETE** `/api/drivers/delete-profile/{id}`
 
-### As Admin
+### Purpose
 
-In Postman, go to the **Body** tab, select **form-data**, and fill in the fields to update:
+Soft-deletes the driver profile.
 
-```
-license_number       D01 00 000002
-franchise_number     9876543210
-verification_status  verified
-```
+Implementation also soft-deletes related records when present:
+- `license_id`
+- `license_image`
 
-**Field Rules (Admin)**
+### Access
 
-| Field                 | Type   | Required | Rules                                                                                  |
-|-----------------------|--------|----------|----------------------------------------------------------------------------------------|
-| `license_number`      | string | No       | Max 255 chars, unique (ignores current profile), alphanumeric and spaces only           |
-| `franchise_number`    | string | No       | Max 255 chars, unique (ignores current profile), alphanumeric and spaces only           |
-| `verification_status` | string | No       | Must be one of: `verified`, `unverified`, `rejected`                                   |
+- Admin only
 
-### As Driver (Owner)
+### Success Response (200)
 
-Drivers can **only** update `franchise_number`. Attempting to update `license_number` or `verification_status` will return a 403 error.
-
-In Postman, go to the **Body** tab, select **form-data**, and fill in:
-
-```
-franchise_number  9876543210
-```
-
-**Field Rules (Driver)**
-
-| Field              | Type   | Required | Rules                                                     |
-|--------------------|--------|----------|-----------------------------------------------------------|
-| `franchise_number` | string | No       | Max 255 chars, unique (ignores current profile)            |
-
-**Example**
-```
-PUT https://rideguide.test/api/drivers/update-profile/019c93de-1d75-713e-a51f-75fe61efcd73
-```
-
-**Success Response (200)**
 ```json
 {
-    "message": "Driver profile updated successfully",
-    "driver_profile": {
-        "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
-        "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "license_number": "D01 00 000002",
-        "franchise_number": "9876543210",
-        "verification_status": "verified",
-        "created_at": "2026-02-25T10:00:00.000000Z",
-        "updated_at": "2026-02-25T12:30:00.000000Z"
-    }
+  "message": "Driver profile deleted successfully",
+  "driver_profile": {
+    "id": "019...",
+    "deleted_at": null
+  }
 }
 ```
 
-**Error Response — Not Found (404)**
+### Common Errors
+
+**404 Not Found**
 ```json
-{
-    "error": "Driver profile not found"
-}
+{ "error": "Driver profile not found" }
 ```
 
-**Error Response — Unauthorized (403)**
+**403 Unauthorized**
 ```json
-{
-    "error": "Unauthorized"
-}
-```
-
-**Error Response — Driver Trying to Update Disallowed Fields (403)**
-```json
-{
-    "error": "You can only update your franchise_number.",
-    "disallowed_fields": ["license_number", "verification_status"]
-}
+{ "error": "Unauthorized" }
 ```
 
 ---
 
-## 4. Delete Driver Profile (Soft Delete)
+## 5) Restore Driver Profile
 
-**DELETE** `https://rideguide.test/api/drivers/delete-profile/{id}`
+### Endpoint
 
-Soft-deletes a driver profile. **Admin only.**
+**PUT** `/api/drivers/restore-profile/{id}`
 
-No body is needed for this request. Replace `{id}` with the driver profile UUID.
+### Purpose
 
-**Example**
-```
-DELETE https://rideguide.test/api/drivers/delete-profile/019c93de-1d75-713e-a51f-75fe61efcd73
-```
+Restores a soft-deleted driver profile and restores related soft-deleted records when available:
+- `license_id`
+- `license_image`
 
-**Success Response (200)**
+### Access
+
+- Admin only
+
+### Success Response (200)
+
 ```json
 {
-    "message": "Driver profile deleted successfully"
+  "message": "Driver profile restored successfully",
+  "driver_profile": {
+    "id": "019...",
+    "deleted_at": null
+  }
 }
 ```
 
-**Error Response — Not Found (404)**
+### Common Errors
+
+**404 Not Found**
 ```json
-{
-    "error": "Driver profile not found"
-}
+{ "error": "Driver profile not found" }
 ```
 
-**Error Response — Unauthorized (403)**
+**401 Unauthenticated**
 ```json
-{
-    "error": "Unauthorized"
-}
+{ "error": "Unauthenticated" }
+```
+
+**403 Unauthorized**
+```json
+{ "error": "Unauthorized" }
 ```
 
 ---
 
-## 5. Restore Driver Profile
+## Suggested Postman Testing Flow
 
-**PUT** `https://rideguide.test/api/drivers/restore-profile/{id}`
-
-Restores a soft-deleted driver profile. **Admin only.**
-
-No body is needed for this request. Replace `{id}` with the driver profile UUID.
-
-**Example**
-```
-PUT https://rideguide.test/api/drivers/restore-profile/019c93de-1d75-713e-a51f-75fe61efcd73
-```
-
-**Success Response (200)**
-```json
-{
-    "message": "Driver profile restored successfully",
-    "driver_profile": {
-        "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
-        "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
-        "license_number": "D01-00-000001",
-        "franchise_number": "1984516156",
-        "verification_status": "unverified",
-        "created_at": "2026-02-25T10:00:00.000000Z",
-        "updated_at": "2026-02-25T14:00:00.000000Z"
-    }
-}
-```
-
-**Error Response — Not Found (404)**
-```json
-{
-    "error": "Driver profile not found"
-}
-```
-
-**Error Response — Unauthorized (403)**
-```json
-{
-    "error": "Unauthorized"
-}
-```
+1. Authenticate (email/phone auth flow), get Bearer token.
+2. Set Authorization to Bearer Token.
+3. As a driver account, call `POST /api/drivers/create-profile` using form-data with image upload.
+4. Call `GET /api/drivers/read-profile/{id}` and confirm nested `driver_license.images.front_url` is returned.
+5. As driver owner, call `PUT /api/drivers/update-profile/{id}` with `license_id_number` and/or images.
+6. As admin account, call `PUT /api/drivers/update-profile/{id}` with `license_verification_status` and optional rejection reason.
+7. As admin account, call delete then restore endpoints.
 
 ---
 
-## Postman Testing Workflow
+## Role & Access Matrix
 
-Follow these steps in order to test the driver endpoints:
-
-1. **Login** — `POST /api/auth/login` with your driver account credentials.
-2. **Verify OTP** — `POST /api/auth/verify-otp` with type `login_2fa` to get your Bearer Token.
-3. **Set Token** — In Postman, go to **Authorization** → **Bearer Token** and paste the token.
-4. **Create Profile** — `POST /api/drivers/create-profile` with `license_number` & `franchise_number` (verification_status is auto-set to `unverified`).
-5. **Read Profile** — `GET /api/drivers/read-profile/{id}` using the profile ID from step 4.
-6. **Update Profile (as Driver)** — `PUT /api/drivers/update-profile/{id}` with `franchise_number` only.
-7. **Update Profile (as Admin)** — `PUT /api/drivers/update-profile/{id}` with any fields including `verification_status`.
-8. **Delete Profile** — `DELETE /api/drivers/delete-profile/{id}` (requires admin token).
-9. **Restore Profile** — `PUT /api/drivers/restore-profile/{id}` (requires admin token).
+| Role | Create | Read | Update | Delete | Restore |
+|------|--------|------|--------|--------|---------|
+| `driver` | ✅ Own | ✅ Own | ✅ Own (license_id_number + images) | ❌ | ❌ |
+| `admin` | ❌ | ✅ Any | ✅ Any (including verification status) | ✅ Any | ✅ Any |
+| `commuter` | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 
-## Roles & Access Reference
+## Common HTTP Status Codes
 
-| Role       | Create | Read       | Update                        | Delete | Restore |
-|------------|--------|------------|-------------------------------|--------|---------|
-| `driver`   | ✅ Own | ✅ Own     | ✅ Own (`franchise_number` only) | ❌     | ❌      |
-| `admin`    | ❌     | ✅ Any     | ✅ Any (all fields)            | ✅ Any | ✅ Any  |
-| `commuter` | ❌     | ❌         | ❌                             | ❌     | ❌      |
+| Status | Meaning | Typical Cause |
+|--------|---------|---------------|
+| 200 | Success | Read/update/delete/restore successful |
+| 201 | Created | Driver profile created |
+| 400 | Bad Request | Driver already has profile |
+| 401 | Unauthenticated | Missing/invalid token |
+| 403 | Unauthorized | Wrong role, not owner, or disallowed fields |
+| 404 | Not Found | Driver profile ID does not exist |
+| 422 | Validation Error | Invalid field format, duplicate license ID, invalid image |
 
 ---
 
-## Common Error Responses
+## Implementation Notes (Important)
 
-| Status | Meaning             | Example                                      |
-|--------|---------------------|----------------------------------------------|
-| 401    | Unauthenticated     | Missing or invalid Bearer Token              |
-| 403    | Unauthorized        | Wrong role or not the profile owner           |
-| 404    | Not Found           | Driver profile with given ID does not exist   |
-| 400    | Bad Request         | Profile already exists for this user          |
-| 422    | Validation Error    | Invalid or duplicate license/franchise number |
+- Current disallowed-field guard for non-admin update checks keys: `license_number`, `verification_status`, `organization_id`.
+- Canonical update keys used by API are: `license_id_number` and `license_verification_status`.
+- For consistency in client apps, prefer sending only the canonical keys documented above.
