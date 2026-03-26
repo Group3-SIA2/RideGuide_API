@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use App\Models\OrganizationAddress;
+use App\Models\HqAddress;
 
 class HQAddressSeeder extends Seeder
 {
@@ -110,7 +110,7 @@ class HQAddressSeeder extends Seeder
         ];
 
         foreach ($addresses as $addr) {
-            OrganizationAddress::create([
+            HqAddress::create([
                 'id' => Str::uuid(),
                 'barangay' => $addr['barangay'],
                 'street' => $addr['street'],

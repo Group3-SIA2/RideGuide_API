@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\Organization;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\OrganizationAddress;
+use App\Models\HqAddress;
 
 class OrganizationSeeder extends Seeder
 {
@@ -13,35 +13,31 @@ class OrganizationSeeder extends Seeder
 
     public function run(): void
     {
-        $descriptions = [
-            'TODA' => 'Primary short-distance transport association in GenSan operating motorized tricycles.',
-            'MODA' => 'Represents motorcycle-for-hire transport operators in GenSan.',
-        ];
+        $descriptions = "TODA Primary short-distance transport association in GenSan operating motorized tricycles.";
 
         $organizations = [
-            ['name' => 'Bulaong Terminal', 'type' => 'TODA', 'barangay' => 'Bulaong'],
-            ['name' => 'Calumpang Terminal', 'type' => 'TODA', 'barangay' => 'Calumpang'],
-            ['name' => 'City Heights Terminal', 'type' => 'TODA', 'barangay' => 'City Heights'],
-            ['name' => 'Dadiangas Terminal', 'type' => 'TODA', 'barangay' => 'Dadiangas'],
-            ['name' => 'Lagao Terminal', 'type' => 'TODA', 'barangay' => 'Lagao'],
-            ['name' => 'Labangal Terminal', 'type' => 'TODA', 'barangay' => 'Labangal'],
-            ['name' => 'Apopong Terminal', 'type' => 'TODA', 'barangay' => 'Apopong'],
-            ['name' => 'Bula Terminal', 'type' => 'TODA', 'barangay' => 'Bula'],
-            ['name' => 'San Isidro Terminal', 'type' => 'TODA', 'barangay' => 'San Isidro'],
-            ['name' => 'Fatima Terminal', 'type' => 'TODA', 'barangay' => 'Fatima'],
-            ['name' => 'Makar Wharf Terminal', 'type' => 'MODA', 'barangay' => 'Makar Wharf'],
-            ['name' => 'Fishport Terminal', 'type' => 'MODA', 'barangay' => 'General Santos Fish Port Complex'],
+            ['name' => 'Bulaong', 'barangay' => 'Bulaong'],
+            ['name' => 'Calumpang', 'barangay' => 'Calumpang'],
+            ['name' => 'City Heights', 'barangay' => 'City Heights'],
+            ['name' => 'Dadiangas', 'barangay' => 'Dadiangas'],
+            ['name' => 'Lagao', 'barangay' => 'Lagao'],
+            ['name' => 'Labangal', 'barangay' => 'Labangal'],
+            ['name' => 'Apopong', 'barangay' => 'Apopong'],
+            ['name' => 'Bula', 'barangay' => 'Bula'],
+            ['name' => 'San Isidro', 'barangay' => 'San Isidro'],
+            ['name' => 'Fatima', 'barangay' => 'Fatima'],
+            ['name' => 'Makar Wharf', 'barangay' => 'Makar Wharf'],
+            ['name' => 'Fishport', 'barangay' => 'General Santos Fish Port Complex'],
         ];
 
         foreach ($organizations as $org) {
 
-            $address = OrganizationAddress::where('barangay', $org['barangay'])->first();
+            $address = HqAddress::where('barangay', $org['barangay'])->first();
 
             Organization::updateOrCreate(
                 ['name' => $org['name']],
                 [
-                    'type'        => $org['type'],
-                    'description' => $descriptions[$org['type']],
+                    'description' => $descriptions,
                     'hq_address'  => $address?->id,
                     'status'      => 'active',
                 ]

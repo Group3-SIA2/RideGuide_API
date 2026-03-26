@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('organizations', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name')->unique();
-            $table->string('type'); 
             $table->text('description')->nullable();
             $table->uuid('owner_user_id')->nullable();
             $table->uuid('hq_address')->nullable();
