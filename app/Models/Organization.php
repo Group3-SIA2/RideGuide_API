@@ -15,7 +15,6 @@ class Organization extends Model
 
     protected $fillable = [
         'name',
-        'type',
         'description',
         'hq_address',
         'status',
@@ -66,5 +65,10 @@ class Organization extends Model
             ->withPivot(['id', 'role_id', 'status', 'invited_by_user_id', 'deleted_at'])
             ->wherePivotNull('deleted_at')
             ->wherePivot('status', 'active');
+    }
+
+    public function hqAddress(): BelongsTo
+    {
+        return $this->belongsTo(HqAddress::class, 'hq_address');
     }
 }
