@@ -7,6 +7,7 @@ use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Driver;
 use App\Models\DriverOrganizationAssignmentLog;
+use App\Models\HqAddress;
 use App\Models\Organization;
 use App\Models\OrganizationUserRole;
 use App\Models\OrganizationTerminal;
@@ -31,19 +32,17 @@ class OrganizationController extends Controller
         $showDeleted = $request->input('status') === 'deleted';
 
         $query = $showDeleted
-            ? Organization::onlyTrashed()->withCount('drivers')
-            : Organization::withCount('drivers');
+            ? Organization::onlyTrashed()->withCount('drivers')->with('hqAddress')
+            : Organization::withCount('drivers')->with('hqAddress');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('type', 'like', "%{$search}%")
-                  ->orWhere('hq_address', 'like', "%{$search}%");
+                  ->orWhereHas('hqAddress', function ($addrQ) use ($search) {
+                      $addrQ->where('barangay', 'like', "%{$search}%")
+                            ->orWhere('street', 'like', "%{$search}%");
+                  });
             });
-        }
-
-        if ($request->input('type')) {
-            $query->where('type', $request->input('type'));
         }
 
         if (!$showDeleted && $request->input('status')) {
@@ -68,7 +67,6 @@ class OrganizationController extends Controller
         }
 
         $organizations = $query->orderBy('name')->paginate(15)->withQueryString();
-        $types         = Organization::distinct()->pluck('type')->filter();
 
         if ($request->ajax()) {
             return response()->json([
@@ -78,7 +76,7 @@ class OrganizationController extends Controller
             ]);
         }
 
-        return view('admin.organizations.index', compact('organizations', 'types', 'showDeleted'));
+        return view('admin.organizations.index', compact('organizations', 'showDeleted'));
     }
 
     public function managerDashboard(Request $request)
@@ -400,14 +398,8 @@ class OrganizationController extends Controller
             ->filter()
             ->values();
 
-        $existingTypes = Organization::query()
-            ->orderBy('type')
-            ->distinct()
-            ->pluck('type')
-            ->filter()
-            ->values();
 
-        return view('admin.organizations.create', compact('eligibleOwners', 'existingNames', 'existingTypes'));
+        return view('admin.organizations.create', compact('eligibleOwners', 'existingNames'));
     }
 
     public function store(StoreOrganizationRequest $request)
@@ -423,7 +415,27 @@ class OrganizationController extends Controller
             $this->ensureOwnerHasOrganizationRole($validated['owner_user_id']);
         }
 
-        $organization = Organization::create($validated);
+        // Handle hq_address as a related record
+        $hqAddressId = null;
+        if (!empty($validated['hq_barangay']) || !empty($validated['hq_street'])) {
+            $hqAddress = HqAddress::create([
+                'barangay'        => $validated['hq_barangay'] ?? '',
+                'street'          => $validated['hq_street'] ?? '',
+                'subdivision'     => $validated['hq_subdivision'] ?? null,
+                'floor_unit_room' => $validated['hq_floor_unit_room'] ?? null,
+                'lat'             => $validated['hq_lat'] ?? null,
+                'lng'             => $validated['hq_lng'] ?? null,
+            ]);
+            $hqAddressId = $hqAddress->id;
+        }
+
+        // Remove address sub-fields from validated data and set the FK
+        $orgData = collect($validated)
+            ->except(['hq_barangay', 'hq_street', 'hq_subdivision', 'hq_floor_unit_room', 'hq_lat', 'hq_lng'])
+            ->put('hq_address', $hqAddressId)
+            ->all();
+
+        $organization = Organization::create($orgData);
 
         if (!empty($organization->owner_user_id)) {
             $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
@@ -450,7 +462,7 @@ class OrganizationController extends Controller
     public function edit(Request $request, string $id)
     {
         $this->authorizePermissions($request, 'edit_organizations');
-        $organization = Organization::findOrFail($id);
+        $organization = Organization::with('hqAddress')->findOrFail($id);
         $this->authorize('update', $organization);
 
         $eligibleOwners = User::query()
@@ -469,20 +481,14 @@ class OrganizationController extends Controller
             ->filter()
             ->values();
 
-        $existingTypes = Organization::query()
-            ->orderBy('type')
-            ->distinct()
-            ->pluck('type')
-            ->filter()
-            ->values();
 
-        return view('admin.organizations.edit', compact('organization', 'eligibleOwners', 'existingNames', 'existingTypes'));
+        return view('admin.organizations.edit', compact('organization', 'eligibleOwners', 'existingNames'));
     }
 
     public function update(UpdateOrganizationRequest $request, string $id)
     {
         $this->authorizePermissions($request, 'edit_organizations');
-        $organization = Organization::findOrFail($id);
+        $organization = Organization::with('hqAddress')->findOrFail($id);
         $this->authorize('update', $organization);
 
         $validated = $request->validated();
@@ -493,7 +499,35 @@ class OrganizationController extends Controller
             $this->ensureOwnerHasOrganizationRole($validated['owner_user_id']);
         }
 
-        $organization->update($validated);
+        // Handle hq_address as a related record
+        $addressFields = ['hq_barangay', 'hq_street', 'hq_subdivision', 'hq_floor_unit_room', 'hq_lat', 'hq_lng'];
+        $hasAddressInput = collect($addressFields)->filter(fn($f) => !empty($validated[$f]))->isNotEmpty();
+
+        if ($hasAddressInput) {
+            $addressData = [
+                'barangay'        => $validated['hq_barangay'] ?? '',
+                'street'          => $validated['hq_street'] ?? '',
+                'subdivision'     => $validated['hq_subdivision'] ?? null,
+                'floor_unit_room' => $validated['hq_floor_unit_room'] ?? null,
+                'lat'             => $validated['hq_lat'] ?? null,
+                'lng'             => $validated['hq_lng'] ?? null,
+            ];
+
+            if ($organization->hqAddress) {
+                // Update existing address record
+                $organization->hqAddress->update($addressData);
+            } else {
+                // Create a new address record and link it
+                $hqAddress = HqAddress::create($addressData);
+                $validated['hq_address'] = $hqAddress->id;
+            }
+        }
+
+        $orgData = collect($validated)
+            ->except($addressFields)
+            ->all();
+
+        $organization->update($orgData);
 
         if (array_key_exists('owner_user_id', $validated) && !empty($validated['owner_user_id'])) {
             $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
@@ -515,6 +549,48 @@ class OrganizationController extends Controller
 
         return redirect()->route('admin.organizations.index')
             ->with('success', 'Organization updated successfully.');
+    }
+
+    /**
+     * Update only the HQ address of an existing organization (modal form).
+     */
+    public function updateAddress(Request $request, string $id)
+    {
+        $this->authorizePermissions($request, 'edit_organizations');
+        $organization = Organization::with('hqAddress')->findOrFail($id);
+        $this->authorize('update', $organization);
+
+        $validated = $request->validate([
+            'hq_barangay'        => ['required', 'string', 'max:255'],
+            'hq_street'          => ['required', 'string', 'max:255'],
+            'hq_subdivision'     => ['nullable', 'string', 'max:255'],
+            'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
+            'hq_lat'             => ['nullable', 'string', 'max:50'],
+            'hq_lng'             => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $addressData = [
+            'barangay'        => $validated['hq_barangay'],
+            'street'          => $validated['hq_street'],
+            'subdivision'     => $validated['hq_subdivision'] ?? null,
+            'floor_unit_room' => $validated['hq_floor_unit_room'] ?? null,
+            'lat'             => $validated['hq_lat'] ?? null,
+            'lng'             => $validated['hq_lng'] ?? null,
+        ];
+
+        if ($organization->hqAddress) {
+            $organization->hqAddress->update($addressData);
+        } else {
+            $hqAddress = HqAddress::create($addressData);
+            $organization->update(['hq_address' => $hqAddress->id]);
+        }
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Address updated successfully.']);
+        }
+
+        return redirect()->route('admin.organizations.index')
+            ->with('success', 'Organization address updated successfully.');
     }
 
     public function destroy(Request $request, string $id)
