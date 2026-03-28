@@ -332,9 +332,9 @@ class DriverController extends Controller
                 'email'       => $driver->user->email,
             ] : null,
             'organization'        => $driver->organization ? [
-                'id'   => $driver->organization->id,
-                'name' => $driver->organization->name,
-                'type' => $driver->organization->type,
+                'id'                => $driver->organization->id,
+                'name'              => $driver->organization->name,
+                'organization_type' => $driver->organization->organization_type,
             ] : null,
             'verification_status' => $license?->verification_status,
             'rejection_reason' => $license?->rejection_reason,
