@@ -60,6 +60,26 @@
                             @enderror
                         </div>
 
+                        <div class="rg-form-group">
+                            <label class="rg-form-label" for="organization_type">
+                                Organization Type <span class="rg-required">*</span>
+                            </label>
+                            <input id="organization_type" name="organization_type" type="text" list="organization-type-options"
+                                   class="rg-form-control @error('organization_type') is-invalid @enderror"
+                                   value="{{ old('organization_type') }}"
+                                   placeholder="e.g. TODA"
+                                   required>
+                            <datalist id="organization-type-options">
+                                @foreach($existingTypes as $existingType)
+                                    <option value="{{ $existingType }}">
+                                @endforeach
+                            </datalist>
+                            <p class="rg-form-hint">Examples: TODA, MODA, Transport Cooperative.</p>
+                            @error('organization_type')
+                                <p class="rg-form-error">{{ $message }}</p>
+                            @enderror
+                        </div>
+
 
                         <div class="rg-form-group">
                             <label class="rg-form-label" for="description">Description</label>

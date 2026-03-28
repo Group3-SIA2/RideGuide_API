@@ -13,6 +13,14 @@
     </td>
 
     <td class="rg-td-muted">
+        @if(!empty($org->organization_type))
+            <span>{{ $org->organization_type }}</span>
+        @else
+            <span class="text-muted fst-italic">—</span>
+        @endif
+    </td>
+
+    <td class="rg-td-muted">
         @if($org->hqAddress)
             <span title="{{ implode(', ', array_filter([
                 $org->hqAddress->floor_unit_room,
