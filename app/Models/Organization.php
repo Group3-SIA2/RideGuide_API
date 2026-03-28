@@ -15,10 +15,16 @@ class Organization extends Model
 
     protected $fillable = [
         'name',
+        'organization_type',
+        'organization_type_id',
         'description',
         'hq_address',
         'status',
         'owner_user_id',
+    ];
+
+    protected $appends = [
+        'organization_type',
     ];
 
     public function getAddressAttribute(): ?string
@@ -34,6 +40,44 @@ class Organization extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    public function organizationType(): BelongsTo
+    {
+        return $this->belongsTo(OrganizationType::class, 'organization_type_id');
+    }
+
+    public function getOrganizationTypeAttribute(): ?string
+    {
+        if ($this->relationLoaded('organizationType')) {
+            return $this->organizationType?->name;
+        }
+
+        if (!empty($this->attributes['organization_type_id'])) {
+            return $this->organizationType()->value('name');
+        }
+
+        return null;
+    }
+
+    public function setOrganizationTypeAttribute(?string $value): void
+    {
+        $typeName = trim((string) $value);
+
+        if ($typeName === '') {
+            $this->attributes['organization_type_id'] = null;
+            return;
+        }
+
+        $type = OrganizationType::withTrashed()->firstOrNew(['name' => $typeName]);
+
+        if (!$type->exists) {
+            $type->save();
+        } elseif ($type->trashed()) {
+            $type->restore();
+        }
+
+        $this->attributes['organization_type_id'] = $type->id;
     }
 
     public function drivers(): HasMany
