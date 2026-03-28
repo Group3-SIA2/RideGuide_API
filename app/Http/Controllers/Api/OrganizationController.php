@@ -26,18 +26,22 @@ class OrganizationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Organization::where('status', 'active');
+        $query = Organization::with('organizationType')->where('status', 'active');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('type', 'like', "%{$search}%")
+                  ->orWhereHas('organizationType', function ($typeQ) use ($search) {
+                      $typeQ->where('name', 'like', "%{$search}%");
+                  })
                   ->orWhere('hq_address', 'like', "%{$search}%");
             });
         }
 
-        if ($type = $request->input('type')) {
-            $query->where('type', $type);
+        if ($organizationType = $request->input('organization_type')) {
+            $query->whereHas('organizationType', function ($typeQ) use ($organizationType) {
+                $typeQ->where('name', $organizationType);
+            });
         }
 
         $perPage       = min((int) $request->input('per_page', 20), 100);
@@ -57,7 +61,7 @@ class OrganizationController extends Controller
     public function show(string $id): JsonResponse
     {
         $user  = auth()->user();
-        $query = Organization::withCount('drivers');
+        $query = Organization::withCount('drivers')->with('organizationType');
 
         if (!$user->hasRole('admin') && !$user->hasRole('super_admin')) {
             $query->where('status', 'active');
@@ -100,6 +104,10 @@ class OrganizationController extends Controller
         }
 
         $data = $request->validated();
+
+        if (array_key_exists('organization_type', $data)) {
+            $data['organization_type'] = trim($data['organization_type']);
+        }
 
         // Automatically assign ownership when an organization-role user creates.
         if ($user->hasRole('organization')) {
@@ -166,16 +174,17 @@ class OrganizationController extends Controller
         }
 
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255', 'unique:organizations,name'],
-            'type'        => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'hq_address'  => ['nullable', 'string', 'max:500'],
-            'roles'       => ['sometimes', 'array', 'min:1'],
-            'roles.*'     => ['string', Rule::in([Role::DRIVER, Role::COMMUTER])],
+            'name'              => ['required', 'string', 'max:255', 'unique:organizations,name'],
+            'organization_type' => ['required', 'string', 'max:100'],
+            'description'       => ['nullable', 'string', 'max:1000'],
+            'hq_address'        => ['nullable', 'string', 'max:500'],
+            'roles'             => ['sometimes', 'array', 'min:1'],
+            'roles.*'           => ['string', Rule::in([Role::DRIVER, Role::COMMUTER])],
         ]);
 
         $additionalRoles = array_unique($validated['roles'] ?? []);
         unset($validated['roles']);
+        $validated['organization_type'] = trim($validated['organization_type']);
 
         $roleNamesToSync = array_unique(array_merge([Role::ORGANIZATION], $additionalRoles));
         $roles = Role::whereIn('name', $roleNamesToSync)->get();
@@ -190,7 +199,7 @@ class OrganizationController extends Controller
         $organization = DB::transaction(function () use ($validated, $user, $roles) {
             $organization = Organization::create([
                 'name'           => $validated['name'],
-                'type'           => $validated['type'],
+                'organization_type' => $validated['organization_type'],
                 'description'    => $validated['description'] ?? null,
                 'hq_address'     => $validated['hq_address'] ?? null,
                 'status'         => 'active',
@@ -252,11 +261,11 @@ class OrganizationController extends Controller
         $this->authorize('update', $organization);
 
         $validated = $request->validate([
-            'name'           => ['sometimes', 'string', 'max:255', Rule::unique('organizations', 'name')->ignore($organization->id)],
-            'type'           => ['sometimes', 'string', 'max:100'],
-            'description'    => ['nullable', 'string', 'max:1000'],
-            'hq_address'     => ['nullable', 'string', 'max:500'],
-            'owner_user_id'  => [
+            'name'              => ['sometimes', 'string', 'max:255', Rule::unique('organizations', 'name')->ignore($organization->id)],
+            'organization_type' => ['sometimes', 'string', 'max:100'],
+            'description'       => ['nullable', 'string', 'max:1000'],
+            'hq_address'        => ['nullable', 'string', 'max:500'],
+            'owner_user_id'     => [
                 'sometimes',
                 'nullable',
                 'uuid',
@@ -264,6 +273,10 @@ class OrganizationController extends Controller
             ],
             'status' => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
+
+        if (array_key_exists('organization_type', $validated)) {
+            $validated['organization_type'] = trim($validated['organization_type']);
+        }
 
         // Organization-role users and organization managers cannot toggle owner or status.
         if ($user->hasRole('organization') || $user->isOrganizationManagerFor($organization->id)) {
