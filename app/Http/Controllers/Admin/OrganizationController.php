@@ -9,6 +9,7 @@ use App\Models\Driver;
 use App\Models\DriverOrganizationAssignmentLog;
 use App\Models\HqAddress;
 use App\Models\Organization;
+use App\Models\OrganizationType;
 use App\Models\OrganizationUserRole;
 use App\Models\OrganizationTerminal;
 use App\Models\Role;
@@ -32,12 +33,15 @@ class OrganizationController extends Controller
         $showDeleted = $request->input('status') === 'deleted';
 
         $query = $showDeleted
-            ? Organization::onlyTrashed()->withCount('drivers')->with('hqAddress')
-            : Organization::withCount('drivers')->with('hqAddress');
+            ? Organization::onlyTrashed()->withCount('drivers')->with(['hqAddress', 'organizationType'])
+            : Organization::withCount('drivers')->with(['hqAddress', 'organizationType']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
+                  ->orWhereHas('organizationType', function ($typeQ) use ($search) {
+                      $typeQ->where('name', 'like', "%{$search}%");
+                  })
                   ->orWhereHas('hqAddress', function ($addrQ) use ($search) {
                       $addrQ->where('barangay', 'like', "%{$search}%")
                             ->orWhere('street', 'like', "%{$search}%");
@@ -398,8 +402,14 @@ class OrganizationController extends Controller
             ->filter()
             ->values();
 
+        $existingTypes = OrganizationType::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->filter()
+            ->values();
 
-        return view('admin.organizations.create', compact('eligibleOwners', 'existingNames'));
+
+        return view('admin.organizations.create', compact('eligibleOwners', 'existingNames', 'existingTypes'));
     }
 
     public function store(StoreOrganizationRequest $request)
@@ -408,6 +418,7 @@ class OrganizationController extends Controller
         $this->authorize('create', Organization::class);
 
         $validated = $request->validated();
+        $validated['organization_type'] = trim($validated['organization_type']);
 
         if (array_key_exists('owner_user_id', $validated)) {
             $ownerUser = User::withTrashed()->find($validated['owner_user_id']);
@@ -481,8 +492,14 @@ class OrganizationController extends Controller
             ->filter()
             ->values();
 
+        $existingTypes = OrganizationType::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->filter()
+            ->values();
 
-        return view('admin.organizations.edit', compact('organization', 'eligibleOwners', 'existingNames'));
+
+        return view('admin.organizations.edit', compact('organization', 'eligibleOwners', 'existingNames', 'existingTypes'));
     }
 
     public function update(UpdateOrganizationRequest $request, string $id)
@@ -492,6 +509,9 @@ class OrganizationController extends Controller
         $this->authorize('update', $organization);
 
         $validated = $request->validated();
+        if (array_key_exists('organization_type', $validated)) {
+            $validated['organization_type'] = trim($validated['organization_type']);
+        }
 
         if (array_key_exists('owner_user_id', $validated)) {
             $ownerUser = User::withTrashed()->find($validated['owner_user_id']);
