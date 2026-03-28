@@ -14,7 +14,11 @@ class OrganizationSeeder extends Seeder
 
     public function run(): void
     {
-        $descriptions = "TODA Primary short-distance transport association in GenSan operating motorized tricycles.";
+        $organizationTypeDescriptions = [
+            'TODA' => 'Primary short-distance transport association in GenSan operating motorized tricycles.',
+            'MODA' => 'Motorcycle-based transport association serving short and flexible local routes.',
+            'Transport Cooperative' => 'Member-owned cooperative that coordinates structured transport services.',
+        ];
 
         $organizations = [
             ['name' => 'Bulaong', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Bulaong', 'street' => 'National Highway']],
@@ -42,6 +46,9 @@ class OrganizationSeeder extends Seeder
                 $organizationType->restore();
             }
 
+            $organizationType->description = $organizationTypeDescriptions[$org['organization_type']] ?? null;
+            $organizationType->save();
+
             $address = HqAddress::query()->firstOrCreate(
                 [
                     'barangay' => $org['address']['barangay'],
@@ -59,7 +66,6 @@ class OrganizationSeeder extends Seeder
                 ['name' => $org['name']],
                 [
                     'organization_type_id' => $organizationType->id,
-                    'description' => $descriptions,
                     'hq_address'  => $address->id,
                     'status'      => 'active',
                 ]

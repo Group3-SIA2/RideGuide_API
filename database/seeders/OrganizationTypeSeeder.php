@@ -13,14 +13,23 @@ class OrganizationTypeSeeder extends Seeder
     public function run(): void
     {
         $organizationTypes = [
-            'TODA',
-            'MODA',
-            'Transport Cooperative',
+            [
+                'name' => 'TODA',
+                'description' => 'Tricycle Operators and Drivers Association serving short-distance city routes.',
+            ],
+            [
+                'name' => 'MODA',
+                'description' => 'Motorcycle Operators and Drivers Association supporting organized motorcycle transport.',
+            ],
+            [
+                'name' => 'Transport Cooperative',
+                'description' => 'Registered transport cooperative coordinating fleet operations and member services.',
+            ],
         ];
 
-        foreach ($organizationTypes as $organizationTypeName) {
+        foreach ($organizationTypes as $organizationTypeData) {
             $organizationType = OrganizationType::withTrashed()->firstOrNew([
-                'name' => $organizationTypeName,
+                'name' => $organizationTypeData['name'],
             ]);
 
             if (!$organizationType->exists) {
@@ -28,6 +37,9 @@ class OrganizationTypeSeeder extends Seeder
             } elseif ($organizationType->trashed()) {
                 $organizationType->restore();
             }
+
+            $organizationType->description = $organizationTypeData['description'];
+            $organizationType->save();
         }
     }
 }
