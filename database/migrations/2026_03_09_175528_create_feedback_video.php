@@ -18,6 +18,9 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
+            $table->index('feedback_id');
+            $table->index('deleted_at');
+
             $table->foreign('feedback_id')->references('id')->on('feedback')->onDelete('cascade');
         });
     }

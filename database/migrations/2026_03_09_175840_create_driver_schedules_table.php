@@ -19,6 +19,10 @@ return new class extends Migration
             $table->time('end_time')->nullable();
             $table->timestamps();
 
+            $table->index('driver_assign_id');
+            $table->index('day_of_week');
+            $table->index(['driver_assign_id', 'day_of_week']);
+
             $table->foreign('driver_assign_id')->references('id')->on('drv_assign_term')->onDelete('cascade');
         });
     }

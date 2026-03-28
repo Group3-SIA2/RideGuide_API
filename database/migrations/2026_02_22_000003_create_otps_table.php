@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('otps', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('code', 6);
             $table->enum('type', ['email_verification', 'login_2fa', 'password_reset', 'phone_verification']);
             $table->timestamp('expires_at');
@@ -21,6 +21,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['user_id', 'type', 'code']);
+            $table->index('expires_at');
+            $table->index('used_at');
         });
     }
 

@@ -17,6 +17,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('waypoint_id');
+            $table->index('deleted_at');
+
             $table->foreign('waypoint_id')->references('id')->on('waypoint')->onDelete('cascade');
         });
     }

@@ -25,6 +25,8 @@ return new class extends Migration
             $table->foreign('new_organization_id')->references('id')->on('organizations')->nullOnDelete();
             $table->foreign('acted_by_user_id')->references('id')->on('users')->nullOnDelete();
 
+            $table->index('acted_by_user_id', 'doal_acted_by_idx');
+            $table->index('action', 'doal_action_idx');
             $table->index(['driver_id', 'created_at'], 'doal_driver_created_idx');
             $table->index(['old_organization_id', 'new_organization_id'], 'doal_old_new_org_idx');
         });

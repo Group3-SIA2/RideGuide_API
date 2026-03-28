@@ -19,6 +19,10 @@ return new class extends Migration
             $table->uuid('destination_terminal_id')->notNull();
             $table->string('status', 20)->notNull();
 
+            $table->index('origin_terminal_id');
+            $table->index('destination_terminal_id');
+            $table->index(['status', 'deleted_at']);
+
             $table->foreign('origin_terminal_id')->references('id')->on('terminals')->onDelete('cascade');
             $table->foreign('destination_terminal_id')->references('id')->on('route_stops')->onDelete('cascade');
 

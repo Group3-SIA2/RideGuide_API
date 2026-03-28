@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreign('organization_id')->references('id')->on('organizations')->cascadeOnDelete();
             $table->foreign('terminal_id')->references('id')->on('terminals')->cascadeOnDelete();
             $table->unique(['organization_id', 'terminal_id'], 'organization_terminal_unique');
+            $table->index('deleted_at', 'organization_terminal_deleted_idx');
         });
     }
 

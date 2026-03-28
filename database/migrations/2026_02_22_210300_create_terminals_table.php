@@ -21,6 +21,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('terminal_name');
+            $table->index(['city', 'barangay']);
+            $table->index('deleted_at');
+
         });
     }
 

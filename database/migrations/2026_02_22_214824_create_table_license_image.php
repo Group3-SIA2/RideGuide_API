@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('image_back')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('deleted_at');
         });
     }
 

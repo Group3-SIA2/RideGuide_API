@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('group')->default('general');
             $table->string('description')->nullable();
             $table->timestamps();
+
+            $table->index('group');
         });
 
         Schema::create('role_permission', function (Blueprint $table) {
@@ -26,8 +28,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->primary(['role_id', 'permission_id']);
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('cascade');
-            $table->foreign('permission_id')->references('id')->on('permissions')->onDelete('cascade');
+            $table->index('permission_id');
+            $table->foreign('role_id')->references('id')->on('roles')->cascadeOnDelete();
+            $table->foreign('permission_id')->references('id')->on('permissions')->cascadeOnDelete();
         });
     }
 

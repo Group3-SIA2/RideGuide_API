@@ -22,6 +22,11 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('commuter_id');
+            $table->index('trip_id');
+            $table->index('rating');
+            $table->index('deleted_at');
+
             $table->foreign('commuter_id')->references('id')->on('commuter')->onDelete('cascade');
             $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');
         });

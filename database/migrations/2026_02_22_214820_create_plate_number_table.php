@@ -16,6 +16,9 @@ return new class extends Migration
             $table->string('plate_number')->notNull();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('plate_number');
+            $table->index('deleted_at');
         });
     }
 

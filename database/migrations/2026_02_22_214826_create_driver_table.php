@@ -20,6 +20,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('organization_id');
+            $table->index('driver_license_id');
+            $table->index('deleted_at');
+
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->foreign('driver_license_id')->references('id')->on('license_id')->cascadeOnDelete();
             $table->foreign('organization_id')->references('id')->on('organizations')->nullOnDelete();

@@ -20,6 +20,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('contact_phone_number');
+            $table->index('deleted_at');
+
         });
     }
 

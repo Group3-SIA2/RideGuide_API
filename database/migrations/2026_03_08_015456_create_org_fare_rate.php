@@ -18,6 +18,11 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('organization_id');
+            $table->index('fare_rate_id');
+            $table->index(['organization_id', 'fare_rate_id']);
+            $table->index('deleted_at');
+
             $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
             $table->foreign('fare_rate_id')->references('id')->on('fare_rate')->onDelete('cascade');
         });

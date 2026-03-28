@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('longitude')->notNull();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index(['latitude', 'longitude']);
+            $table->index('deleted_at');
         });
     }
 

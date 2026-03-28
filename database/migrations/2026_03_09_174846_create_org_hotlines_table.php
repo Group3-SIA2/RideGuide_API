@@ -18,6 +18,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('organization_id');
+            $table->index('hotline_number');
+            $table->index('deleted_at');
+
             $table->foreign('organization_id')->references('id')->on('organizations')->onDelete('cascade');
         });
     }

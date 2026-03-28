@@ -19,8 +19,15 @@ return new class extends Migration
             $table->uuid('passenger_stop_id')->notNull();
             $table->decimal('fare', 8, 2)->notNull(); // I calculate ang trip and waypoint tapos store dri
 
+            $table->index('commuter_id');
+            $table->index('trip_id');
+            $table->index('passenger_start_id');
+            $table->index('passenger_stop_id');
+            $table->index(['trip_id', 'commuter_id']);
+
             $table->timestamps();
             $table->softDeletes();
+            $table->index('deleted_at');
 
             $table->foreign('commuter_id')->references('id')->on('commuter')->onDelete('cascade');
             $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');

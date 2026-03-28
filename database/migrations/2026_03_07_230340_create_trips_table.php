@@ -17,6 +17,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index(['driver_id', 'created_at']);
+            $table->index('deleted_at');
+
             $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
         });
     }

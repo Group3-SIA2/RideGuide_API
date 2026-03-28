@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('classification_name')->notNull()->unique();
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('deleted_at');
         });
     }
 

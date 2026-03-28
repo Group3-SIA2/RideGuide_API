@@ -20,6 +20,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('image_id');
+            $table->index('verification_status');
+            $table->index('deleted_at');
+
             $table->foreign('image_id')->references('id')->on('license_image')->cascadeOnDelete();
         });
     }

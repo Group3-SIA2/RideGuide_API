@@ -19,6 +19,9 @@ return new class extends Migration
 
             $table->timestamps();
             $table->softDeletes();
+
+            $table->index('effective_date');
+            $table->index('deleted_at');
         });
     }
 

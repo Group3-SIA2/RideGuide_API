@@ -23,6 +23,12 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('driver_id');
+            $table->index('vehicle_type_id');
+            $table->index('plate_number_id');
+            $table->index(['status', 'verification_status']);
+            $table->index('deleted_at');
+
             $table->foreign('driver_id')->references('id')->on('driver')->onDelete('cascade');
             $table->foreign('vehicle_type_id')->references('id')->on('vehicle_types')->onDelete('cascade');
             $table->foreign('plate_number_id')->references('id')->on('plate_number')->onDelete('cascade');

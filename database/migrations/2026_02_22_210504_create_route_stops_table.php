@@ -18,10 +18,14 @@ return new class extends Migration
             $table->decimal('latitude', 10, 8)->notNull();
             $table->decimal('longitude', 11, 8)->notNull();
 
+            $table->index('terminal_id');
+            $table->index('stop_name');
+
             $table->foreign('terminal_id')->references('id')->on('terminals')->onDelete('set null');
 
             $table->timestamps();
             $table->softDeletes();
+            $table->index('deleted_at');
         });
     }
 

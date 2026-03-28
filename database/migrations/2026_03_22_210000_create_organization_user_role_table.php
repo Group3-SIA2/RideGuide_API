@@ -28,6 +28,8 @@ return new class extends Migration
 
             $table->unique(['organization_id', 'user_id', 'role_id'], 'org_user_role_unique');
             $table->index(['organization_id', 'user_id', 'status'], 'org_user_status_idx');
+            $table->index('invited_by_user_id', 'org_user_invited_by_idx');
+            $table->index('deleted_at', 'org_user_deleted_idx');
         });
     }
 

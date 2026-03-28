@@ -22,6 +22,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index('user_id');
+            $table->index(['barangay', 'street']);
+            $table->index('deleted_at');
+
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }

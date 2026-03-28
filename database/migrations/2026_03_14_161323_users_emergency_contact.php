@@ -17,6 +17,10 @@ return new class extends Migration
             $table->uuid('emergency_contact_id');
             $table->timestamps();
 
+            $table->index('user_id');
+            $table->index('emergency_contact_id');
+            $table->index(['user_id', 'emergency_contact_id']);
+
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('emergency_contact_id')->references('id')->on('emergency_contact')->onDelete('cascade');
         });
