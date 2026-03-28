@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Models\Organization;
+use App\Models\OrganizationType;
 use App\Models\OrganizationUserRole;
 use App\Models\Role;
 use App\Models\User;
@@ -26,15 +27,42 @@ class OrganizationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Organization::with('organizationType')->where('status', 'active');
+        $user = $request->user();
+        $isAdmin = $this->isAdminUser($user);
 
-        if ($search = $request->input('search')) {
+        $query = Organization::query()->with([
+            'organizationType',
+            'hqAddress',
+        ]);
+
+        if (!$isAdmin) {
+            $query->where('status', 'active');
+        } else {
+            if ($request->boolean('include_deleted')) {
+                $query->withTrashed();
+            }
+
+            if ($status = $request->input('status')) {
+                if (in_array($status, ['active', 'inactive'], true)) {
+                    $query->where('status', $status);
+                }
+            }
+        }
+
+        $search = trim((string) $request->input('search', ''));
+        if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhereHas('organizationType', function ($typeQ) use ($search) {
-                      $typeQ->where('name', 'like', "%{$search}%");
+                      $typeQ->where('name', 'like', "%{$search}%")
+                          ->orWhere('description', 'like', "%{$search}%");
                   })
-                  ->orWhere('hq_address', 'like', "%{$search}%");
+                  ->orWhereHas('hqAddress', function ($addressQ) use ($search) {
+                      $addressQ->where('barangay', 'like', "%{$search}%")
+                          ->orWhere('street', 'like', "%{$search}%")
+                          ->orWhere('subdivision', 'like', "%{$search}%")
+                          ->orWhere('floor_unit_room', 'like', "%{$search}%");
+                  });
             });
         }
 
@@ -44,12 +72,42 @@ class OrganizationController extends Controller
             });
         }
 
-        $perPage       = min((int) $request->input('per_page', 20), 100);
-        $organizations = $query->orderBy('name')->paginate($perPage);
+        if ($organizationTypeId = $request->input('organization_type_id')) {
+            $query->where('organization_type_id', $organizationTypeId);
+        }
+
+        if ($ownerUserId = $request->input('owner_user_id')) {
+            $query->where('owner_user_id', $ownerUserId);
+        }
+
+        $sortableColumns = ['name', 'status', 'created_at', 'updated_at'];
+        $sortBy = $request->input('sort_by', 'name');
+        if (!in_array($sortBy, $sortableColumns, true)) {
+            $sortBy = 'name';
+        }
+
+        $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $perPage       = max(1, min((int) $request->input('per_page', 20), 100));
+        $organizations = $query->orderBy($sortBy, $sortDir)->paginate($perPage)->withQueryString();
 
         return response()->json([
             'success' => true,
             'data'    => $organizations,
+            'meta'    => [
+                'filters' => [
+                    'search' => $search !== '' ? $search : null,
+                    'organization_type' => $request->input('organization_type'),
+                    'organization_type_id' => $request->input('organization_type_id'),
+                    'owner_user_id' => $request->input('owner_user_id'),
+                    'status' => $request->input('status'),
+                    'include_deleted' => $isAdmin ? $request->boolean('include_deleted') : false,
+                ],
+                'sort' => [
+                    'by' => $sortBy,
+                    'dir' => $sortDir,
+                ],
+            ],
         ], 200);
     }
 
@@ -61,7 +119,11 @@ class OrganizationController extends Controller
     public function show(string $id): JsonResponse
     {
         $user  = auth()->user();
-        $query = Organization::withCount('drivers')->with('organizationType');
+        $query = Organization::withCount('drivers')->with(['organizationType', 'hqAddress']);
+
+        if ($this->isAdminUser($user) && request()->boolean('include_deleted')) {
+            $query->withTrashed();
+        }
 
         if (!$user->hasRole('admin') && !$user->hasRole('super_admin')) {
             $query->where('status', 'active');
@@ -107,6 +169,11 @@ class OrganizationController extends Controller
 
         if (array_key_exists('organization_type', $data)) {
             $data['organization_type'] = trim($data['organization_type']);
+        }
+
+        if (array_key_exists('description', $data)) {
+            $this->syncOrganizationTypeDescriptionByName($data['organization_type'] ?? null, $data['description'], true);
+            unset($data['description']);
         }
 
         // Automatically assign ownership when an organization-role user creates.
@@ -185,6 +252,9 @@ class OrganizationController extends Controller
         $additionalRoles = array_unique($validated['roles'] ?? []);
         unset($validated['roles']);
         $validated['organization_type'] = trim($validated['organization_type']);
+        if (array_key_exists('description', $validated)) {
+            $this->syncOrganizationTypeDescriptionByName($validated['organization_type'], $validated['description'], true);
+        }
 
         $roleNamesToSync = array_unique(array_merge([Role::ORGANIZATION], $additionalRoles));
         $roles = Role::whereIn('name', $roleNamesToSync)->get();
@@ -200,7 +270,6 @@ class OrganizationController extends Controller
             $organization = Organization::create([
                 'name'           => $validated['name'],
                 'organization_type' => $validated['organization_type'],
-                'description'    => $validated['description'] ?? null,
                 'hq_address'     => $validated['hq_address'] ?? null,
                 'status'         => 'active',
                 'owner_user_id'  => $user->id,
@@ -276,6 +345,16 @@ class OrganizationController extends Controller
 
         if (array_key_exists('organization_type', $validated)) {
             $validated['organization_type'] = trim($validated['organization_type']);
+        }
+
+        if (array_key_exists('description', $validated)) {
+            if (array_key_exists('organization_type', $validated)) {
+                $this->syncOrganizationTypeDescriptionByName($validated['organization_type'], $validated['description'], true);
+            } else {
+                $this->syncOrganizationTypeDescriptionById($organization->organization_type_id, $validated['description'], true);
+            }
+
+            unset($validated['description']);
         }
 
         // Organization-role users and organization managers cannot toggle owner or status.
@@ -369,6 +448,63 @@ class OrganizationController extends Controller
         ], 200);
     }
 
+    private function syncOrganizationTypeDescriptionByName(?string $organizationTypeName, ?string $description, bool $shouldUpdateDescription = true): void
+    {
+        $typeName = trim((string) $organizationTypeName);
+        if ($typeName === '') {
+            return;
+        }
+
+        $organizationType = OrganizationType::withTrashed()->firstOrNew(['name' => $typeName]);
+
+        if (!$organizationType->exists) {
+            $organizationType->save();
+        } elseif ($organizationType->trashed()) {
+            $organizationType->restore();
+        }
+
+        if ($shouldUpdateDescription) {
+            $organizationType->description = $this->normalizeDescription($description);
+            $organizationType->save();
+        }
+    }
+
+    private function syncOrganizationTypeDescriptionById(?string $organizationTypeId, ?string $description, bool $shouldUpdateDescription = true): void
+    {
+        if (empty($organizationTypeId)) {
+            return;
+        }
+
+        $organizationType = OrganizationType::withTrashed()->find($organizationTypeId);
+        if (!$organizationType) {
+            return;
+        }
+
+        if ($organizationType->trashed()) {
+            $organizationType->restore();
+        }
+
+        if ($shouldUpdateDescription) {
+            $organizationType->description = $this->normalizeDescription($description);
+            $organizationType->save();
+        }
+    }
+
+    private function normalizeDescription(?string $description): ?string
+    {
+        $normalized = trim((string) $description);
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function isAdminUser(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $user->hasRole(Role::ADMIN) || $user->hasRole(Role::SUPER_ADMIN);
+    }
+
     /**
      * Get drivers assigned to the logged-in user's managed organization.
      * GET /api/organizations/assigned-drivers
@@ -402,13 +538,13 @@ class OrganizationController extends Controller
 
         $perPage = min((int) $request->input('per_page', 20), 100);
 
-        $drivers = Driver::with(['user', 'organization'])
+        $drivers = Driver::with(['user', 'organization.organizationType'])
             ->where('organization_id', $organization->id)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
         // Format drivers
-        $data = $drivers->through(function ($driver) {
+        $drivers = $drivers->through(function ($driver) {
             return [
                 'id' => $driver->id,
                 'user_id' => $driver->user_id,
@@ -421,6 +557,8 @@ class OrganizationController extends Controller
                 'organization' => $driver->organization ? [
                     'id' => $driver->organization->id,
                     'name' => $driver->organization->name,
+                    'organization_type' => $driver->organization->organization_type,
+                    'description' => $driver->organization->description,
                 ] : null,
                 'driver_license_id' => $driver->driver_license_id,
                 'verification_status' => $driver->verification_status ?? null,

@@ -40,7 +40,8 @@ class OrganizationController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhereHas('organizationType', function ($typeQ) use ($search) {
-                      $typeQ->where('name', 'like', "%{$search}%");
+                      $typeQ->where('name', 'like', "%{$search}%")
+                          ->orWhere('description', 'like', "%{$search}%");
                   })
                   ->orWhereHas('hqAddress', function ($addrQ) use ($search) {
                       $addrQ->where('barangay', 'like', "%{$search}%")
@@ -420,6 +421,11 @@ class OrganizationController extends Controller
         $validated = $request->validated();
         $validated['organization_type'] = trim($validated['organization_type']);
 
+        if (array_key_exists('description', $validated)) {
+            $this->syncOrganizationTypeDescriptionByName($validated['organization_type'], $validated['description']);
+            unset($validated['description']);
+        }
+
         if (array_key_exists('owner_user_id', $validated)) {
             $ownerUser = User::withTrashed()->find($validated['owner_user_id']);
             $this->authorize('assignOwner', [Organization::class, $ownerUser]);
@@ -511,6 +517,16 @@ class OrganizationController extends Controller
         $validated = $request->validated();
         if (array_key_exists('organization_type', $validated)) {
             $validated['organization_type'] = trim($validated['organization_type']);
+        }
+
+        if (array_key_exists('description', $validated)) {
+            if (array_key_exists('organization_type', $validated)) {
+                $this->syncOrganizationTypeDescriptionByName($validated['organization_type'], $validated['description']);
+            } else {
+                $this->syncOrganizationTypeDescriptionById($organization->organization_type_id, $validated['description']);
+            }
+
+            unset($validated['description']);
         }
 
         if (array_key_exists('owner_user_id', $validated)) {
@@ -654,6 +670,50 @@ class OrganizationController extends Controller
         }
 
         $ownerUser->roles()->syncWithoutDetaching([$organizationRoleId]);
+    }
+
+    private function syncOrganizationTypeDescriptionByName(?string $organizationTypeName, ?string $description): void
+    {
+        $typeName = trim((string) $organizationTypeName);
+        if ($typeName === '') {
+            return;
+        }
+
+        $organizationType = OrganizationType::withTrashed()->firstOrNew(['name' => $typeName]);
+
+        if (!$organizationType->exists) {
+            $organizationType->save();
+        } elseif ($organizationType->trashed()) {
+            $organizationType->restore();
+        }
+
+        $organizationType->description = $this->normalizeDescription($description);
+        $organizationType->save();
+    }
+
+    private function syncOrganizationTypeDescriptionById(?string $organizationTypeId, ?string $description): void
+    {
+        if (empty($organizationTypeId)) {
+            return;
+        }
+
+        $organizationType = OrganizationType::withTrashed()->find($organizationTypeId);
+        if (!$organizationType) {
+            return;
+        }
+
+        if ($organizationType->trashed()) {
+            $organizationType->restore();
+        }
+
+        $organizationType->description = $this->normalizeDescription($description);
+        $organizationType->save();
+    }
+
+    private function normalizeDescription(?string $description): ?string
+    {
+        $normalized = trim((string) $description);
+        return $normalized === '' ? null : $normalized;
     }
 
     private function managedOrganizationFor(User $user): ?Organization

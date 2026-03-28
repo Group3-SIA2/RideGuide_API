@@ -17,7 +17,6 @@ class Organization extends Model
         'name',
         'organization_type',
         'organization_type_id',
-        'description',
         'hq_address',
         'status',
         'owner_user_id',
@@ -25,6 +24,7 @@ class Organization extends Model
 
     protected $appends = [
         'organization_type',
+        'description',
     ];
 
     public function getAddressAttribute(): ?string
@@ -55,6 +55,19 @@ class Organization extends Model
 
         if (!empty($this->attributes['organization_type_id'])) {
             return $this->organizationType()->value('name');
+        }
+
+        return null;
+    }
+
+    public function getDescriptionAttribute(): ?string
+    {
+        if ($this->relationLoaded('organizationType')) {
+            return $this->organizationType?->description;
+        }
+
+        if (!empty($this->attributes['organization_type_id'])) {
+            return $this->organizationType()->value('description');
         }
 
         return null;
