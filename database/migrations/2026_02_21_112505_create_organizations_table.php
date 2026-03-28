@@ -15,7 +15,6 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name')->unique();
             $table->uuid('organization_type_id')->nullable();
-            $table->text('description')->nullable();
             $table->uuid('owner_user_id')->nullable();
             $table->uuid('hq_address')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
