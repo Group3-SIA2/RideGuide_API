@@ -82,10 +82,11 @@
 
 
                         <div class="rg-form-group">
-                            <label class="rg-form-label" for="description">Description</label>
+                            <label class="rg-form-label" for="description">Organization Type Description</label>
                             <textarea id="description" name="description" rows="3"
                                       class="rg-form-control @error('description') is-invalid @enderror"
-                                      placeholder="Brief description of this organization…">{{ old('description') }}</textarea>
+                                      placeholder="Brief description for this organization type…">{{ old('description') }}</textarea>
+                            <p class="rg-form-hint">This description is shared by organizations using the same organization type.</p>
                             @error('description')
                                 <p class="rg-form-error">{{ $message }}</p>
                             @enderror

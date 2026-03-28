@@ -34,7 +34,7 @@
                         <h6 class="rg-card-title mb-0">Organization Directory</h6>
                     </div>
                     <form id="rg-filter-form" method="GET" action="{{ route('admin.organizations.index') }}" class="rg-filter-bar mt-2">
-                        <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name, organization type, or address…" value="{{ request('search') }}">
+                        <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name, organization type, type description, or address…" value="{{ request('search') }}">
                         <select id="rg-filter-status" name="status" class="rg-filter-select">
                             <option value="">All Statuses</option>
                             <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
