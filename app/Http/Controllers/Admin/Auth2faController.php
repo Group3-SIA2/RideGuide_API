@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\OtpMail;
 use App\Models\Otp;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -101,6 +102,18 @@ class Auth2faController extends Controller
         $request->session()->regenerate();
 
         session()->forget(['2fa:user_id', '2fa:remember']);
+
+        if ($user->hasRole(Role::SUPER_ADMIN)) {
+            return redirect()->route('super-admin.dashboard');
+        }
+
+        if (
+            ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
+            && !$user->hasRole(Role::ADMIN)
+            && !$user->hasRole(Role::SUPER_ADMIN)
+        ) {
+            return redirect()->route('org-manager.dashboard');
+        }
 
         return redirect()->intended('/admin/dashboard');
     }
