@@ -19,8 +19,11 @@ class UpdateOrganizationRequest extends FormRequest
 
         return [
             'name'           => ['required', 'string', 'max:255', Rule::unique('organizations', 'name')->ignore($id)],
-            'organization_type' => ['required', 'string', 'max:100'],
-            'description'    => ['nullable', 'string', 'max:1000'],
+            'organization_type_id' => [
+                'required',
+                'uuid',
+                Rule::exists('organization_types', 'id')->whereNull('deleted_at'),
+            ],
             'hq_address'     => ['nullable', 'string', 'max:500'],
             'owner_user_id'  => [
                 'nullable',

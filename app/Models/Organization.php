@@ -50,7 +50,8 @@ class Organization extends Model
     public function getOrganizationTypeAttribute(): ?string
     {
         if ($this->relationLoaded('organizationType')) {
-            return $this->organizationType?->name;
+            $organizationType = $this->getRelation('organizationType');
+            return $organizationType?->name;
         }
 
         if (!empty($this->attributes['organization_type_id'])) {
@@ -63,7 +64,8 @@ class Organization extends Model
     public function getDescriptionAttribute(): ?string
     {
         if ($this->relationLoaded('organizationType')) {
-            return $this->organizationType?->description;
+            $organizationType = $this->getRelation('organizationType');
+            return $organizationType?->description;
         }
 
         if (!empty($this->attributes['organization_type_id'])) {
@@ -107,7 +109,8 @@ class Organization extends Model
     {
         return $this->belongsToMany(Terminal::class, 'organization_terminals', 'organization_id', 'terminal_id')
             ->withTimestamps()
-            ->withPivot('id');
+            ->withPivot(['id', 'deleted_at'])
+            ->wherePivotNull('deleted_at');
     }
 
     public function organizationUserRoles(): HasMany
