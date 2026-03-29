@@ -33,7 +33,9 @@ class DriverController extends Controller
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('license_number', 'like', "%{$search}%")
+                $q->whereHas('licenseId', function ($lq) use ($search) {
+                    $lq->where('license_id', 'like', "%{$search}%");
+                })
                   ->orWhereHas('user', function ($uq) use ($search) {
                       $uq->where('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%")
@@ -43,6 +45,10 @@ class DriverController extends Controller
         }
 
         if ($status = $request->input('status')) {
+            if ($status === 'pending') {
+                $status = 'unverified';
+            }
+
             $query->whereHas('licenseId', function ($q) use ($status) {
                 $q->where('verification_status', $status);
             });
