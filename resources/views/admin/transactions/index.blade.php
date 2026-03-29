@@ -2,6 +2,11 @@
 
 @section('title', 'Transaction Logbook - RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $transactionsIndexRoute = $panelPrefix . '.transactions.index';
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -36,7 +41,7 @@
                 <h6 class="rg-card-title mb-0">Transactions</h6>
             </div>
 
-            <form class="rg-filter-bar mt-3 mt-md-0" method="GET" action="{{ route('admin.transactions.index') }}">
+            <form class="rg-filter-bar mt-3 mt-md-0" method="GET" action="{{ route($transactionsIndexRoute) }}">
                 <input
                     type="text"
                     name="search"
