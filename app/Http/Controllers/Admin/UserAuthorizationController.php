@@ -44,7 +44,7 @@ class UserAuthorizationController extends Controller
         $this->authorizePermissions($request, 'manage_authorization');
 
         if (!$this->canEditRolePermissions($request->user(), $role)) {
-            return redirect()->route('admin.user-authorization.index')
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
                 ->with('error', 'You are not allowed to edit permissions for this role.');
         }
 
@@ -64,13 +64,13 @@ class UserAuthorizationController extends Controller
         $this->authorizePermissions($request, 'manage_authorization');
 
         if (!$this->canEditRolePermissions($request->user(), $role)) {
-            return redirect()->route('admin.user-authorization.index')
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
                 ->with('error', 'You are not allowed to edit permissions for this role.');
         }
 
         // prevent admin and super admin removing thier role's permissions to avoid locking themselves out
         if (in_array($role->name, [Role::SUPER_ADMIN, Role::ADMIN], true) && empty($request->input('permissions'))) {
-            return redirect()->route('admin.user-authorization.edit-role', $role)
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.edit-role'), $role)
                 ->with('error', 'You cannot remove all permissions from this role. At least one permission must be assigned to prevent locking yourself out.');
         }
 
@@ -81,7 +81,7 @@ class UserAuthorizationController extends Controller
 
         $role->permissions()->sync($validated['permissions'] ?? []);
 
-        return redirect()->route('admin.user-authorization.index')
+        return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
             ->with('success', "Permissions for \"{$role->name}\" updated successfully.");
     }
 
@@ -116,7 +116,7 @@ class UserAuthorizationController extends Controller
         $currentUser = $request->user();
 
         if (!$this->canManageUserRoles($currentUser, $user)) {
-            return redirect()->route('admin.user-authorization.index')
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
                 ->with('error', 'You are not allowed to manage roles for this user.');
         }
 
@@ -169,7 +169,7 @@ class UserAuthorizationController extends Controller
         $currentUser = $request->user();
 
         if (!$this->canManageUserRoles($currentUser, $user)) {
-            return redirect()->route('admin.user-authorization.index')
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
                 ->with('error', 'You are not allowed to manage roles for this user.');
         }
 
@@ -208,20 +208,20 @@ class UserAuthorizationController extends Controller
                 ->map(fn (string $roleName) => ucwords(str_replace('_', ' ', $roleName)))
                 ->implode(', ');
 
-            return redirect()->route('admin.user-authorization.edit-user', $user)
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.edit-user'), $user)
                 ->withInput()
                 ->with('error', "These roles are not allowed for this user context: {$label}.");
         }
 
         if ($roleCombinationError = $this->roleCombinationError($selectedRoleIds)) {
-            return redirect()->route('admin.user-authorization.edit-user', $user)
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.edit-user'), $user)
                 ->withInput()
                 ->with('error', $roleCombinationError);
         }
 
         $user->roles()->sync($selectedRoleIds);
         
-        return redirect()->route('admin.user-authorization.index')
+        return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
             ->with('success', "Roles for \"{$user->first_name} {$user->last_name}\" updated successfully.");
     }
 
@@ -339,5 +339,16 @@ class UserAuthorizationController extends Controller
         }
 
         return array_values(array_unique($disabled));
+    }
+
+    private function panelRouteName(Request $request, string $suffix): string
+    {
+        $routeName = (string) optional($request->route())->getName();
+
+        if (str_starts_with($routeName, 'super-admin.')) {
+            return 'super-admin.' . $suffix;
+        }
+
+        return 'admin.' . $suffix;
     }
 }

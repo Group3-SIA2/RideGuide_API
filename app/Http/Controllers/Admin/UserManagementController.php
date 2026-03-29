@@ -171,7 +171,7 @@ class UserManagementController extends Controller
         $this->authorizePermissions($request, 'manage_users');
 
         if ($user->hasRole(Role::SUPER_ADMIN)) {
-            return redirect()->route('admin.user-status.index')
+            return redirect()->route($this->panelRouteName($request, 'user-status.index'))
                 ->with('error', 'Cannot change status of Super Admin.');
         }
 
@@ -188,7 +188,7 @@ class UserManagementController extends Controller
             'status_changed_at' => $statusChanged ? now() : $user->status_changed_at,
         ]);
 
-        return redirect()->route('admin.user-status.index')
+        return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'User status updated successfully.');
     }
 
@@ -211,7 +211,7 @@ class UserManagementController extends Controller
             'rejection_reason' => $validated['rejection_reason'] ?? null,
         ]);
 
-        return redirect()->route('admin.user-status.index')
+        return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'Discount verification updated successfully.');
     }
 
@@ -235,7 +235,7 @@ class UserManagementController extends Controller
             'rejection_reason' => $validated['rejection_reason'] ?? null,
         ]);
 
-        return redirect()->route('admin.user-status.index')
+        return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'Vehicle status updated successfully.');
     }
 
@@ -255,7 +255,7 @@ class UserManagementController extends Controller
         $license = $driver->loadMissing('licenseId')->licenseId;
 
         if (! $license) {
-            return redirect()->route('admin.user-status.index')
+            return redirect()->route($this->panelRouteName($request, 'user-status.index'))
                 ->with('error', 'Driver license record not found, unable to update status.');
         }
 
@@ -266,7 +266,7 @@ class UserManagementController extends Controller
                 : null,
         ]);
 
-        return redirect()->route('admin.user-status.index')
+        return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'Driver verification updated successfully.');
     }
 
@@ -276,7 +276,7 @@ class UserManagementController extends Controller
 
         User::onlyTrashed()->restore();
 
-        return redirect()->route('admin.user-status.index')
+        return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'All deleted users have been restored.');
     }
 
@@ -289,7 +289,7 @@ class UserManagementController extends Controller
             $driver->restore();
         });
 
-        return redirect()->route('admin.user-status.index')
+        return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'All deleted drivers have been restored.');
     }
 
@@ -299,7 +299,7 @@ class UserManagementController extends Controller
 
         Vehicle::onlyTrashed()->restore();
 
-        return redirect()->route('admin.user-status.index')
+        return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'All deleted vehicles have been restored.');
      }
 
@@ -309,7 +309,7 @@ class UserManagementController extends Controller
 
          Discount::onlyTrashed()->restore();
 
-         return redirect()->route('admin.user-status.index')
+         return redirect()->route($this->panelRouteName($request, 'user-status.index'))
              ->with('success', 'All deleted discounts have been restored.');
       }
 
@@ -512,5 +512,16 @@ class UserManagementController extends Controller
                 ];
             })
             ->toArray();
+    }
+
+    private function panelRouteName(Request $request, string $suffix): string
+    {
+        $routeName = (string) optional($request->route())->getName();
+
+        if (str_starts_with($routeName, 'super-admin.')) {
+            return 'super-admin.' . $suffix;
+        }
+
+        return 'admin.' . $suffix;
     }
 }
