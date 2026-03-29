@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => \App\Http\Controllers\Auth\CheckPermission::class,
             'active.user' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'panel.role' => \App\Http\Middleware\EnsurePanelRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
