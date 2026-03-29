@@ -203,7 +203,7 @@
     </div>
 
     <div class="row mt-4">
-        <div class="col-lg-6">
+        <div class="col-12">
             <div class="rg-card h-100">
                 <div class="rg-card-header">
                     <div class="d-flex align-items-center">
@@ -226,6 +226,7 @@
                                 @forelse($drivers as $driver)
                                 @php
                                     $license = $driver->licenseId;
+                                    $licenseNumber = $license?->license_id;
                                     $licenseImage = $license ? $license->image : null;
                                     $licenseStatus = $license->verification_status ?? 'unverified';
                                     $licenseModalId = 'driverLicenseModal_' . $driver->id;
@@ -245,10 +246,10 @@
                                         <small class="text-muted">{{ optional($driver->user)->email }}</small>
                                     </td>
                                     <td>
-                                        <span class="text-muted d-block">{{ $driver->license_number }}</span>
+                                        <span class="text-muted d-block">{{ $licenseNumber ?? '—' }}</span>
                                         @if($hasLicenseImages)
                                             <button type="button" class="btn btn-link btn-sm px-0" data-toggle="modal" data-target="#{{ $licenseModalId }}">
-                                                <i class="fas fa-id-card mr-1"></i> View License
+                                                <i class="fas fa-id-card mr-1"></i> View License ID ({{ $licenseNumber ?? 'N/A' }})
                                             </button>
                                         @endif
                                     </td>
@@ -264,19 +265,19 @@
                                         <form action="{{ route($userStatusDriversUpdateRoute, $driver) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <div class="form-row">
-                                                <div class="col-12 col-md-6 mb-2 mb-md-0">
+                                            <div class="form-row align-items-start">
+                                                <div class="col-12 col-md-5 mb-2 mb-md-0">
                                                     <select name="verification_status" class="form-control form-control-sm">
                                                         @foreach($driverVerificationOptions as $value => $label)
                                                             <option value="{{ $value }}" @selected($licenseStatus === $value)>{{ $label }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
-                                                <div class="col-12 col-md-6">
+                                                <div class="col-12 col-md-5 mb-2 mb-md-0">
                                                     <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Reason (optional)" value="{{ $license->rejection_reason ?? '' }}">
                                                 </div>
-                                                <div class="col-12 mt-2">
-                                                    <button type="submit" class="btn btn-sm btn-primary btn-block">Update</button>
+                                                <div class="col-12 col-md-2 text-md-right">
+                                                    <button type="submit" class="btn btn-sm btn-primary">Update</button>
                                                 </div>
                                             </div>
                                         </form>
@@ -293,6 +294,7 @@
                     @foreach($drivers as $driver)
                         @php
                             $license = $driver->licenseId;
+                            $licenseNumber = $license?->license_id;
                             $licenseImage = $license ? $license->image : null;
                             $licenseFrontUrl = $licenseImage && $licenseImage->image_front
                                 ? ($licenseImage->image_front_url ?? \App\Support\MediaStorage::url($licenseImage->image_front))
@@ -314,6 +316,7 @@
                                             </button>
                                         </div>
                                         <div class="modal-body">
+                                            <p class="text-muted mb-3">License ID Number: <strong>{{ $licenseNumber ?? 'N/A' }}</strong></p>
                                             <div class="row">
                                                 @if($licenseFrontUrl)
                                                     <div class="col-md-6 mb-3">
@@ -342,7 +345,7 @@
                 @endif
             </div>
         </div>
-        <div class="col-lg-6 mt-4 mt-lg-0">
+        <div class="col-12 mt-4">
             <div class="rg-card h-100">
                 <div class="rg-card-header">
                     <div class="d-flex align-items-center">

@@ -35,7 +35,8 @@
                         <select id="rg-filter" name="status" class="rg-filter-select">
                             <option value="">All Statuses</option>
                             <option value="verified" {{ request('status') === 'verified' ? 'selected' : '' }}>Verified</option>
-                            <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="unverified" {{ in_array(request('status'), ['unverified', 'pending'], true) ? 'selected' : '' }}>Unverified</option>
+                            <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
                         </select>
                         <button type="submit" class="rg-btn-search"><i class="fas fa-search"></i> Search</button>
                         <button type="button" id="rg-clear" class="rg-btn-clear">Clear</button>
@@ -82,6 +83,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <p class="text-muted mb-3">License ID Number: <strong id="driverLicenseNumber">N/A</strong></p>
                     <div class="row">
                         <div class="col-md-6 mb-3" id="driverLicenseFrontWrapper">
                             <img src="" alt="Driver License Front" class="img-fluid rounded shadow-sm" id="driverLicenseFront">
@@ -111,6 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var total  = document.getElementById('rg-total');
     var modal = document.getElementById('driverLicensePreviewModal');
     var modalTitle = document.getElementById('driverLicenseModalTitle');
+    var licenseNumberEl = document.getElementById('driverLicenseNumber');
     var frontWrapper = document.getElementById('driverLicenseFrontWrapper');
     var backWrapper = document.getElementById('driverLicenseBackWrapper');
     var frontImg = document.getElementById('driverLicenseFront');
@@ -122,10 +125,14 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.rg-view-license').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var driverName = this.dataset.driver || 'Driver License';
+                var licenseNumber = this.dataset.licenseNumber || 'N/A';
                 var front = this.dataset.front || '';
                 var back = this.dataset.back || '';
 
                 modalTitle.textContent = 'Driver License Images — ' + driverName;
+                if (licenseNumberEl) {
+                    licenseNumberEl.textContent = licenseNumber;
+                }
 
                 if (front) {
                     frontImg.src = front;
