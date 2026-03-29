@@ -14,9 +14,9 @@
     <td class="rg-td-muted">{{ $driver->user->email ?? '—' }}</td>
     <td class="rg-td-muted">{{ $driver->organization->name ?? '—' }}</td>
     <td class="rg-td-muted">
-        {{ $driver->license_number ?? '—' }}
         @php
             $license = $driver->licenseId;
+            $licenseNumber = $license?->license_id;
             $licenseImage = $license ? $license->image : null;
             $licenseFront = $licenseImage && $licenseImage->image_front
                 ? ($licenseImage->image_front_url ?? \App\Support\MediaStorage::url($licenseImage->image_front))
@@ -27,12 +27,14 @@
             $hasLicenseImages = $licenseFront || $licenseBack;
             $driverName = trim(($driver->user->first_name ?? '') . ' ' . ($driver->user->last_name ?? '')) ?: 'Driver License';
         @endphp
+        {{ $licenseNumber ?? '—' }}
         @if($hasLicenseImages)
             <button type="button"
                     class="btn btn-link btn-sm px-0 rg-view-license"
                     data-toggle="modal"
                     data-target="#driverLicensePreviewModal"
                     data-driver="{{ $driverName }}"
+                    data-license-number="{{ $licenseNumber ?? 'N/A' }}"
                     data-front="{{ $licenseFront }}"
                     data-back="{{ $licenseBack }}">
                 <i class="fas fa-id-card mr-1"></i> View License
