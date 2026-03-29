@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Support\DashboardCache;
+use App\Support\MediaStorage;
 
 class DashboardController extends Controller
 {
@@ -43,16 +44,72 @@ class DashboardController extends Controller
             return null;
         }
 
+        $emergency = $driver->usersEmergencyContact?->emergencyContact;
+        $license = $driver->licenseId;
+        $image = $license?->image;
+        $frontPath = $image?->image_front;
+        $backPath = $image?->image_back;
+        $joinedLicenseIdNumber = $driver->getAttribute('license_id_number');
+        $joinedLicenseStatus = $driver->getAttribute('license_verification_status');
+        $joinedLicenseRejectionReason = $driver->getAttribute('license_rejection_reason');
+        $licenseIdNumber = $joinedLicenseIdNumber ?: $license?->license_id;
+        $licenseVerificationStatus = $joinedLicenseStatus ?: $license?->verification_status;
+        $licenseRejectionReason = $joinedLicenseRejectionReason ?: $license?->rejection_reason;
+
         return [
             'id' => $driver->id,
             'user_id' => $driver->user_id,
-            'license_number' => $driver->license_number,
+            'driver_license_id' => $driver->driver_license_id,
             'organization_id' => $driver->organization_id,
-            'verification_status' => $driver->verification_status,
+            'organization' => $driver->organization ? [
+                'id' => $driver->organization->id,
+                'name' => $driver->organization->name,
+                'organization_type' => $driver->organization->organization_type,
+            ] : null,
+            'license_id_number' => $licenseIdNumber,
+            // Keep this legacy key for older clients while exposing nested driver_license.
+            'license_number' => $licenseIdNumber,
+            'verification_status' => $licenseVerificationStatus,
+            'rejection_reason' => $licenseRejectionReason,
+            'license_verification_status' => $licenseVerificationStatus,
+            'license_rejection_reason' => $licenseRejectionReason,
+            'driver_license' => $license ? [
+                'id' => $license->id,
+                'number' => $license->license_id,
+                'verification_status' => $license->verification_status,
+                'rejection_reason' => $license->rejection_reason,
+                'images' => [
+                    'front_path' => $frontPath,
+                    'front_url' => $frontPath ? MediaStorage::url($frontPath) : null,
+                    'back_path' => $backPath,
+                    'back_url' => $backPath ? MediaStorage::url($backPath) : null,
+                ],
+            ] : null,
+            'emergency_contact' => $emergency ? [
+                'id' => $emergency->id,
+                'contact_name' => $emergency->contact_name,
+                'contact_phone_number' => $emergency->contact_phone_number,
+                'contact_relationship' => $emergency->contact_relationship,
+            ] : null,
             'created_at' => $driver->created_at,
             'updated_at' => $driver->updated_at,
             'deleted_at' => $driver->deleted_at,
         ];
+    }
+
+    private function loadDriverProfileForDashboard(string $userId): ?Driver
+    {
+        return Driver::query()
+            ->leftJoin('license_id', 'driver.driver_license_id', '=', 'license_id.id')
+            ->where('driver.user_id', $userId)
+            ->select([
+                'driver.*',
+                'license_id.license_id as license_id_number',
+                'license_id.verification_status as license_verification_status',
+                'license_id.rejection_reason as license_rejection_reason',
+            ])
+            ->with(['organization.organizationType', 'licenseId.image', 'usersEmergencyContact.emergencyContact'])
+            ->first();
     }
 
     private function formatCommuterProfile(?Commuter $commuter): ?array
@@ -107,10 +164,10 @@ class DashboardController extends Controller
         ];
     }
 
-    private function buildUserDashboardData(User $user, string $activeRole, array $roleNames): array
+    private function buildUserDashboardData(User $user, string $activeRole, array $roleNames, ?Driver $driverProfile = null): array
     {
         $freshUser = User::findOrFail($user->id);
-        $driverProfile = Driver::where('user_id', $user->id)->first();
+        $driverProfile = $driverProfile ?? $this->loadDriverProfileForDashboard($user->id);
         $commuterProfile = Commuter::with('discount.classificationType')
             ->where('user_id', $user->id)
             ->first();
@@ -188,13 +245,13 @@ class DashboardController extends Controller
         $cacheKey = DashboardCache::key($user->id, 'driver');
 
         $data = Cache::remember($cacheKey, DashboardCache::ttlSeconds(), function () use ($user, $roleNames) {
-            $driverProfile = Driver::where('user_id', $user->id)->first();
+            $driverProfile = $this->loadDriverProfileForDashboard($user->id);
 
             if (! $driverProfile) {
                 return null;
             }
 
-            return $this->buildUserDashboardData($user, 'driver', $roleNames);
+            return $this->buildUserDashboardData($user, 'driver', $roleNames, $driverProfile);
         });
 
         if ($data === null) {
