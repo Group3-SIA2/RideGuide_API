@@ -9,7 +9,13 @@
             <p class="rg-page-subtitle">Overview of your organization and driver assignments.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('admin.organizations.assignments.index', array_filter(['organization_id' => $selectedOrganizationId ?? null])) }}" class="rg-btn rg-btn-primary rg-btn-sm">
+            @php
+                $panelPrefix = request()->routeIs('org-manager.*')
+                    ? 'org-manager'
+                    : (request()->routeIs('super-admin.*') ? 'super-admin' : 'admin');
+                $assignmentsRoute = $panelPrefix . '.organizations.assignments.index';
+            @endphp
+            <a href="{{ route($assignmentsRoute, array_filter(['organization_id' => $selectedOrganizationId ?? null])) }}" class="rg-btn rg-btn-primary rg-btn-sm">
                 <i class="fas fa-user-plus"></i> Manage Driver Assignments
             </a>
         </div>
@@ -17,6 +23,17 @@
 @stop
 
 @section('content')
+    @php
+        $panelPrefix = request()->routeIs('org-manager.*')
+            ? 'org-manager'
+            : (request()->routeIs('super-admin.*') ? 'super-admin' : 'admin');
+        $dashboardRoute = $panelPrefix . '.organizations.manager-dashboard';
+        $assignmentsRoute = $panelPrefix . '.organizations.assignments.index';
+        $assignmentsQuery = array_filter([
+            'organization_id' => $selectedOrganizationId ?? ($managedOrganization->id ?? null),
+        ]);
+    @endphp
+
     @if(($organizationsForAdmin ?? collect())->isNotEmpty())
         <div class="row mb-3">
             <div class="col-12">
@@ -26,7 +43,7 @@
                             <span class="rg-card-dot"></span>
                             <h6 class="rg-card-title mb-0">Select Organization</h6>
                         </div>
-                        <form method="GET" action="{{ route('admin.organizations.manager-dashboard') }}" class="rg-filter-bar mt-2" id="organization-dashboard-filter-form">
+                        <form method="GET" action="{{ route($dashboardRoute) }}" class="rg-filter-bar mt-2" id="organization-dashboard-filter-form">
                             <select name="organization_id" class="rg-filter-select" required onchange="this.form.submit()" aria-label="Select organization">
                                 <option value="">Select Organization</option>
                                 @foreach($organizationsForAdmin as $adminOrg)
@@ -35,7 +52,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <a href="{{ route('admin.organizations.manager-dashboard') }}" class="rg-btn-clear">Clear</a>
+                            <a href="{{ route($dashboardRoute) }}" class="rg-btn-clear">Clear</a>
                         </form>
                     </div>
                 </div>
@@ -52,18 +69,7 @@
             @endif
         </div>
     @else
-        <div class="row align-items-stretch">
-            <div class="col-12 col-md-6 col-xl-3 mb-3 mb-xl-0">
-                <div class="rg-stat-card rg-stat-card-equal h-100">
-                    <div class="rg-stat-icon"><i class="fas fa-building"></i></div>
-                    <div class="rg-stat-body">
-                        <p class="rg-stat-label">My Organization</p>
-                        <h3 class="rg-stat-value rg-stat-value-name">{{ $managedOrganization->name }}</h3>
-                        <span class="rg-stat-sub rg-stat-sub-org">{{ $managedOrganization->type }}</span>
-                    </div>
-                </div>
-            </div>
-
+        <div class="row align-items-stretch g-3 g-xl-4 mb-2">
             <div class="col-12 col-md-6 col-xl-3 mb-3 mb-xl-0">
                 <div class="rg-stat-card rg-stat-card-equal h-100">
                     <div class="rg-stat-icon"><i class="fas fa-id-card"></i></div>
@@ -71,6 +77,17 @@
                         <p class="rg-stat-label">Total Assigned Drivers</p>
                         <h3 class="rg-stat-value">{{ number_format($totalAssignedDrivers) }}</h3>
                         <span class="rg-stat-sub">Currently assigned</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3 mb-3 mb-xl-0">
+                <div class="rg-stat-card rg-stat-card-equal h-100">
+                    <div class="rg-stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="rg-stat-body">
+                        <p class="rg-stat-label">Assigned Terminals</p>
+                        <h3 class="rg-stat-value">{{ number_format($totalAssignedTerminals) }}</h3>
+                        <span class="rg-stat-sub">Linked to this organization</span>
                     </div>
                 </div>
             </div>
@@ -98,14 +115,58 @@
             </div>
         </div>
 
-        <div class="row mt-2">
-            <div class="col-12">
+        <div class="row mt-4 g-3 g-xl-4">
+            <div class="col-12 col-xl-5 mb-3 mb-xl-0">
+                <div class="rg-card h-100">
+                    <div class="rg-card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rg-card-dot"></span>
+                            <h6 class="rg-card-title mb-0">Assigned Terminals</h6>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rg-badge">{{ $assignedTerminals->count() }} total</span>
+                            <a href="{{ route($assignmentsRoute, $assignmentsQuery) }}" class="rg-btn rg-btn-secondary rg-btn-sm" title="Open Driver Assignments for selected organization">
+                                <i class="fas fa-external-link-alt"></i> Assign a Terminal
+                            </a>
+                        </div>
+                    </div>
+                    <div class="rg-card-body p-0">
+                        @if($assignedTerminals->isEmpty())
+                            <p class="rg-empty mb-0 p-3">No terminals linked yet.</p>
+                        @else
+                            <div class="table-responsive">
+                                <table class="rg-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Location</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($assignedTerminals as $terminal)
+                                            <tr>
+                                                <td>{{ $terminal->terminal_name }}</td>
+                                                <td class="rg-td-muted">{{ $terminal->barangay }}, {{ $terminal->city }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-7 mb-3 mb-xl-0">
                 <div class="rg-card">
                     <div class="rg-card-header d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-2">
                             <span class="rg-card-dot"></span>
                             <h6 class="rg-card-title mb-0">Recently Assigned Drivers</h6>
                         </div>
+                        <a href="{{ route($assignmentsRoute, $assignmentsQuery) }}" class="rg-btn rg-btn-secondary rg-btn-sm" title="Open Driver Assignments for selected organization">
+                            <i class="fas fa-external-link-alt"></i> Assign a Driver
+                        </a>
                     </div>
                     <div class="rg-card-body p-0">
                         <div class="table-responsive">
