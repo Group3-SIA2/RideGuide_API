@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Rules\OrganizationOwnerEligible;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreOrganizationRequest extends FormRequest
 {
@@ -16,8 +17,17 @@ class StoreOrganizationRequest extends FormRequest
     {
         return [
             'name'           => ['required', 'string', 'max:255', 'unique:organizations,name'],
-            'organization_type' => ['required', 'string', 'max:100'],
-            'description'    => ['nullable', 'string', 'max:1000'],
+            'organization_type_id' => [
+                'required_without:organization_type',
+                'uuid',
+                Rule::exists('organization_types', 'id')->whereNull('deleted_at'),
+            ],
+            'organization_type' => [
+                'required_without:organization_type_id',
+                'string',
+                'max:100',
+                Rule::exists('organization_types', 'name')->whereNull('deleted_at'),
+            ],
             'hq_address'     => ['nullable', 'string', 'max:500'],
             'owner_user_id'  => [
                 'nullable',
