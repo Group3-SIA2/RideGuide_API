@@ -2,6 +2,17 @@
 
 @section('title', 'User Management — RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $userStatusIndexRoute = $panelPrefix . '.user-status.index';
+    $userStatusUsersUpdateRoute = $panelPrefix . '.user-status.users.update';
+    $userStatusDriversUpdateRoute = $panelPrefix . '.user-status.drivers.update';
+    $userStatusVehiclesUpdateRoute = $panelPrefix . '.user-status.vehicles.update';
+    $userStatusDiscountsUpdateRoute = $panelPrefix . '.user-status.discounts.update';
+    $userStatusRestoreSearchRoute = $panelPrefix . '.user-status.restore.search';
+    $userStatusRestoreRecordRoute = $panelPrefix . '.user-status.restore.record';
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -103,7 +114,7 @@
                 <span class="rg-card-dot"></span>
                 <h6 class="rg-card-title mb-0">User Accounts</h6>
             </div>
-            <form class="rg-filter-bar mt-3 mt-md-0" method="GET" action="{{ route('admin.user-status.index') }}">
+            <form class="rg-filter-bar mt-3 mt-md-0" method="GET" action="{{ route($userStatusIndexRoute) }}">
                 <input type="text" name="search" class="rg-search-input" placeholder="Search user by name or email…" value="{{ $filters['search'] }}">
                 <button type="submit" class="rg-btn-search">
                     <i class="fas fa-search"></i>
@@ -152,7 +163,7 @@
                                 @endif
                             </td>
                             <td>
-                                <form action="{{ route('admin.user-status.users.update', $user) }}" method="POST" class="form-inline">
+                                <form action="{{ route($userStatusUsersUpdateRoute, $user) }}" method="POST" class="form-inline">
                                     @csrf
                                     @method('PATCH')
                                     <div class="form-row w-100">
@@ -250,7 +261,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <form action="{{ route('admin.user-status.drivers.update', $driver) }}" method="POST">
+                                        <form action="{{ route($userStatusDriversUpdateRoute, $driver) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
                                             <div class="form-row">
@@ -380,7 +391,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <form action="{{ route('admin.user-status.vehicles.update', $vehicle) }}" method="POST">
+                                        <form action="{{ route($userStatusVehiclesUpdateRoute, $vehicle) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
                                             <div class="form-row">
@@ -551,7 +562,7 @@
                                 @endif
                             </td>
                             <td>
-                                <form action="{{ route('admin.user-status.discounts.update', $discount) }}" method="POST">
+                                <form action="{{ route($userStatusDiscountsUpdateRoute, $discount) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
                                     <div class="form-row">
@@ -648,8 +659,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedback = document.getElementById('restoreSearchFeedback');
     const spinner = document.getElementById('restoreSearchSpinner');
     const emptyState = document.getElementById('restoreEmptyState');
-    const searchUrl = '{{ route('admin.user-status.restore.search') }}';
-    const restoreUrl = '{{ route('admin.user-status.restore.record') }}';
+    const searchUrl = '{{ route($userStatusRestoreSearchRoute) }}';
+    const restoreUrl = '{{ route($userStatusRestoreRecordRoute) }}';
     const csrfTokenMeta = document.head.querySelector('meta[name="csrf-token"]');
     const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '';
 
