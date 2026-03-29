@@ -15,24 +15,53 @@ class OrganizationSeeder extends Seeder
     public function run(): void
     {
         $organizationTypeDescriptions = [
-            'TODA' => 'Primary short-distance transport association in GenSan operating motorized tricycles.',
-            'MODA' => 'Motorcycle-based transport association serving short and flexible local routes.',
-            'Transport Cooperative' => 'Member-owned cooperative that coordinates structured transport services.',
+            'Transport Cooperative' => 'Registered transport cooperatives in General Santos City operating structured and modernized public transport services.',
+            'Transport Alliance/Association' => 'Transport alliances and associations in General Santos City consolidating route-based operators and dispatch coordination.',
+            'TODA' => 'Barangay-level Tricycle Operators and Drivers Associations aligned with LGU and LPTRP regulations in General Santos City.',
+            'PUVMP Group' => 'Organizations and route clusters participating in the PUV Modernization Program, deploying higher-capacity and lower-emission units.',
         ];
 
         $organizations = [
-            ['name' => 'Bulaong', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Bulaong', 'street' => 'National Highway']],
-            ['name' => 'Calumpang', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Calumpang', 'street' => 'Calumpang Road']],
-            ['name' => 'City Heights', 'organization_type' => 'TODA', 'address' => ['barangay' => 'City Heights', 'street' => 'Santiago Blvd']],
-            ['name' => 'Dadiangas', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Dadiangas', 'street' => 'Pendatun Avenue']],
-            ['name' => 'Lagao', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Lagao', 'street' => 'San Miguel Street']],
-            ['name' => 'Labangal', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Labangal', 'street' => 'Diversion Road']],
-            ['name' => 'Apopong', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Apopong', 'street' => 'Apopong Road']],
-            ['name' => 'Bula', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Bula', 'street' => 'Bula Road']],
-            ['name' => 'San Isidro', 'organization_type' => 'TODA', 'address' => ['barangay' => 'San Isidro', 'street' => 'San Isidro Street']],
-            ['name' => 'Fatima', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Fatima', 'street' => 'Fatima Road']],
-            ['name' => 'Makar Wharf', 'organization_type' => 'TODA', 'address' => ['barangay' => 'Makar Wharf', 'street' => 'Makar Port Road']],
-            ['name' => 'Fishport', 'organization_type' => 'TODA', 'address' => ['barangay' => 'General Santos Fish Port Complex', 'street' => 'Fishport Road']],
+            [
+                'name' => 'Metro GenSan Transport Cooperative (MGTC) - Lagao Cluster',
+                'organization_type' => 'Transport Cooperative',
+                'address' => ['barangay' => 'Lagao', 'street' => 'Santiago Boulevard'],
+            ],
+            [
+                'name' => 'Metro GenSan Transport Cooperative (MGTC) - Calumpang Cluster',
+                'organization_type' => 'Transport Cooperative',
+                'address' => ['barangay' => 'Calumpang', 'street' => 'Jose Catolico Sr. Avenue'],
+            ],
+            [
+                'name' => 'Public Transport Alliance of GenSan (PTAG) - Pioneer Corridor',
+                'organization_type' => 'Transport Alliance/Association',
+                'address' => ['barangay' => 'Dadiangas South', 'street' => 'Pioneer Avenue'],
+            ],
+            [
+                'name' => 'Public Transport Alliance of GenSan (PTAG) - Roxas East Corridor',
+                'organization_type' => 'Transport Alliance/Association',
+                'address' => ['barangay' => 'Dadiangas East', 'street' => 'Roxas East Avenue'],
+            ],
+            [
+                'name' => 'Lagao TODA',
+                'organization_type' => 'TODA',
+                'address' => ['barangay' => 'Lagao', 'street' => 'San Miguel Street'],
+            ],
+            [
+                'name' => 'City Heights TODA',
+                'organization_type' => 'TODA',
+                'address' => ['barangay' => 'City Heights', 'street' => 'Santiago Boulevard'],
+            ],
+            [
+                'name' => 'Conel PUVMP E-Jeepney Group',
+                'organization_type' => 'PUVMP Group',
+                'address' => ['barangay' => 'Conel', 'street' => 'National Highway'],
+            ],
+            [
+                'name' => 'Tambler PUVMP E-Jeepney Group',
+                'organization_type' => 'PUVMP Group',
+                'address' => ['barangay' => 'Tambler', 'street' => 'Fishport Road'],
+            ],
         ];
 
         foreach ($organizations as $org) {

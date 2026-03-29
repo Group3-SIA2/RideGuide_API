@@ -14,16 +14,20 @@ class OrganizationTypeSeeder extends Seeder
     {
         $organizationTypes = [
             [
-                'name' => 'TODA',
-                'description' => 'Tricycle Operators and Drivers Association serving short-distance city routes.',
-            ],
-            [
-                'name' => 'MODA',
-                'description' => 'Motorcycle Operators and Drivers Association supporting organized motorcycle transport.',
-            ],
-            [
                 'name' => 'Transport Cooperative',
-                'description' => 'Registered transport cooperative coordinating fleet operations and member services.',
+                'description' => 'Registered transport cooperatives in General Santos City (e.g., MGTC) operating structured and modernized public transport services.',
+            ],
+            [
+                'name' => 'Transport Alliance/Association',
+                'description' => 'Transport alliances and associations in General Santos City (e.g., PTAG) consolidating route-based operators and dispatch coordination.',
+            ],
+            [
+                'name' => 'TODA',
+                'description' => 'Barangay-level Tricycle Operators and Drivers Associations aligned with LGU and LPTRP regulations in General Santos City.',
+            ],
+            [
+                'name' => 'PUVMP Group',
+                'description' => 'Organizations and route clusters participating in the PUV Modernization Program, deploying higher-capacity and lower-emission units.',
             ],
         ];
 

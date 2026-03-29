@@ -32,13 +32,20 @@ class PermissionSeeder extends Seeder
             ['name' => 'view_drivers',       'display_name' => 'View Drivers',          'group' => 'drivers',       'description' => 'Can view the list of drivers.'],
             ['name' => 'manage_drivers',     'display_name' => 'Manage Drivers',        'group' => 'drivers',       'description' => 'Can manage driver records.'],
             ['name' => 'assign_drivers_to_organization', 'display_name' => 'Assign Drivers To Organization', 'group' => 'drivers', 'description' => 'Can assign and unassign drivers for owned organization.'],
+            ['name' => 'unassign_drivers_from_organization', 'display_name' => 'Unassign Drivers From Organization', 'group' => 'drivers', 'description' => 'Can unassign drivers from owned organization.'],
 
             // Organization Management
             ['name' => 'view_organizations', 'display_name' => 'View Organizations',    'group' => 'organizations', 'description' => 'Can view the list of organizations.'],
             ['name' => 'create_organizations','display_name' => 'Create Organizations', 'group' => 'organizations', 'description' => 'Can create new organizations.'],
             ['name' => 'edit_organizations', 'display_name' => 'Edit Organizations',    'group' => 'organizations', 'description' => 'Can edit existing organizations.'],
             ['name' => 'delete_organizations','display_name' => 'Delete Organizations', 'group' => 'organizations', 'description' => 'Can delete organizations.'],
+            ['name' => 'manage_organization_types','display_name' => 'Manage Organization Types', 'group' => 'organizations', 'description' => 'Can create and manage organization types.'],
             ['name' => 'manage_organization_terminals','display_name' => 'Manage Organization Terminals', 'group' => 'organizations', 'description' => 'Can add terminals to owned organizations.'],
+            ['name' => 'view_organization_assignments', 'display_name' => 'View Organization Assignments', 'group' => 'organizations', 'description' => 'Can view the driver and terminal assignment panel.'],
+            ['name' => 'view_organization_terminals', 'display_name' => 'View Organization Terminals', 'group' => 'organizations', 'description' => 'Can view terminals linked to organizations.'],
+            ['name' => 'assign_organization_terminals', 'display_name' => 'Assign Existing Organization Terminals', 'group' => 'organizations', 'description' => 'Can link existing terminals to owned organizations.'],
+            ['name' => 'create_organization_terminals', 'display_name' => 'Create Organization Terminals', 'group' => 'organizations', 'description' => 'Can create and link new terminals to owned organizations.'],
+            ['name' => 'delete_organization_terminals', 'display_name' => 'Delete Organization Terminals', 'group' => 'organizations', 'description' => 'Can remove linked terminals from owned organizations.'],
 
             // Dashboard
             ['name' => 'view_admin_dashboard',     'display_name' => 'View Admin Dashboard',  'group' => 'dashboard',     'description' => 'Can view the admin dashboard.'],
@@ -86,7 +93,13 @@ class PermissionSeeder extends Seeder
             $organizationPermissions = Permission::whereIn('name', [
                 'view_organizations',
                 'view_drivers',
+                'view_organization_assignments',
+                'view_organization_terminals',
                 'assign_drivers_to_organization',
+                'unassign_drivers_from_organization',
+                'assign_organization_terminals',
+                'create_organization_terminals',
+                'delete_organization_terminals',
                 'view_organization_dashboard',
                 'manage_organization_terminals',
             ])->pluck('id')->toArray();
