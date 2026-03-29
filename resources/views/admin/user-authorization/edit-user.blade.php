@@ -1,5 +1,11 @@
 @extends('adminlte::page')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $authorizationIndexRoute = $panelPrefix . '.user-authorization.index';
+    $authorizationUpdateUserRoute = $panelPrefix . '.user-authorization.update-user';
+@endphp
+
 @section('title', 'Manage User Roles — RideGuide Admin')
 
 @section('content_header')
@@ -10,7 +16,7 @@
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
             
-            <a href="{{ route('admin.user-authorization.index') }}" class="btn btn-sm btn-outline-secondary">
+            <a href="{{ route($authorizationIndexRoute) }}" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
         </div>
@@ -41,7 +47,7 @@
     <div class="row rg-manage-roles-layout">
         {{-- Role Assignment --}}
         <div class="col-12 col-lg-5">
-            <form action="{{ route('admin.user-authorization.update-user', $user) }}" method="POST">
+            <form action="{{ route($authorizationUpdateUserRoute, $user) }}" method="POST">
                 @csrf
                 @method('PUT')
 
@@ -92,7 +98,7 @@
                         </div>
                     </div>
                     <div class="rg-card-footer d-flex justify-content-end">
-                        <a href="{{ route('admin.user-authorization.index') }}" class="btn btn-secondary mr-2">Cancel</a>
+                        <a href="{{ route($authorizationIndexRoute) }}" class="btn btn-secondary mr-2">Cancel</a>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save mr-1"></i> Save Roles
                         </button>

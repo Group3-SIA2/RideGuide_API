@@ -2,6 +2,13 @@
 
 @section('title', 'User Authorization — RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $authorizationIndexRoute = $panelPrefix . '.user-authorization.index';
+    $authorizationEditRoleRoute = $panelPrefix . '.user-authorization.edit-role';
+    $authorizationEditUserRoute = $panelPrefix . '.user-authorization.edit-user';
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -77,7 +84,7 @@
                                     </td>
                                     <td>
                                         @if(in_array($role->name, $editableRoleNames, true))
-                                            <a href="{{ route('admin.user-authorization.edit-role', $role) }}"
+                                                          <a href="{{ route($authorizationEditRoleRoute, $role) }}"
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-edit"></i> Edit Permissions
                                             </a>
@@ -104,7 +111,7 @@
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">User Role Assignments</h6>
                     </div>
-                    <form id="rg-user-search-form" class="rg-filter-bar mt-2" method="GET" action="{{ route('admin.user-authorization.index') }}">
+                    <form id="rg-user-search-form" class="rg-filter-bar mt-2" method="GET" action="{{ route($authorizationIndexRoute) }}">
                         <input id="rg-user-search" type="text" name="user_search" class="rg-search-input" placeholder="Search user by name or email…" value="{{ request('user_search') }}">
                         <button type="submit" class="rg-btn-search"><i class="fas fa-search"></i> Search</button>
                     </form>
@@ -182,7 +189,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                                     <a href="{{ route('admin.user-authorization.edit-user', $user) }}"
+                                                     <a href="{{ route($authorizationEditUserRoute, $user) }}"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-user-shield"></i> Manage Roles
                                         </a>
