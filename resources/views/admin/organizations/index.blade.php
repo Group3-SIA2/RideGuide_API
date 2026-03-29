@@ -2,6 +2,13 @@
 
 @section('title', 'Organizations — RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $organizationsIndexRoute = $panelPrefix . '.organizations.index';
+    $organizationsCreateRoute = $panelPrefix . '.organizations.create';
+    $organizationTypesIndexRoute = $panelPrefix . '.organizations.types.index';
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -10,7 +17,10 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <span class="rg-badge" id="rg-total">{{ $organizations->total() }} total</span>
-            <a href="{{ route('admin.organizations.create') }}" class="rg-btn rg-btn-primary rg-btn-sm">
+            <a href="{{ route($organizationTypesIndexRoute) }}" class="rg-btn rg-btn-secondary rg-btn-sm">
+                <i class="fas fa-tags"></i> Organization Types
+            </a>
+            <a href="{{ route($organizationsCreateRoute) }}" class="rg-btn rg-btn-primary rg-btn-sm">
                 <i class="fas fa-plus"></i> Add Organization
             </a>
         </div>
@@ -33,7 +43,7 @@
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Organization Directory</h6>
                     </div>
-                    <form id="rg-filter-form" method="GET" action="{{ route('admin.organizations.index') }}" class="rg-filter-bar mt-2">
+                    <form id="rg-filter-form" method="GET" action="{{ route($organizationsIndexRoute) }}" class="rg-filter-bar mt-2">
                         <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name, organization type, type description, or address…" value="{{ request('search') }}">
                         <select id="rg-filter-status" name="status" class="rg-filter-select">
                             <option value="">All Statuses</option>
@@ -266,7 +276,7 @@ function openAddressModal(btn) {
     document.getElementById('modal-hq-lat').value            = btn.getAttribute('data-hq-lat') || '';
     document.getElementById('modal-hq-lng').value            = btn.getAttribute('data-hq-lng') || '';
 
-    var baseUrl = '{{ rtrim(url('admin/organizations'), '/') }}';
+    var baseUrl = '{{ rtrim(url($panelPrefix . '/organizations'), '/') }}';
     document.getElementById('form-address-update').action = baseUrl + '/' + orgId + '/address';
 
     var feedback = document.getElementById('modal-address-feedback');

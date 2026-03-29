@@ -2,6 +2,13 @@
 
 @section('title', 'Add Organization — RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $organizationsIndexRoute = $panelPrefix . '.organizations.index';
+    $organizationsStoreRoute = $panelPrefix . '.organizations.store';
+    $organizationTypesIndexRoute = $panelPrefix . '.organizations.types.index';
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -10,7 +17,7 @@
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
             
-            <a href="{{ route('admin.organizations.index') }}" class="rg-btn rg-btn-secondary rg-btn-sm">
+            <a href="{{ route($organizationsIndexRoute) }}" class="rg-btn rg-btn-secondary rg-btn-sm">
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>
         </div>
@@ -37,7 +44,7 @@
                     </div>
                     @endif
 
-                    <form method="POST" action="{{ route('admin.organizations.store') }}">
+                    <form method="POST" action="{{ route($organizationsStoreRoute) }}">
                         @csrf
 
                         <div class="rg-form-group">
@@ -61,33 +68,25 @@
                         </div>
 
                         <div class="rg-form-group">
-                            <label class="rg-form-label" for="organization_type">
+                            <label class="rg-form-label" for="organization_type_id">
                                 Organization Type <span class="rg-required">*</span>
                             </label>
-                            <input id="organization_type" name="organization_type" type="text" list="organization-type-options"
-                                   class="rg-form-control @error('organization_type') is-invalid @enderror"
-                                   value="{{ old('organization_type') }}"
-                                   placeholder="e.g. TODA"
+                            <select id="organization_type_id" name="organization_type_id"
+                                   class="rg-form-control @error('organization_type_id') is-invalid @enderror"
                                    required>
-                            <datalist id="organization-type-options">
+                                <option value="">Select organization type</option>
                                 @foreach($existingTypes as $existingType)
-                                    <option value="{{ $existingType }}">
+                                    <option value="{{ $existingType->id }}" {{ old('organization_type_id') === $existingType->id ? 'selected' : '' }}>
+                                        {{ $existingType->name }}
+                                    </option>
                                 @endforeach
-                            </datalist>
-                            <p class="rg-form-hint">Examples: TODA, MODA, Transport Cooperative.</p>
-                            @error('organization_type')
-                                <p class="rg-form-error">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-
-                        <div class="rg-form-group">
-                            <label class="rg-form-label" for="description">Organization Type Description</label>
-                            <textarea id="description" name="description" rows="3"
-                                      class="rg-form-control @error('description') is-invalid @enderror"
-                                      placeholder="Brief description for this organization type…">{{ old('description') }}</textarea>
-                            <p class="rg-form-hint">This description is shared by organizations using the same organization type.</p>
-                            @error('description')
+                            </select>
+                            <p class="rg-form-hint">Only existing organization types can be selected.</p>
+                            <p class="rg-form-hint">
+                                Need a new type?
+                                <a href="{{ route($organizationTypesIndexRoute) }}">Create organization type here</a>.
+                            </p>
+                            @error('organization_type_id')
                                 <p class="rg-form-error">{{ $message }}</p>
                             @enderror
                         </div>
@@ -202,7 +201,7 @@
                             <button type="submit" class="rg-btn rg-btn-primary">
                                 <i class="fas fa-plus"></i> Add Organization
                             </button>
-                            <a href="{{ route('admin.organizations.index') }}" class="rg-btn rg-btn-secondary">
+                            <a href="{{ route($organizationsIndexRoute) }}" class="rg-btn rg-btn-secondary">
                                 Cancel
                             </a>
                         </div>
