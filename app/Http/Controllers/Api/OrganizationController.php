@@ -11,12 +11,15 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Driver;
 use App\Models\DriverOrganizationAssignmentLog;
+use App\Models\HqAddress;
 use App\Rules\OrganizationOwnerEligible;
 use App\Support\DashboardCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class OrganizationController extends Controller
 {
@@ -171,10 +174,30 @@ class OrganizationController extends Controller
             $data['organization_type'] = trim($data['organization_type']);
         }
 
+        $organizationTypeName = $data['organization_type'] ?? null;
+        $resolvedOrganizationTypeId = $this->resolveOrganizationTypeIdFromPayload($data, $data['organization_type_id'] ?? null);
+        $data['organization_type_id'] = $resolvedOrganizationTypeId;
+        unset($data['organization_type']);
+
         if (array_key_exists('description', $data)) {
-            $this->syncOrganizationTypeDescriptionByName($data['organization_type'] ?? null, $data['description'], true);
+            if (!empty($resolvedOrganizationTypeId)) {
+                $this->syncOrganizationTypeDescriptionById($resolvedOrganizationTypeId, $data['description'], true);
+            } else {
+                $this->syncOrganizationTypeDescriptionByName($organizationTypeName, $data['description'], true);
+            }
+
             unset($data['description']);
         }
+
+        $data['hq_address'] = $this->resolveHqAddressIdFromPayload($data);
+        unset(
+            $data['hq_street'],
+            $data['hq_barangay'],
+            $data['hq_subdivision'],
+            $data['hq_floor_unit_room'],
+            $data['hq_lat'],
+            $data['hq_lng']
+        );
 
         // Automatically assign ownership when an organization-role user creates.
         if ($user->hasRole('organization')) {
@@ -242,18 +265,44 @@ class OrganizationController extends Controller
 
         $validated = $request->validate([
             'name'              => ['required', 'string', 'max:255', 'unique:organizations,name'],
-            'organization_type' => ['required', 'string', 'max:100'],
+            'organization_type_id' => [
+                'required_without:organization_type',
+                'uuid',
+                Rule::exists('organization_types', 'id')->whereNull('deleted_at'),
+            ],
+            'organization_type' => [
+                'required_without:organization_type_id',
+                'string',
+                'max:100',
+                Rule::exists('organization_types', 'name')->whereNull('deleted_at'),
+            ],
             'description'       => ['nullable', 'string', 'max:1000'],
             'hq_address'        => ['nullable', 'string', 'max:500'],
+            'hq_street'          => ['nullable', 'string', 'max:255'],
+            'hq_barangay'        => ['nullable', 'string', 'max:255'],
+            'hq_subdivision'     => ['nullable', 'string', 'max:255'],
+            'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
+            'hq_lat'             => ['nullable', 'string', 'max:50'],
+            'hq_lng'             => ['nullable', 'string', 'max:50'],
             'roles'             => ['sometimes', 'array', 'min:1'],
             'roles.*'           => ['string', Rule::in([Role::DRIVER, Role::COMMUTER])],
         ]);
 
         $additionalRoles = array_unique($validated['roles'] ?? []);
         unset($validated['roles']);
-        $validated['organization_type'] = trim($validated['organization_type']);
+        if (array_key_exists('organization_type', $validated)) {
+            $validated['organization_type'] = trim((string) $validated['organization_type']);
+        }
+
+        $resolvedOrganizationTypeId = $this->resolveOrganizationTypeIdFromPayload($validated, $validated['organization_type_id'] ?? null);
+        $resolvedHqAddressId = $this->resolveHqAddressIdFromPayload($validated);
+
         if (array_key_exists('description', $validated)) {
-            $this->syncOrganizationTypeDescriptionByName($validated['organization_type'], $validated['description'], true);
+            if (!empty($resolvedOrganizationTypeId)) {
+                $this->syncOrganizationTypeDescriptionById($resolvedOrganizationTypeId, $validated['description'], true);
+            } else {
+                $this->syncOrganizationTypeDescriptionByName($validated['organization_type'] ?? null, $validated['description'], true);
+            }
         }
 
         $roleNamesToSync = array_unique(array_merge([Role::ORGANIZATION], $additionalRoles));
@@ -266,11 +315,11 @@ class OrganizationController extends Controller
             ], 422);
         }
 
-        $organization = DB::transaction(function () use ($validated, $user, $roles) {
+        $organization = DB::transaction(function () use ($validated, $user, $roles, $resolvedOrganizationTypeId, $resolvedHqAddressId) {
             $organization = Organization::create([
                 'name'           => $validated['name'],
-                'organization_type' => $validated['organization_type'],
-                'hq_address'     => $validated['hq_address'] ?? null,
+                'organization_type_id' => $resolvedOrganizationTypeId,
+                'hq_address'     => $resolvedHqAddressId,
                 'status'         => 'active',
                 'owner_user_id'  => $user->id,
             ]);
@@ -331,9 +380,25 @@ class OrganizationController extends Controller
 
         $validated = $request->validate([
             'name'              => ['sometimes', 'string', 'max:255', Rule::unique('organizations', 'name')->ignore($organization->id)],
-            'organization_type' => ['sometimes', 'string', 'max:100'],
+            'organization_type_id' => [
+                'sometimes',
+                'uuid',
+                Rule::exists('organization_types', 'id')->whereNull('deleted_at'),
+            ],
+            'organization_type' => [
+                'sometimes',
+                'string',
+                'max:100',
+                Rule::exists('organization_types', 'name')->whereNull('deleted_at'),
+            ],
             'description'       => ['nullable', 'string', 'max:1000'],
             'hq_address'        => ['nullable', 'string', 'max:500'],
+            'hq_street'          => ['nullable', 'string', 'max:255'],
+            'hq_barangay'        => ['nullable', 'string', 'max:255'],
+            'hq_subdivision'     => ['nullable', 'string', 'max:255'],
+            'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
+            'hq_lat'             => ['nullable', 'string', 'max:50'],
+            'hq_lng'             => ['nullable', 'string', 'max:50'],
             'owner_user_id'     => [
                 'sometimes',
                 'nullable',
@@ -347,15 +412,45 @@ class OrganizationController extends Controller
             $validated['organization_type'] = trim($validated['organization_type']);
         }
 
+        if (
+            array_key_exists('organization_type_id', $validated)
+            || array_key_exists('organization_type', $validated)
+        ) {
+            $validated['organization_type_id'] = $this->resolveOrganizationTypeIdFromPayload($validated, $organization->organization_type_id);
+            unset($validated['organization_type']);
+        }
+
         if (array_key_exists('description', $validated)) {
-            if (array_key_exists('organization_type', $validated)) {
-                $this->syncOrganizationTypeDescriptionByName($validated['organization_type'], $validated['description'], true);
+            if (!empty($validated['organization_type_id'])) {
+                $this->syncOrganizationTypeDescriptionById($validated['organization_type_id'], $validated['description'], true);
             } else {
                 $this->syncOrganizationTypeDescriptionById($organization->organization_type_id, $validated['description'], true);
             }
 
             unset($validated['description']);
         }
+
+        $hasAddressPayload =
+            array_key_exists('hq_address', $validated)
+            || array_key_exists('hq_street', $validated)
+            || array_key_exists('hq_barangay', $validated)
+            || array_key_exists('hq_subdivision', $validated)
+            || array_key_exists('hq_floor_unit_room', $validated)
+            || array_key_exists('hq_lat', $validated)
+            || array_key_exists('hq_lng', $validated);
+
+        if ($hasAddressPayload) {
+            $validated['hq_address'] = $this->resolveHqAddressIdFromPayload($validated, $organization);
+        }
+
+        unset(
+            $validated['hq_street'],
+            $validated['hq_barangay'],
+            $validated['hq_subdivision'],
+            $validated['hq_floor_unit_room'],
+            $validated['hq_lat'],
+            $validated['hq_lng']
+        );
 
         // Organization-role users and organization managers cannot toggle owner or status.
         if ($user->hasRole('organization') || $user->isOrganizationManagerFor($organization->id)) {
@@ -494,6 +589,137 @@ class OrganizationController extends Controller
     {
         $normalized = trim((string) $description);
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function resolveOrganizationTypeIdFromPayload(array $payload, ?string $fallbackOrganizationTypeId = null): ?string
+    {
+        $organizationTypeId = $payload['organization_type_id'] ?? null;
+        if (!empty($organizationTypeId)) {
+            return $organizationTypeId;
+        }
+
+        if (array_key_exists('organization_type', $payload)) {
+            $organizationTypeName = trim((string) ($payload['organization_type'] ?? ''));
+
+            if ($organizationTypeName === '') {
+                return $fallbackOrganizationTypeId;
+            }
+
+            $resolvedOrganizationTypeId = OrganizationType::query()
+                ->where('name', $organizationTypeName)
+                ->whereNull('deleted_at')
+                ->value('id');
+
+            if (empty($resolvedOrganizationTypeId)) {
+                throw ValidationException::withMessages([
+                    'organization_type' => 'Selected organization type does not exist.',
+                ]);
+            }
+
+            return $resolvedOrganizationTypeId;
+        }
+
+        return $fallbackOrganizationTypeId;
+    }
+
+    private function resolveHqAddressIdFromPayload(array $payload, ?Organization $organization = null): ?string
+    {
+        $street = trim((string) ($payload['hq_street'] ?? ''));
+        $barangay = trim((string) ($payload['hq_barangay'] ?? ''));
+        $subdivision = $this->normalizeDescription($payload['hq_subdivision'] ?? null);
+        $floorUnitRoom = $this->normalizeDescription($payload['hq_floor_unit_room'] ?? null);
+        $latitude = $this->normalizeDescription($payload['hq_lat'] ?? null);
+        $longitude = $this->normalizeDescription($payload['hq_lng'] ?? null);
+
+        $hasStructuredAddressInput =
+            $street !== ''
+            || $barangay !== ''
+            || !is_null($subdivision)
+            || !is_null($floorUnitRoom)
+            || !is_null($latitude)
+            || !is_null($longitude);
+
+        if ($hasStructuredAddressInput) {
+            if ($street === '' || $barangay === '') {
+                throw ValidationException::withMessages([
+                    'hq_street' => 'Both hq_street and hq_barangay are required when providing HQ address details.',
+                    'hq_barangay' => 'Both hq_street and hq_barangay are required when providing HQ address details.',
+                ]);
+            }
+
+            $addressData = [
+                'street' => $street,
+                'barangay' => $barangay,
+                'subdivision' => $subdivision,
+                'floor_unit_room' => $floorUnitRoom,
+                'lat' => $latitude,
+                'lng' => $longitude,
+            ];
+
+            if ($organization && $organization->hqAddress) {
+                $organization->hqAddress->update($addressData);
+                return $organization->hqAddress->id;
+            }
+
+            $hqAddress = HqAddress::query()->firstOrCreate(
+                [
+                    'barangay' => $barangay,
+                    'street' => $street,
+                ],
+                [
+                    'subdivision' => $subdivision,
+                    'floor_unit_room' => $floorUnitRoom,
+                    'lat' => $latitude,
+                    'lng' => $longitude,
+                ]
+            );
+
+            return $hqAddress->id;
+        }
+
+        if (!array_key_exists('hq_address', $payload)) {
+            return $organization?->hq_address;
+        }
+
+        $hqAddressInput = trim((string) ($payload['hq_address'] ?? ''));
+        if ($hqAddressInput === '') {
+            return null;
+        }
+
+        if (Str::isUuid($hqAddressInput)) {
+            $existingHqAddress = HqAddress::query()->find($hqAddressInput);
+            if (!$existingHqAddress) {
+                throw ValidationException::withMessages([
+                    'hq_address' => 'Selected HQ address does not exist.',
+                ]);
+            }
+
+            return $existingHqAddress->id;
+        }
+
+        // Backward-compatible fallback for legacy free-text payloads.
+        $parts = array_values(array_filter(array_map('trim', explode(',', $hqAddressInput)), function ($value) {
+            return $value !== '';
+        }));
+
+        $derivedStreet = $parts[0] ?? 'Unspecified Street';
+        $derivedBarangay = $parts[1] ?? $derivedStreet;
+        $derivedSubdivision = $parts[2] ?? null;
+
+        $legacyAddress = HqAddress::query()->firstOrCreate(
+            [
+                'barangay' => $derivedBarangay,
+                'street' => $derivedStreet,
+            ],
+            [
+                'subdivision' => $derivedSubdivision,
+                'floor_unit_room' => null,
+                'lat' => null,
+                'lng' => null,
+            ]
+        );
+
+        return $legacyAddress->id;
     }
 
     private function isAdminUser(?User $user): bool

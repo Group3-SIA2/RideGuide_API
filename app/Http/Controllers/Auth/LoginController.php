@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
 class LoginController extends Controller
@@ -20,12 +21,25 @@ class LoginController extends Controller
 
     use AuthenticatesUsers;
 
-    /**
-     * Where to redirect users after login.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/admin/dashboard';
+    protected function redirectTo(): string
+    {
+        $user = auth()->user();
+
+        if ($user && $user->hasRole(Role::SUPER_ADMIN)) {
+            return route('super-admin.dashboard');
+        }
+
+        if (
+            $user
+            && ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
+            && !$user->hasRole(Role::ADMIN)
+            && !$user->hasRole(Role::SUPER_ADMIN)
+        ) {
+            return route('org-manager.dashboard');
+        }
+
+        return route('admin.dashboard');
+    }
 
     /**
      * Create a new controller instance.
