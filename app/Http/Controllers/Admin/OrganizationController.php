@@ -106,9 +106,11 @@ class OrganizationController extends Controller
         }
 
         $totalAssignedDrivers = 0;
+        $totalAssignedTerminals = 0;
         $unverifiedDriverLicenses = 0;
         $availableDriversCount = 0;
         $recentlyAssignedDrivers = collect();
+        $assignedTerminals = collect();
 
         if ($managedOrganization) {
             $totalAssignedDrivers = Driver::where('organization_id', $managedOrganization->id)->count();
@@ -126,14 +128,29 @@ class OrganizationController extends Controller
                 ->latest('updated_at')
                 ->take(10)
                 ->get();
+
+            $assignedTerminals = $managedOrganization->terminals()
+                ->orderBy('terminal_name')
+                ->get([
+                    'terminals.id',
+                    'terminals.terminal_name',
+                    'terminals.barangay',
+                    'terminals.city',
+                    'terminals.latitude',
+                    'terminals.longitude',
+                ]);
+
+            $totalAssignedTerminals = $assignedTerminals->count();
         }
 
         return view('admin.organizations.manager-dashboard', compact(
             'managedOrganization',
             'totalAssignedDrivers',
+            'totalAssignedTerminals',
             'unverifiedDriverLicenses',
             'availableDriversCount',
             'recentlyAssignedDrivers',
+            'assignedTerminals',
             'organizationsForAdmin',
             'selectedOrganizationId'
         ));
@@ -141,7 +158,7 @@ class OrganizationController extends Controller
 
     public function assignmentIndex(Request $request)
     {
-        $this->authorizePermissions($request, 'assign_drivers_to_organization');
+        $this->authorizePermissions($request, 'view_organization_assignments');
 
         $currentUser = $request->user();
         $organizationsForAdmin = collect();
@@ -242,13 +259,30 @@ class OrganizationController extends Controller
 
     public function storeTerminal(Request $request)
     {
-        $this->authorizePermissions($request, 'manage_organization_terminals');
-
         $organization = $this->resolveTargetOrganizationForAssignment($request);
 
         $validated = $request->validate([
             'terminal_id'   => ['nullable', 'uuid', Rule::exists('terminals', 'id')],
-            'terminal_name' => ['required_without:terminal_id', 'nullable', 'string', 'max:255'],
+            'terminal_name' => [
+                'required_without:terminal_id',
+                'nullable',
+                'string',
+                'max:255',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (!is_string($value) || trim($value) === '') {
+                        return;
+                    }
+
+                    $hasOrganizationTypePrefix = preg_match(
+                        '/^\s*(toda|puvmp\s*group|transport\s*cooperative|transport\s*alliance(?:\/association)?)(\b|\s*[-:])/i',
+                        $value
+                    ) === 1;
+
+                    if ($hasOrganizationTypePrefix) {
+                        $fail('Terminal name must be location-based only (e.g., "Lagao Public Transport Terminal") and must not include organization type labels.');
+                    }
+                },
+            ],
             'barangay'      => ['required_without:terminal_id', 'nullable', 'string', 'max:255'],
             'city'          => ['required_without:terminal_id', 'nullable', 'string', 'max:255'],
         ], [
@@ -257,30 +291,60 @@ class OrganizationController extends Controller
             'city.required_without' => 'City is required when not selecting an existing terminal.',
         ]);
 
+        if (empty($validated['terminal_id'])) {
+            $this->authorizePermissions($request, 'create_organization_terminals');
+        } else {
+            $this->authorizePermissions($request, 'assign_organization_terminals');
+        }
+
         if (empty($validated['terminal_id']) && empty($validated['terminal_name'])) {
-            return redirect()->route('admin.organizations.assignments.index', $this->buildOrganizationQuery($request))
+            return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $this->buildOrganizationQuery($request))
                 ->with('error', 'Please select an existing terminal or provide details for a new one.');
         }
 
         if (empty($validated['terminal_id'])) {
-            $terminal = Terminal::create([
-                'terminal_name' => $validated['terminal_name'],
-                'barangay'      => $validated['barangay'],
-                'city'          => $validated['city'],
-                'latitude'      => null,
-                'longitude'     => null,
-            ]);
+            $normalizedTerminalName = preg_replace('/\s+/', ' ', trim((string) $validated['terminal_name']));
+            $normalizedBarangay = preg_replace('/\s+/', ' ', trim((string) $validated['barangay']));
+            $normalizedCity = preg_replace('/\s+/', ' ', trim((string) $validated['city']));
+
+            $terminal = Terminal::withTrashed()
+                ->where('terminal_name', $normalizedTerminalName)
+                ->where('barangay', $normalizedBarangay)
+                ->where('city', $normalizedCity)
+                ->first();
+
+            if ($terminal) {
+                if ($terminal->trashed()) {
+                    $terminal->restore();
+                }
+            } else {
+                $terminal = Terminal::create([
+                    'terminal_name' => $normalizedTerminalName,
+                    'barangay'      => $normalizedBarangay,
+                    'city'          => $normalizedCity,
+                    'latitude'      => null,
+                    'longitude'     => null,
+                ]);
+            }
         } else {
             $terminal = Terminal::findOrFail($validated['terminal_id']);
         }
 
-        $alreadyLinked = OrganizationTerminal::where('organization_id', $organization->id)
+        $existingLink = OrganizationTerminal::withTrashed()
+            ->where('organization_id', $organization->id)
             ->where('terminal_id', $terminal->id)
-            ->exists();
+            ->first();
 
-        if ($alreadyLinked) {
-            return redirect()->route('admin.organizations.assignments.index', $this->buildOrganizationQuery($request))
+        if ($existingLink && !$existingLink->trashed()) {
+            return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $this->buildOrganizationQuery($request))
                 ->with('error', 'This terminal is already linked to your organization.');
+        }
+
+        if ($existingLink && $existingLink->trashed()) {
+            $existingLink->restore();
+
+            return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $this->buildOrganizationQuery($request))
+                ->with('success', 'Terminal linked to your organization successfully.');
         }
 
         OrganizationTerminal::create([
@@ -288,8 +352,35 @@ class OrganizationController extends Controller
             'terminal_id'     => $terminal->id,
         ]);
 
-        return redirect()->route('admin.organizations.assignments.index', $this->buildOrganizationQuery($request))
+        return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $this->buildOrganizationQuery($request))
             ->with('success', 'Terminal added to your organization successfully.');
+    }
+
+    public function removeTerminal(Request $request, Terminal $terminal)
+    {
+        $this->authorizePermissions($request, 'delete_organization_terminals');
+
+        $organization = $this->resolveTargetOrganizationForAssignment($request);
+
+        $link = OrganizationTerminal::query()
+            ->where('organization_id', $organization->id)
+            ->where('terminal_id', $terminal->id)
+            ->first();
+
+        if (!$link) {
+            return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $this->buildOrganizationQuery($request))
+                ->with('error', 'Terminal is not linked to the selected organization.');
+        }
+
+        $link->delete();
+
+        return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $this->buildOrganizationQuery($request))
+            ->with('success', 'Terminal removed from your organization successfully.');
+    }
+
+    public function unassignTerminal(Request $request, Terminal $terminal)
+    {
+        return $this->removeTerminal($request, $terminal);
     }
 
     public function assignDriver(Request $request, Driver $driver)
@@ -316,7 +407,7 @@ class OrganizationController extends Controller
             $query['organization_id'] = $request->input('organization_id');
         }
 
-        return redirect()->route('admin.organizations.assignments.index', $query)
+        return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $query)
             ->with('success', 'Driver assigned to your organization successfully.');
     }
 
@@ -344,16 +435,16 @@ class OrganizationController extends Controller
             $query['organization_id'] = $request->input('organization_id');
         }
 
-        return redirect()->route('admin.organizations.assignments.index', $query)
+        return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $query)
             ->with('success', 'Driver assignment updated successfully.');
     }
 
     public function unassignDriver(Request $request, Driver $driver)
     {
-        $this->authorizePermissions($request, 'assign_drivers_to_organization');
+        $this->authorizePermissions($request, 'unassign_drivers_from_organization');
 
         if (!$driver->organization_id) {
-            return redirect()->route('admin.organizations.assignments.index', [
+            return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), [
                 'organization_id' => $request->input('organization_id'),
             ])->with('error', 'Driver is not assigned to any organization.');
         }
@@ -378,7 +469,7 @@ class OrganizationController extends Controller
             DriverOrganizationAssignmentLog::ACTION_UNASSIGN
         );
 
-        return redirect()->route('admin.organizations.assignments.index', $query)
+        return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $query)
             ->with('success', 'Driver unassigned successfully.');
     }
 
@@ -405,9 +496,7 @@ class OrganizationController extends Controller
 
         $existingTypes = OrganizationType::query()
             ->orderBy('name')
-            ->pluck('name')
-            ->filter()
-            ->values();
+            ->get(['id', 'name', 'description']);
 
 
         return view('admin.organizations.create', compact('eligibleOwners', 'existingNames', 'existingTypes'));
@@ -419,12 +508,14 @@ class OrganizationController extends Controller
         $this->authorize('create', Organization::class);
 
         $validated = $request->validated();
-        $validated['organization_type'] = trim($validated['organization_type']);
 
-        if (array_key_exists('description', $validated)) {
-            $this->syncOrganizationTypeDescriptionByName($validated['organization_type'], $validated['description']);
-            unset($validated['description']);
+        if (empty($validated['organization_type_id']) && !empty($validated['organization_type'])) {
+            $validated['organization_type_id'] = OrganizationType::query()
+                ->where('name', trim((string) $validated['organization_type']))
+                ->value('id');
         }
+
+        unset($validated['organization_type']);
 
         if (array_key_exists('owner_user_id', $validated)) {
             $ownerUser = User::withTrashed()->find($validated['owner_user_id']);
@@ -472,14 +563,14 @@ class OrganizationController extends Controller
             }
         }
 
-        return redirect()->route('admin.organizations.index')
+        return redirect()->route($this->panelRouteName($request, 'organizations.index'))
             ->with('success', 'Organization created successfully.');
     }
 
     public function edit(Request $request, string $id)
     {
         $this->authorizePermissions($request, 'edit_organizations');
-        $organization = Organization::with('hqAddress')->findOrFail($id);
+        $organization = Organization::with(['hqAddress', 'organizationType'])->findOrFail($id);
         $this->authorize('update', $organization);
 
         $eligibleOwners = User::query()
@@ -500,9 +591,7 @@ class OrganizationController extends Controller
 
         $existingTypes = OrganizationType::query()
             ->orderBy('name')
-            ->pluck('name')
-            ->filter()
-            ->values();
+            ->get(['id', 'name', 'description']);
 
 
         return view('admin.organizations.edit', compact('organization', 'eligibleOwners', 'existingNames', 'existingTypes'));
@@ -515,19 +604,7 @@ class OrganizationController extends Controller
         $this->authorize('update', $organization);
 
         $validated = $request->validated();
-        if (array_key_exists('organization_type', $validated)) {
-            $validated['organization_type'] = trim($validated['organization_type']);
-        }
-
-        if (array_key_exists('description', $validated)) {
-            if (array_key_exists('organization_type', $validated)) {
-                $this->syncOrganizationTypeDescriptionByName($validated['organization_type'], $validated['description']);
-            } else {
-                $this->syncOrganizationTypeDescriptionById($organization->organization_type_id, $validated['description']);
-            }
-
-            unset($validated['description']);
-        }
+        unset($validated['organization_type']);
 
         if (array_key_exists('owner_user_id', $validated)) {
             $ownerUser = User::withTrashed()->find($validated['owner_user_id']);
@@ -583,7 +660,7 @@ class OrganizationController extends Controller
             }
         }
 
-        return redirect()->route('admin.organizations.index')
+        return redirect()->route($this->panelRouteName($request, 'organizations.index'))
             ->with('success', 'Organization updated successfully.');
     }
 
@@ -625,7 +702,7 @@ class OrganizationController extends Controller
             return response()->json(['success' => true, 'message' => 'Address updated successfully.']);
         }
 
-        return redirect()->route('admin.organizations.index')
+        return redirect()->route($this->panelRouteName($request, 'organizations.index'))
             ->with('success', 'Organization address updated successfully.');
     }
 
@@ -637,7 +714,7 @@ class OrganizationController extends Controller
 
         $organization->delete();
 
-        return redirect()->route('admin.organizations.index')
+        return redirect()->route($this->panelRouteName($request, 'organizations.index'))
             ->with('success', 'Organization deleted successfully.');
     }
 
@@ -649,8 +726,53 @@ class OrganizationController extends Controller
 
         $organization->restore();
 
-        return redirect()->route('admin.organizations.index')
+        return redirect()->route($this->panelRouteName($request, 'organizations.index'))
             ->with('success', 'Organization restored successfully.');
+    }
+
+    public function organizationTypesIndex(Request $request)
+    {
+        $this->authorizePermissions($request, 'manage_organization_types');
+
+        $organizationTypes = OrganizationType::query()
+            ->withCount('organizations')
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('admin.organizations.types-index', compact('organizationTypes'));
+    }
+
+    public function organizationTypesStore(Request $request)
+    {
+        $this->authorizePermissions($request, 'manage_organization_types');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $typeName = trim($validated['name']);
+        $description = $this->normalizeDescription($validated['description'] ?? null);
+
+        $organizationType = OrganizationType::withTrashed()->firstOrNew(['name' => $typeName]);
+
+        if ($organizationType->exists && !$organizationType->trashed()) {
+            return redirect()->route($this->panelRouteName($request, 'organizations.types.index'))
+                ->with('error', 'Organization type already exists.')
+                ->withInput();
+        }
+
+        if ($organizationType->trashed()) {
+            $organizationType->restore();
+        }
+
+        $organizationType->name = $typeName;
+        $organizationType->description = $description;
+        $organizationType->save();
+
+        return redirect()->route($this->panelRouteName($request, 'organizations.types.index'))
+            ->with('success', 'Organization type created successfully.');
     }
 
     private function ensureOwnerHasOrganizationRole(?string $ownerUserId): void
@@ -670,44 +792,6 @@ class OrganizationController extends Controller
         }
 
         $ownerUser->roles()->syncWithoutDetaching([$organizationRoleId]);
-    }
-
-    private function syncOrganizationTypeDescriptionByName(?string $organizationTypeName, ?string $description): void
-    {
-        $typeName = trim((string) $organizationTypeName);
-        if ($typeName === '') {
-            return;
-        }
-
-        $organizationType = OrganizationType::withTrashed()->firstOrNew(['name' => $typeName]);
-
-        if (!$organizationType->exists) {
-            $organizationType->save();
-        } elseif ($organizationType->trashed()) {
-            $organizationType->restore();
-        }
-
-        $organizationType->description = $this->normalizeDescription($description);
-        $organizationType->save();
-    }
-
-    private function syncOrganizationTypeDescriptionById(?string $organizationTypeId, ?string $description): void
-    {
-        if (empty($organizationTypeId)) {
-            return;
-        }
-
-        $organizationType = OrganizationType::withTrashed()->find($organizationTypeId);
-        if (!$organizationType) {
-            return;
-        }
-
-        if ($organizationType->trashed()) {
-            $organizationType->restore();
-        }
-
-        $organizationType->description = $this->normalizeDescription($description);
-        $organizationType->save();
     }
 
     private function normalizeDescription(?string $description): ?string
@@ -783,5 +867,20 @@ class OrganizationController extends Controller
         }
 
         return [];
+    }
+
+    private function panelRouteName(Request $request, string $suffix): string
+    {
+        $routeName = (string) optional($request->route())->getName();
+
+        if (str_starts_with($routeName, 'org-manager.')) {
+            return 'org-manager.' . $suffix;
+        }
+
+        if (str_starts_with($routeName, 'super-admin.')) {
+            return 'super-admin.' . $suffix;
+        }
+
+        return 'admin.' . $suffix;
     }
 }

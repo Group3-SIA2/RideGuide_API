@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Commuter;
 use App\Models\Driver;
+use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -23,8 +25,18 @@ class DashboardController extends Controller
     /**
      * Display the admin dashboard.
      */
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request): View|JsonResponse|RedirectResponse
     {
+        $user = $request->user();
+
+        if (
+            ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
+            && !$user->hasRole(Role::ADMIN)
+            && !$user->hasRole(Role::SUPER_ADMIN)
+        ) {
+            return redirect()->route('org-manager.dashboard');
+        }
+
         $this->authorizePermissions($request, 'view_admin_dashboard');
 
         $totalVerifiedUsers = User::whereNotNull('email_verified_at')->count();
