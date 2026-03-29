@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Organizations API manages TODA/MODA/cooperative organizations and ownership workflows.
+The Organizations API manages transport organizations, ownership workflows, and organization-manager assignments.
 
 Access summary:
 - admin / super_admin: full access (list all, include deleted, create/update/delete/restore)
@@ -11,9 +11,12 @@ Access summary:
 
 Current schema-aligned request fields:
 - name (required)
-- organization_type (required, string)
+- organization_type_id (preferred, UUID) OR organization_type (existing type name)
 - description (nullable, string): stored in organization_types.description and shared by organizations of the same type
-- hq_address (nullable)
+- hq_address (nullable): UUID of hq_address record, with backward-compatible text support
+- hq_street + hq_barangay (recommended for structured HQ creation/update)
+- hq_subdivision, hq_floor_unit_room, hq_lat, hq_lng (optional structured HQ fields)
+- hq_lat and hq_lng should come from the map-selected location (pin/drop marker) in the app
 - owner_user_id (nullable, UUID)
 - status (active or inactive)
 
@@ -140,23 +143,33 @@ Not found (404):
 
 POST /api/organizations
 
-Body (JSON):
-```json
-{
-  "name": "TODA - New Terminal",
-  "organization_type": "TODA",
-  "description": "Primary short-distance transport association in GenSan.",
-  "hq_address": "Purok 5, Brgy. San Isidro, General Santos City",
-  "owner_user_id": "01a2b3c4-d5e6-7890-f1a2-b3c4d5e6f789"
-}
+Body (form-data):
+```text
+name                  Lagao TODA
+organization_type_id  01f2a3b4-c5d6-7e8f-9012-3456789abcde
+description           Barangay-level tricycle transport association in GenSan.
+hq_street             San Miguel Street
+hq_barangay           Lagao
+hq_subdivision        Lagao 1
+hq_lat                6.123280
+hq_lng                125.168320
+owner_user_id         01a2b3c4-d5e6-7890-f1a2-b3c4d5e6f789
 ```
 
 Rules:
 - name: required, unique, max 255
-- organization_type: required, max 100
+- organization_type_id: required unless organization_type is provided, must exist and not be soft-deleted
+- organization_type: required unless organization_type_id is provided, must match an existing non-deleted type name
 - description: nullable, max 1000 (stored on organization type)
-- hq_address: nullable, max 500
+- hq_street and hq_barangay: required together when sending structured HQ address
+- hq_lat and hq_lng: optional but should be sourced from the selected map location when available
+- hq_address: nullable (UUID preferred). Legacy free-text is still accepted and converted server-side.
 - owner_user_id: nullable UUID, must be an eligible active owner
+
+Compatibility notes:
+- If Flutter already has a type picker with IDs, send organization_type_id.
+- If Flutter only has type names, send organization_type (server resolves to organization_type_id).
+- For HQ address, structured fields are recommended; plain text hq_address is fallback compatibility mode.
 
 Role behavior:
 - organization caller: limited to one organization; server auto-sets owner_user_id to authenticated user
@@ -176,19 +189,25 @@ POST /api/organizations/create-profile
 
 Creates an organization owned by the authenticated user while keeping multi-role support.
 
-Body (JSON):
-```json
-{
-  "name": "Lagao TODA",
-  "organization_type": "TODA",
-  "description": "Association-owned tricycle operators.",
-  "hq_address": "Lagao, General Santos City",
-  "roles": ["driver", "commuter"]
-}
+Body (form-data):
+```text
+name               City Heights TODA
+organization_type  TODA
+description        Barangay-level TODA in City Heights.
+hq_street          Santiago Boulevard
+hq_barangay        City Heights
+hq_subdivision     City Heights Proper
+roles[]            driver
+roles[]            commuter
 ```
 
 Rules:
-- name, organization_type, description, hq_address follow the same validation limits as create
+- name: required, unique, max 255
+- organization_type_id OR organization_type: same resolution rules as create
+- description: nullable, max 1000
+- hq_address: nullable UUID/text compatibility input
+- hq_street + hq_barangay + optional structured fields: supported and recommended
+- hq_lat and hq_lng should be captured from map selection for better location accuracy
 - roles (optional): array limited to driver and/or commuter
 - caller must already have one of organization, admin, super_admin
 - one organization per owner (returns 409 if already exists)
@@ -201,9 +220,9 @@ Success (201):
   "data": {
     "organization": {
       "id": "019f...",
-      "name": "Lagao TODA",
+      "name": "City Heights TODA",
       "organization_type": "TODA",
-      "description": "Association-owned tricycle operators."
+      "description": "Barangay-level TODA in City Heights."
     },
     "roles": ["driver", "organization"]
   }
@@ -245,9 +264,10 @@ Partial update supported.
 
 Updatable fields:
 - name
-- organization_type
+- organization_type_id OR organization_type
 - description (updates organization type description)
-- hq_address
+- hq_address (UUID/text compatibility)
+- hq_street, hq_barangay, hq_subdivision, hq_floor_unit_room, hq_lat, hq_lng
 - owner_user_id
 - status
 
@@ -302,10 +322,26 @@ Recommended mobile flow for organization onboarding:
 - GET /api/organizations for listing/search/filter
 - GET /api/organizations/assigned-drivers for org management driver screen
 
+Flutter request payload recommendation for step 4 (form-data fields):
+```text
+name               Lagao TODA
+organization_type  TODA
+description        Barangay-level tricycle transport association.
+hq_street          San Miguel Street
+hq_barangay        Lagao
+hq_subdivision     Lagao 1
+roles[]            driver
+roles[]            commuter
+```
+
+If your app stores type IDs, you can replace organization_type with organization_type_id.
+
 Flutter request tips:
-- For list screens use query params: search, organization_type, sort_by, sort_dir, per_page
+- For list screens use query params: search, organization_type, organization_type_id, sort_by, sort_dir, per_page
 - For admin tools add include_deleted and status filters
 - Treat description as type-level metadata (shared by organizations using that type)
+- Prefer structured HQ fields over free-text hq_address in new app versions
+- When providing hq_lat and hq_lng, use coordinates from the in-app map picker selection
 
 Example list call from Flutter:
 ```text
