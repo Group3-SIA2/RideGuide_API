@@ -17,6 +17,10 @@
 
 @section('content')
 
+    @php
+        $dashboardRoute = request()->routeIs('super-admin.*') ? 'super-admin.dashboard' : 'admin.dashboard';
+    @endphp
+
     {{-- Stats Row --}}
     <div class="row align-items-stretch">
 
@@ -106,7 +110,7 @@
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Recent Users</h6>
                     </div>
-                    <form id="rg-filter-form" method="GET" action="{{ route('admin.dashboard') }}" class="rg-filter-bar mt-2">
+                    <form id="rg-filter-form" method="GET" action="{{ route($dashboardRoute) }}" class="rg-filter-bar mt-2">
                         <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name or email…" value="{{ request('search') }}">
                         <select id="rg-filter" name="role" class="rg-filter-select">
                             <option value="">All Roles</option>

@@ -180,7 +180,7 @@ body,
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 12px;
-    padding-bottom: 8px;
+    padding-bottom: 14px;
 }
 .rg-page-title {
     font-size: 1.35rem;
