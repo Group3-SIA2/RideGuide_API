@@ -2,6 +2,11 @@
 
 @section('title', 'Commuters — RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $commutersIndexRoute = $panelPrefix . '.commuters.index';
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -25,7 +30,7 @@
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Commuter List</h6>
                     </div>
-                    <form id="rg-filter-form" method="GET" action="{{ route('admin.commuters.index') }}" class="rg-filter-bar mt-2">
+                    <form id="rg-filter-form" method="GET" action="{{ route($commutersIndexRoute) }}" class="rg-filter-bar mt-2">
                         <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name or email…" value="{{ request('search') }}">
                         <select id="rg-filter" name="classification" class="rg-filter-select">
                             <option value="">All Classifications</option>

@@ -1,3 +1,10 @@
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $organizationsRestoreRoute = $panelPrefix . '.organizations.restore';
+    $organizationsEditRoute = $panelPrefix . '.organizations.edit';
+    $organizationsDestroyRoute = $panelPrefix . '.organizations.destroy';
+@endphp
+
 @forelse($organizations as $index => $org)
 <tr>
     <td class="rg-td-index">{{ $organizations->firstItem() + $index }}</td>
@@ -46,7 +53,7 @@
     </td>
     <td>
         @if($showDeleted ?? false)
-            <form method="POST" action="{{ route('admin.organizations.restore', $org->id) }}">
+            <form method="POST" action="{{ route($organizationsRestoreRoute, $org->id) }}">
                 @csrf
                 <button type="submit" class="rg-btn rg-btn-sm"
                         style="background:rgba(34,197,94,0.12);color:#15803d;border:none;">
@@ -71,11 +78,11 @@
                         onclick="openAddressModal(this)">
                     <i class="fas fa-map-marker-alt"></i>
                 </button>
-                <a href="{{ route('admin.organizations.edit', $org->id) }}"
+                <a href="{{ route($organizationsEditRoute, $org->id) }}"
                    class="rg-btn rg-btn-sm" style="background:var(--rg-accent-dim);color:var(--rg-accent);border:none;">
                     <i class="fas fa-edit"></i>
                 </a>
-                <form method="POST" action="{{ route('admin.organizations.destroy', $org->id) }}"
+                <form method="POST" action="{{ route($organizationsDestroyRoute, $org->id) }}"
                       onsubmit="return confirm('Delete {{ addslashes($org->name) }}? It can be restored later.')">
                     @csrf
                     @method('DELETE')
