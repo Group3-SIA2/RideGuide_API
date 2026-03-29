@@ -59,6 +59,8 @@ class AppServiceProvider extends ServiceProvider
                 'view_organization_dashboard',
                 'view_organizations',
                 'assign_drivers_to_organization',
+                'view_organization_assignments',
+                'manage_organization_types',
             ]);
         });
 
@@ -74,7 +76,20 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_org_super_admin_assignments', function (User $user) {
             return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
-                && $user->hasPermission('assign_drivers_to_organization');
+                && $user->hasAnyPermission([
+                    'view_organization_assignments',
+                    'assign_drivers_to_organization',
+                    'unassign_drivers_from_organization',
+                    'assign_organization_terminals',
+                    'create_organization_terminals',
+                    'delete_organization_terminals',
+                    'manage_organization_terminals',
+                ]);
+        });
+
+        Gate::define('menu_org_super_admin_types', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('manage_organization_types');
         });
 
         Gate::define('menu_org_admin_group', function (User $user) {
@@ -86,6 +101,8 @@ class AppServiceProvider extends ServiceProvider
                 'view_organization_dashboard',
                 'view_organizations',
                 'assign_drivers_to_organization',
+                'view_organization_assignments',
+                'manage_organization_types',
             ]);
         });
 
@@ -104,7 +121,21 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('menu_org_admin_assignments', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
                 && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
-                && $user->hasPermission('assign_drivers_to_organization');
+                && $user->hasAnyPermission([
+                    'view_organization_assignments',
+                    'assign_drivers_to_organization',
+                    'unassign_drivers_from_organization',
+                    'assign_organization_terminals',
+                    'create_organization_terminals',
+                    'delete_organization_terminals',
+                    'manage_organization_terminals',
+                ]);
+        });
+
+        Gate::define('menu_org_admin_types', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('manage_organization_types');
         });
 
         Gate::define('menu_org_role_dashboard', function (User $user) {
@@ -122,7 +153,122 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return ($user->hasRole(\App\Models\Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-                && $user->hasPermission('assign_drivers_to_organization');
+                && $user->hasAnyPermission([
+                    'view_organization_assignments',
+                    'assign_drivers_to_organization',
+                    'unassign_drivers_from_organization',
+                    'assign_organization_terminals',
+                    'create_organization_terminals',
+                    'delete_organization_terminals',
+                    'manage_organization_terminals',
+                ]);
+        });
+
+        Gate::define('menu_super_admin_users', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('view_users');
+        });
+
+        Gate::define('menu_admin_users', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('view_users');
+        });
+
+        Gate::define('menu_super_admin_commuters', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasAnyPermission(['view_commuters', 'manage_commuters']);
+        });
+
+        Gate::define('menu_admin_commuters', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasAnyPermission(['view_commuters', 'manage_commuters']);
+        });
+
+        Gate::define('menu_super_admin_drivers', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasAnyPermission(['view_drivers', 'manage_drivers']);
+        });
+
+        Gate::define('menu_admin_drivers', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasAnyPermission(['view_drivers', 'manage_drivers']);
+        });
+
+        Gate::define('menu_super_admin_user_management', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('manage_users');
+        });
+
+        Gate::define('menu_admin_user_management', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('manage_users');
+        });
+
+        Gate::define('menu_super_admin_user_authorization', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('manage_authorization');
+        });
+
+        Gate::define('menu_admin_user_authorization', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('manage_authorization');
+        });
+
+        Gate::define('menu_super_admin_profile', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN);
+        });
+
+        Gate::define('menu_admin_profile', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN);
+        });
+
+        Gate::define('menu_org_profile', function (User $user) {
+            return ($user->hasRole(\App\Models\Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && !$user->hasRole(\App\Models\Role::ADMIN);
+        });
+
+        Gate::define('menu_super_admin_backups', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('view_backups');
+        });
+
+        Gate::define('menu_admin_backups', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('view_backups');
+        });
+
+        Gate::define('menu_super_admin_transactions', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('view_transactions');
+        });
+
+        Gate::define('menu_admin_transactions', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasPermission('view_transactions');
+        });
+
+        Gate::define('menu_super_admin_logout', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN);
+        });
+
+        Gate::define('menu_admin_logout', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN);
+        });
+
+        Gate::define('menu_org_logout', function (User $user) {
+            return ($user->hasRole(\App\Models\Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && !$user->hasRole(\App\Models\Role::ADMIN);
         });
 
         View::composer('admin.*', function ($view) {

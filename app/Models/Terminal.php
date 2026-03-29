@@ -38,6 +38,7 @@ class Terminal extends Model
     {
         return $this->belongsToMany(Organization::class, 'organization_terminals', 'terminal_id', 'organization_id')
             ->withTimestamps()
-            ->withPivot('id');
+            ->withPivot(['id', 'deleted_at'])
+            ->wherePivotNull('deleted_at');
     }
 }
