@@ -13,6 +13,24 @@
 
 @section('content')
 
+    @php
+        $currentUser = auth()->user();
+        $isOrganizationManagerOnly = $currentUser
+            && ($currentUser->hasRole(\App\Models\Role::ORGANIZATION) || $currentUser->hasAnyActiveOrganizationManagement())
+            && !$currentUser->hasRole(\App\Models\Role::ADMIN)
+            && !$currentUser->hasRole(\App\Models\Role::SUPER_ADMIN);
+
+        $cancelDashboardRoute = $currentUser && $currentUser->hasRole(\App\Models\Role::SUPER_ADMIN)
+            ? 'super-admin.dashboard'
+            : ($isOrganizationManagerOnly
+            ? 'org-manager.dashboard'
+            : 'admin.dashboard');
+
+        $logoutRoute = $currentUser && $currentUser->hasRole(\App\Models\Role::SUPER_ADMIN)
+            ? 'super-admin.logout'
+            : ($isOrganizationManagerOnly ? 'org-manager.logout' : 'admin.logout');
+    @endphp
+
     <div class="row justify-content-center">
         <div class="col-12 col-md-5 col-lg-4">
             <div class="rg-card">
@@ -29,11 +47,11 @@
                     </p>
 
                     <div class="d-flex gap-3 justify-content-center mt-4">
-                        <a href="{{ route('admin.dashboard') }}" class="rg-btn-cancel">
+                        <a href="{{ route($cancelDashboardRoute) }}" class="rg-btn-cancel">
                             Cancel
                         </a>
 
-                        <form method="POST" action="{{ route('admin.logout') }}">
+                        <form method="POST" action="{{ route($logoutRoute) }}">
                             @csrf
                             <button type="submit" class="rg-btn-logout">
                                 <i class="fas fa-sign-out-alt me-1"></i> Yes, Logout

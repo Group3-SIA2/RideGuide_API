@@ -2,6 +2,11 @@
 
 @section('title', 'Drivers — RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $driversIndexRoute = $panelPrefix . '.drivers.index';
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -25,7 +30,7 @@
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Driver List</h6>
                     </div>
-                    <form id="rg-filter-form" method="GET" action="{{ route('admin.drivers.index') }}" class="rg-filter-bar mt-2">
+                    <form id="rg-filter-form" method="GET" action="{{ route($driversIndexRoute) }}" class="rg-filter-bar mt-2">
                         <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name, email, license…" value="{{ request('search') }}">
                         <select id="rg-filter" name="status" class="rg-filter-select">
                             <option value="">All Statuses</option>

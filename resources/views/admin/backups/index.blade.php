@@ -2,6 +2,13 @@
 
 @section('title', 'Backup & Restore — RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
+    $backupsIndexRoute = $panelPrefix . '.backups.index';
+    $backupsCreateRoute = $panelPrefix . '.backups.create';
+    $backupsBaseUrl = rtrim(url($panelPrefix . '/backups'), '/');
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -326,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Refresh backup list via AJAX ───────────────────────
     function refreshList() {
         tbody.style.opacity = '0.35';
-        fetch("{{ route('admin.backups.index') }}", {
+        fetch("{{ route($backupsIndexRoute) }}", {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(function(r) { return r.json(); })
@@ -350,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function () {
         hideAlerts();
         showLoading('Creating database backup…');
 
-        fetch("{{ route('admin.backups.create') }}", {
+        fetch("{{ route($backupsCreateRoute) }}", {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
@@ -376,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Download Backup ────────────────────────────────────
     function handleDownload(filename) {
-        window.location.href = "{{ url('admin/backups') }}/" + encodeURIComponent(filename) + "/download";
+        window.location.href = "{{ $backupsBaseUrl }}/" + encodeURIComponent(filename) + "/download";
     }
 
     // ── Restore Backup ─────────────────────────────────────
@@ -411,7 +418,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showLoading('Step 1 of 2 — Creating a safety backup before restore…');
         updateLoadingStep(1);
 
-        fetch("{{ url('admin/backups') }}/" + encodeURIComponent(restoreFilename) + "/restore", {
+        fetch("{{ $backupsBaseUrl }}/" + encodeURIComponent(restoreFilename) + "/restore", {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
