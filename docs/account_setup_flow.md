@@ -322,12 +322,30 @@ Include Bearer token in Authorization.
 
 Sample body:
 ```
-name        Lagao TODA
-type        TODA
-description Association-owned tricycle operators.
-hq_address  Lagao, General Santos City
+name              Lagao TODA
+organization_type TODA
+description       Barangay-level tricycle transport association.
+hq_street         San Miguel Street
+hq_barangay       Lagao
+hq_subdivision    Lagao 1
+hq_lat            6.123280
+hq_lng            125.168320
 roles[]     driver
 roles[]     commuter
+```
+
+Flutter form-data fields example:
+```text
+name              Lagao TODA
+organization_type TODA
+description       Barangay-level tricycle transport association.
+hq_street         San Miguel Street
+hq_barangay       Lagao
+hq_subdivision    Lagao 1
+hq_lat            6.123280
+hq_lng            125.168320
+roles[]           driver
+roles[]           commuter
 ```
 
 Notes:
@@ -336,6 +354,11 @@ Notes:
 - Keeps existing roles and can attach `driver` and/or `commuter`.
 - One organization profile per owner user.
 - Access is restricted to users who already have `organization`, `admin`, or `super_admin` role.
+- `organization_type_id` is also supported. Use it if your Flutter app already stores type UUIDs.
+- `organization_type` must match an existing active organization type when `organization_type_id` is not provided.
+- Structured HQ fields (`hq_street` + `hq_barangay`) are recommended for new app versions.
+- `hq_lat` and `hq_lng` should come from the selected map location (pinned point), not manual free typing.
+- `hq_address` text is still accepted for backward compatibility.
 
 ### Multi-role Scenarios (QA/Frontend)
 
