@@ -2,6 +2,19 @@
 
 @section('title', 'Driver Assignments - RideGuide Admin')
 
+@php
+    $panelPrefix = request()->routeIs('org-manager.*')
+        ? 'org-manager'
+        : (request()->routeIs('super-admin.*') ? 'super-admin' : 'admin');
+    $dashboardRoute = $panelPrefix . '.organizations.manager-dashboard';
+    $assignmentsRoute = $panelPrefix . '.organizations.assignments.index';
+    $assignRoute = $panelPrefix . '.organizations.assignments.assign';
+    $updateRoute = $panelPrefix . '.organizations.assignments.update';
+    $unassignRoute = $panelPrefix . '.organizations.assignments.unassign';
+    $terminalsStoreRoute = $panelPrefix . '.organizations.terminals.store';
+    $terminalsRemoveRoute = $panelPrefix . '.organizations.terminals.remove';
+@endphp
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -9,7 +22,7 @@
             <p class="rg-page-subtitle">Assign and unassign drivers for {{ $managedOrganization->name ?? 'your selected organization' }}.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('admin.organizations.manager-dashboard') }}" class="rg-btn rg-btn-secondary rg-btn-sm">
+            <a href="{{ route($dashboardRoute) }}" class="rg-btn rg-btn-secondary rg-btn-sm">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
         </div>
@@ -47,7 +60,7 @@
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Search Drivers</h6>
                     </div>
-                    <form method="GET" action="{{ route('admin.organizations.assignments.index') }}" class="rg-filter-bar mt-2" id="organization-assignments-filter-form">
+                    <form method="GET" action="{{ route($assignmentsRoute) }}" class="rg-filter-bar mt-2" id="organization-assignments-filter-form">
                         @if(($organizationsForAdmin ?? collect())->isNotEmpty())
                             <select name="organization_id" class="rg-filter-select" required onchange="this.form.submit()" aria-label="Select organization">
                                 <option value="">Select Organization</option>
@@ -65,8 +78,7 @@
                             <option value="unverified" {{ request('status') === 'unverified' ? 'selected' : '' }}>Unverified</option>
                             <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
                         </select>
-                        <button type="submit" class="rg-btn-search"><i class="fas fa-search"></i> Search</button>
-                        <a href="{{ route('admin.organizations.assignments.index') }}" class="rg-btn-clear">Clear</a>
+                        <a href="{{ route($assignmentsRoute) }}" class="rg-btn-clear">Clear</a>
                     </form>
                 </div>
             </div>
@@ -117,7 +129,7 @@
                                         </td>
                                         <td>
                                             <div class="d-flex gap-1">
-                                                <form method="POST" action="{{ route('admin.organizations.assignments.update', $driver->id) }}">
+                                                <form method="POST" action="{{ route($updateRoute, $driver->id) }}">
                                                     @csrf
                                                     @method('PUT')
                                                     @if(!empty($selectedOrganizationId))
@@ -125,7 +137,7 @@
                                                     @endif
                                                     <button type="submit" class="btn btn-sm btn-outline-primary">Update</button>
                                                 </form>
-                                                <form method="POST" action="{{ route('admin.organizations.assignments.unassign', $driver->id) }}" onsubmit="return confirm('Unassign this driver from your organization?');">
+                                                <form method="POST" action="{{ route($unassignRoute, $driver->id) }}" onsubmit="return confirm('Unassign this driver from your organization?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     @if(!empty($selectedOrganizationId))
@@ -183,7 +195,7 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <form method="POST" action="{{ route('admin.organizations.assignments.assign', $driver->id) }}">
+                                            <form method="POST" action="{{ route($assignRoute, $driver->id) }}">
                                                 @csrf
                                                 @if(!empty($selectedOrganizationId))
                                                     <input type="hidden" name="organization_id" value="{{ $selectedOrganizationId }}">
@@ -213,48 +225,14 @@
     <div class="row mt-4">
         <div class="col-12 col-xl-6 mb-3 mb-xl-0">
             <div class="rg-card h-100">
-                <div class="rg-card-header d-flex align-items-center justify-content-between">
+                <div class="rg-card-header" style="justify-content:flex-start;">
                     <div class="d-flex align-items-center gap-2">
                         <span class="rg-card-dot"></span>
-                        <h6 class="rg-card-title mb-0">Assigned Terminals</h6>
+                        <h6 class="rg-card-title mb-0">Add Terminal</h6>
                     </div>
-                    <span class="rg-badge">{{ $organizationTerminals->count() }} total</span>
-                </div>
-                <div class="rg-card-body p-0">
-                    @if($organizationTerminals->isEmpty())
-                        <p class="rg-empty mb-0 p-3">No terminals linked yet.</p>
-                    @else
-                        <div class="table-responsive">
-                            <table class="rg-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Location</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($organizationTerminals as $terminal)
-                                        <tr>
-                                            <td>{{ $terminal->terminal_name }}</td>
-                                            <td class="rg-td-muted">{{ $terminal->barangay }}, {{ $terminal->city }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-xl-6">
-            <div class="rg-card h-100">
-                <div class="rg-card-header d-flex align-items-center gap-2">
-                    <span class="rg-card-dot"></span>
-                    <h6 class="rg-card-title mb-0">Add Terminal</h6>
                 </div>
                 <div class="rg-card-body pt-3">
-                    <form method="POST" action="{{ route('admin.organizations.terminals.store') }}">
+                    <form method="POST" action="{{ route($terminalsStoreRoute) }}">
                         @csrf
                         @if(!empty($selectedOrganizationId))
                             <input type="hidden" name="organization_id" value="{{ $selectedOrganizationId }}">
@@ -271,11 +249,13 @@
                                 @endforeach
                             </select>
                             <small class="form-text text-muted">Select an existing terminal or complete the form below to create a new one.</small>
+                            <small id="terminal-mode-hint" class="form-text text-info">Choose one mode: select an existing terminal or enter details for a new terminal.</small>
                         </div>
 
                         <div class="form-group mb-3 p-3">
                             <label for="terminal_name">Terminal Name</label>
-                            <input type="text" id="terminal_name" name="terminal_name" class="form-control" value="{{ old('terminal_name') }}" placeholder="Lagao TODA Main Terminal">
+                            <input type="text" id="terminal_name" name="terminal_name" class="form-control" value="{{ old('terminal_name') }}" placeholder="Lagao Public Transport Terminal">
+                            <small class="form-text text-muted">Use location-based names only. Do not include organization type labels (TODA, PUVMP Group, etc.).</small>
                         </div>
 
                         <div class="form-row">
@@ -296,6 +276,202 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-12 col-xl-6">
+            <div class="rg-card h-100">
+                <div class="rg-card-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rg-card-dot"></span>
+                        <h6 class="rg-card-title mb-0">Assigned Terminals</h6>
+                    </div>
+                    <span class="rg-badge">{{ $organizationTerminals->count() }} total</span>
+                </div>
+                <div class="rg-card-body p-0">
+                    @if($organizationTerminals->isEmpty())
+                        <p class="rg-empty mb-0 p-3">No terminals linked yet.</p>
+                    @else
+                        <div class="table-responsive">
+                            <table class="rg-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Location</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($organizationTerminals as $terminal)
+                                        <tr>
+                                            <td>{{ $terminal->terminal_name }}</td>
+                                            <td class="rg-td-muted">{{ $terminal->barangay }}, {{ $terminal->city }}</td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm btn-outline-info js-terminal-view"
+                                                        data-terminal-name="{{ $terminal->terminal_name }}"
+                                                        data-terminal-barangay="{{ $terminal->barangay }}"
+                                                        data-terminal-city="{{ $terminal->city }}"
+                                                        data-terminal-latitude="{{ $terminal->latitude }}"
+                                                        data-terminal-longitude="{{ $terminal->longitude }}"
+                                                    >
+                                                        View
+                                                    </button>
+
+                                                    <form method="POST" action="{{ route($terminalsRemoveRoute, $terminal->id) }}" onsubmit="return confirm('Remove this terminal from the selected organization?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        @if(!empty($selectedOrganizationId))
+                                                            <input type="hidden" name="organization_id" value="{{ $selectedOrganizationId }}">
+                                                        @endif
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="terminalDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Terminal Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2"><strong>Name:</strong> <span id="terminal-detail-name">-</span></p>
+                    <p class="mb-2"><strong>Barangay:</strong> <span id="terminal-detail-barangay">-</span></p>
+                    <p class="mb-2"><strong>City:</strong> <span id="terminal-detail-city">-</span></p>
+                    <p class="mb-0"><strong>Coordinates:</strong> <span id="terminal-detail-coordinates">-</span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
     </div>
     @endif
+@stop
+
+@section('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var terminalSelect = document.getElementById('terminal_id');
+    var terminalNameInput = document.getElementById('terminal_name');
+    var barangayInput = document.getElementById('barangay');
+    var cityInput = document.getElementById('city');
+
+    if (!terminalSelect || !terminalNameInput || !barangayInput || !cityInput) {
+        return;
+    }
+
+    var newTerminalFields = [terminalNameInput, barangayInput, cityInput];
+
+    function hasNewTerminalValue() {
+        return newTerminalFields.some(function (field) {
+            return field.value.trim() !== '';
+        });
+    }
+
+    function setNewTerminalFieldsDisabled(disabled) {
+        newTerminalFields.forEach(function (field) {
+            field.disabled = disabled;
+        });
+    }
+
+    function syncTerminalInputMode(source) {
+        var hasExistingTerminal = terminalSelect.value !== '';
+
+        if (hasExistingTerminal) {
+            newTerminalFields.forEach(function (field) {
+                field.value = '';
+            });
+
+            setNewTerminalFieldsDisabled(true);
+            terminalSelect.disabled = false;
+            updateModeHint('existing');
+            return;
+        }
+
+        var hasManualInput = hasNewTerminalValue();
+
+        if (hasManualInput) {
+            terminalSelect.value = '';
+            terminalSelect.disabled = true;
+            setNewTerminalFieldsDisabled(false);
+            updateModeHint('manual');
+            return;
+        }
+
+        terminalSelect.disabled = false;
+        setNewTerminalFieldsDisabled(false);
+        updateModeHint('neutral');
+    }
+
+    function updateModeHint(mode) {
+        var modeHint = document.getElementById('terminal-mode-hint');
+
+        if (!modeHint) {
+            return;
+        }
+
+        if (mode === 'existing') {
+            modeHint.textContent = 'Existing terminal selected, manual fields disabled.';
+            return;
+        }
+
+        if (mode === 'manual') {
+            modeHint.textContent = 'New terminal details mode enabled, existing terminal selection disabled.';
+            return;
+        }
+
+        modeHint.textContent = 'Choose one mode: select an existing terminal or enter details for a new terminal.';
+    }
+
+    terminalSelect.addEventListener('change', function () {
+        syncTerminalInputMode('existing');
+    });
+
+    newTerminalFields.forEach(function (field) {
+        field.addEventListener('input', function () {
+            syncTerminalInputMode('manual');
+        });
+    });
+
+    syncTerminalInputMode('initial');
+
+    var terminalViewButtons = document.querySelectorAll('.js-terminal-view');
+    var terminalDetailsModal = document.getElementById('terminalDetailsModal');
+
+    if (terminalViewButtons.length && terminalDetailsModal) {
+        terminalViewButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var name = button.getAttribute('data-terminal-name') || '-';
+                var barangay = button.getAttribute('data-terminal-barangay') || '-';
+                var city = button.getAttribute('data-terminal-city') || '-';
+                var latitude = button.getAttribute('data-terminal-latitude') || '';
+                var longitude = button.getAttribute('data-terminal-longitude') || '';
+                var coordinates = (latitude && longitude) ? (latitude + ', ' + longitude) : '-';
+
+                document.getElementById('terminal-detail-name').textContent = name;
+                document.getElementById('terminal-detail-barangay').textContent = barangay;
+                document.getElementById('terminal-detail-city').textContent = city;
+                document.getElementById('terminal-detail-coordinates').textContent = coordinates;
+
+                $('#terminalDetailsModal').modal('show');
+            });
+        });
+    }
+});
+</script>
 @stop
