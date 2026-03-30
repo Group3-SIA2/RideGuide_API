@@ -124,6 +124,10 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::patch('/user-status/drivers/{driver}', [UserManagementController::class, 'updateDriverStatus'])->name('user-status.drivers.update');
         Route::get('/user-status/restore/search', [UserManagementController::class, 'searchDeletedRecords'])->name('user-status.restore.search');
         Route::post('/user-status/restore', [UserManagementController::class, 'restoreRecord'])->name('user-status.restore.record');
+         Route::get('/user-status/create',           [UserManagementController::class, 'createUser'])->name('user-status.create');
+        Route::post('/user-status/store',           [UserManagementController::class, 'storeUser'])->name('user-status.store');
+        Route::post('/user-status/verify-email',    [UserManagementController::class, 'verifyUserEmail'])->name('user-status.verify-email');
+        Route::post('/user-status/resend-otp',      [UserManagementController::class, 'resendUserVerificationOtp'])->name('user-status.resend-otp');
     });
 
     Route::prefix('super-admin')->name('super-admin.')->middleware('panel.role:super-admin')->group(function () {
@@ -173,6 +177,10 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::patch('/user-status/drivers/{driver}', [UserManagementController::class, 'updateDriverStatus'])->name('user-status.drivers.update');
         Route::get('/user-status/restore/search', [UserManagementController::class, 'searchDeletedRecords'])->name('user-status.restore.search');
         Route::post('/user-status/restore', [UserManagementController::class, 'restoreRecord'])->name('user-status.restore.record');
+         Route::get('/user-status/create',           [UserManagementController::class, 'createUser'])->name('user-status.create');
+        Route::post('/user-status/store',           [UserManagementController::class, 'storeUser'])->name('user-status.store');
+        Route::post('/user-status/verify-email',    [UserManagementController::class, 'verifyUserEmail'])->name('user-status.verify-email');
+        Route::post('/user-status/resend-otp',      [UserManagementController::class, 'resendUserVerificationOtp'])->name('user-status.resend-otp');
 
         Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
         Route::post('/backups', [BackupController::class, 'create'])->name('backups.create');
