@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
 class DashboardCache
@@ -25,5 +27,13 @@ class DashboardCache
         foreach (['admin', 'driver', 'commuter'] as $role) {
             Cache::forget(self::key($userId, $role));
         }
+    }
+
+    public static function forgetAdminDashboards(): void
+    {
+        User::query()
+            ->whereHas('roles', fn ($query) => $query->where('name', Role::ADMIN))
+            ->pluck('id')
+            ->each(fn (string $adminId) => Cache::forget(self::key($adminId, 'admin')));
     }
 }

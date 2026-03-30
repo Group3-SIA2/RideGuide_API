@@ -12,6 +12,7 @@ use App\Models\Otp;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\vehicle as Vehicle;
+use App\Support\DashboardCache;
 use App\Support\MediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -339,8 +340,16 @@ class UserManagementController extends Controller
 
         $discount->update([
             'verification_status' => $validated['verification_status'],
-            'rejection_reason' => $validated['rejection_reason'] ?? null,
+            'rejection_reason' => $validated['verification_status'] === Discount::VERIFICATION_REJECTED
+                ? ($validated['rejection_reason'] ?? null)
+                : null,
         ]);
+
+        $commuterUserId = optional($discount->loadMissing('commuter')->commuter)->user_id;
+        if ($commuterUserId) {
+            DashboardCache::forgetUserDashboards($commuterUserId);
+        }
+        DashboardCache::forgetAdminDashboards();
 
         return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'Discount verification updated successfully.');
@@ -656,7 +665,7 @@ class UserManagementController extends Controller
                                 ->orWhere('email', 'like', "%{$query}%");
                         })
                         ->orWhereHas('classificationType', function ($classificationQuery) use ($query) {
-                            $classificationQuery->where('name', 'like', "%{$query}%");
+                            $classificationQuery->where('classification_name', 'like', "%{$query}%");
                         });
                 });
             })
@@ -670,7 +679,7 @@ class UserManagementController extends Controller
                     'id' => $discount->id,
                     'title' => trim(($commuterUser->first_name ?? '') . ' ' . ($commuterUser->last_name ?? '')) ?: 'Discount #' . $discount->id,
                     'subtitle' => 'ID #: ' . ($discount->ID_number ?? 'N/A'),
-                    'meta' => optional($discount->classificationType)->name,
+                    'meta' => optional($discount->classificationType)->classification_name,
                     'deleted_at' => optional($discount->deleted_at)->format('M d, Y h:i A'),
                 ];
             })

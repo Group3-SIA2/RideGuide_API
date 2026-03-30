@@ -55,6 +55,71 @@ Authorization: Bearer {your_token_here}
 
 ---
 
+## Dashboard API (Role-based)
+
+The mobile app reads role dashboard data from:
+
+- `GET /api/dashboard/admin`
+- `GET /api/dashboard/driver`
+- `GET /api/dashboard/commuter`
+
+### Optional Fresh-Data Query
+
+Use either query parameter to bypass cache and recompute the latest payload:
+
+- `?refresh=true`
+- `?force_refresh=true`
+
+Example:
+
+```
+GET https://rideguide.test/api/dashboard/commuter?refresh=true
+```
+
+### Commuter Dashboard – Discount Verification Fields
+
+The commuter dashboard payload now includes discount verification fields similar to the driver license verification fields.
+
+`data.commuter_profile` includes:
+
+- `verification_status`
+- `rejection_reason`
+- `discount_verification_status`
+- `discount_rejection_reason`
+
+`data.commuter_profile.discount` includes:
+
+- `verification_status`
+- `rejection_reason`
+
+**Sample (excerpt)**
+
+```json
+{
+    "success": true,
+    "data": {
+        "active_role": "commuter",
+        "commuter_profile": {
+            "id": "019c93de-1d75-713e-a51f-75fe61efcd73",
+            "user_id": "019c7a57-980d-715f-b7b6-67014c23b601",
+            "classification_name": "Student",
+            "verification_status": "pending",
+            "rejection_reason": null,
+            "discount_verification_status": "pending",
+            "discount_rejection_reason": null,
+            "discount": {
+                "id": "2b3c4d5e-...",
+                "ID_number": "2021 00457",
+                "verification_status": "pending",
+                "rejection_reason": null
+            }
+        }
+    }
+}
+```
+
+---
+
 ## 1. Get All Users
 
 **GET** `https://rideguide.test/api/users`

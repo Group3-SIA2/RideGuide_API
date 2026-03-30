@@ -8,6 +8,7 @@ use App\Models\Feedback;
 use App\Models\Role;
 use App\Models\Commuter;
 use App\Models\User;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +17,22 @@ use App\Support\MediaStorage;
 
 class DashboardController extends Controller
 {
+    private function shouldForceRefresh(Request $request): bool
+    {
+        return $request->boolean('refresh') || $request->boolean('force_refresh');
+    }
+
+    private function rememberDashboard(string $cacheKey, Request $request, Closure $resolver)
+    {
+        if ($this->shouldForceRefresh($request)) {
+            Cache::forget($cacheKey);
+
+            return $resolver();
+        }
+
+        return Cache::remember($cacheKey, DashboardCache::ttlSeconds(), $resolver);
+    }
+
 
     private function formatUser(User $user): array
     {
@@ -118,16 +135,25 @@ class DashboardController extends Controller
             return null;
         }
 
+        $discountVerificationStatus = $commuter->discount?->verification_status;
+        $discountRejectionReason = $commuter->discount?->rejection_reason;
+
         return [
             'id' => $commuter->id,
             'user_id' => $commuter->user_id,
             'discount_id' => $commuter->discount_id,
             'classification_name' => $commuter->discount?->classificationType?->classification_name ?? 'Regular',
+            'verification_status' => $discountVerificationStatus,
+            'rejection_reason' => $discountRejectionReason,
+            'discount_verification_status' => $discountVerificationStatus,
+            'discount_rejection_reason' => $discountRejectionReason,
             'discount' => $commuter->discount ? [
                 'id' => $commuter->discount->id,
                 'ID_number' => $commuter->discount->ID_number,
                 'ID_image_id' => $commuter->discount->ID_image_id,
                 'classification_type_id' => $commuter->discount->classification_type_id,
+                'verification_status' => $discountVerificationStatus,
+                'rejection_reason' => $discountRejectionReason,
                 'created_at' => $commuter->discount->created_at,
                 'updated_at' => $commuter->discount->updated_at,
                 'deleted_at' => $commuter->discount->deleted_at,
@@ -182,7 +208,7 @@ class DashboardController extends Controller
         );
     }
 
-    public function adminDashboard(): JsonResponse
+    public function adminDashboard(Request $request): JsonResponse
     {
         $user = auth()->user();
 
@@ -198,7 +224,7 @@ class DashboardController extends Controller
 
         $cacheKey = DashboardCache::key($user->id, 'admin');
 
-        $data = Cache::remember($cacheKey, DashboardCache::ttlSeconds(), function () use ($user, $roleNames) {
+        $data = $this->rememberDashboard($cacheKey, $request, function () use ($user, $roleNames) {
             $totalVerifiedUsers = User::whereNotNull('email_verified_at')->count();
             $totalAdmins = User::whereHas('roles', fn ($query) => $query->where('name', 'admin'))->count();
             $totalDrivers = User::whereHas('roles', fn ($query) => $query->where('name', 'driver'))->count();
@@ -228,7 +254,7 @@ class DashboardController extends Controller
  
     // DRIVER DASHBOARD
 
-    public function driverDashboard(): JsonResponse
+    public function driverDashboard(Request $request): JsonResponse
     {
         $user = auth()->user();
 
@@ -244,7 +270,7 @@ class DashboardController extends Controller
 
         $cacheKey = DashboardCache::key($user->id, 'driver');
 
-        $data = Cache::remember($cacheKey, DashboardCache::ttlSeconds(), function () use ($user, $roleNames) {
+        $data = $this->rememberDashboard($cacheKey, $request, function () use ($user, $roleNames) {
             $driverProfile = $this->loadDriverProfileForDashboard($user->id);
 
             if (! $driverProfile) {
@@ -267,7 +293,7 @@ class DashboardController extends Controller
    
     // USER (COMMUTER) DASHBOARD
  
-    public function commuterDashboard(): JsonResponse
+    public function commuterDashboard(Request $request): JsonResponse
     {
         $user = auth()->user();
 
@@ -283,7 +309,7 @@ class DashboardController extends Controller
 
         $cacheKey = DashboardCache::key($user->id, 'commuter');
 
-        $data = Cache::remember($cacheKey, DashboardCache::ttlSeconds(), function () use ($user, $roleNames) {
+        $data = $this->rememberDashboard($cacheKey, $request, function () use ($user, $roleNames) {
             $commuterProfile = Commuter::with('user', 'discount.classificationType')
                 ->where('user_id', $user->id)
                 ->first();

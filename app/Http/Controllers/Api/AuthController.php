@@ -29,6 +29,10 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
+        $request->merge([
+            'email' => $this->normalizeEmail($request->input('email')),
+        ]);
+
         $validated = $request->validate([
             'email'=> ['required', 'string', 'email:rfc,filter', 'max:255', 'unique:users,email'],
             'password'=> ['required', 'string', Password::min(8)->mixedCase()->symbols()],
@@ -69,6 +73,10 @@ class AuthController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
+        $request->merge([
+            'email' => $this->normalizeEmail($request->input('email')),
+        ]);
+
         $validated = $request->validate([
             'email'=> ['required', 'string', 'email:rfc,filter'],
             'password' => ['required', 'string'],
@@ -181,7 +189,7 @@ class AuthController extends Controller
         }
 
         $firebaseUid = (string) data_get($claims, 'sub', '');
-        $email = data_get($claims, 'email');
+        $email = $this->normalizeEmail(data_get($claims, 'email'));
         $displayName = (string) data_get($claims, 'name', '');
         $emailVerified = (bool) data_get($claims, 'email_verified', false);
 
@@ -199,11 +207,57 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::where('email', $email)->first();
+        $providerColumn = $providerFromToken === 'google.com' ? 'google_id' : 'facebook_id';
+        $providerLabel = $providerFromToken === 'google.com' ? 'Google' : 'Facebook';
+
+        $providerUser = User::withTrashed()
+            ->where($providerColumn, $firebaseUid)
+            ->first();
+
+        $emailUser = User::withTrashed()
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        // Safety guard: one social account cannot resolve to a different stored email account.
+        if ($providerUser && $emailUser && $providerUser->id !== $emailUser->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This social account conflicts with an existing user record. Please contact support.',
+            ], 409);
+        }
+
+        $user = $providerUser ?? $emailUser;
+
+        if ($user && $user->trashed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account is deactivated. Please contact support.',
+            ], 403);
+        }
+
+        // Policy: existing email/password accounts cannot be used via social sign-in unless already linked.
+        if ($user && empty($user->{$providerColumn})) {
+            return response()->json([
+                'success' => false,
+                'message' => "This email is already registered. Please sign in using email and password instead of {$providerLabel}.",
+            ], 409);
+        }
+
+        if ($user && $user->{$providerColumn} !== $firebaseUid) {
+            return response()->json([
+                'success' => false,
+                'message' => "This email is linked to a different {$providerLabel} account.",
+            ], 409);
+        }
+
         $isNewUser = false;
 
         if (!$user) {
             $nameParts = $this->splitDisplayName($displayName);
+
+            $socialIdData = $providerFromToken === 'google.com'
+                ? ['google_id' => $firebaseUid]
+                : ['facebook_id' => $firebaseUid];
 
             $user = User::create([
                 'email' => $email,
@@ -213,6 +267,7 @@ class AuthController extends Controller
                 'status' => User::STATUS_ACTIVE,
                 'status_reason' => null,
                 'status_changed_at' => now(),
+                ...$socialIdData,
             ]);
             
             if ($emailVerified) {
@@ -224,14 +279,6 @@ class AuthController extends Controller
         }
 
         $updates = [];
-
-        if ($providerFromToken === 'google.com') {
-            $updates['google_id'] = $firebaseUid;
-        }
-
-        if ($providerFromToken === 'facebook.com') {
-            $updates['facebook_id'] = $firebaseUid;
-        }
 
         if ($emailVerified && is_null($user->email_verified_at)) {
             $updates['email_verified_at'] = now();
@@ -290,6 +337,10 @@ class AuthController extends Controller
      */
     public function verifyOtp(Request $request): JsonResponse
     {
+        $request->merge([
+            'email' => $this->normalizeEmail($request->input('email')),
+        ]);
+
         $validated = $request->validate([
             'email'=> ['required', 'string', 'email:rfc,filter'],
             'otp'=> ['required', 'string', 'size:6'],
@@ -414,6 +465,10 @@ class AuthController extends Controller
      */
     public function forgotPassword(Request $request): JsonResponse
     {
+        $request->merge([
+            'email' => $this->normalizeEmail($request->input('email')),
+        ]);
+
         $validated = $request->validate([
             'email' => ['required', 'string', 'email:rfc,filter'],
         ]);
@@ -457,6 +512,10 @@ class AuthController extends Controller
      */
     public function resetPassword(Request $request): JsonResponse
     {
+        $request->merge([
+            'email' => $this->normalizeEmail($request->input('email')),
+        ]);
+
         $validated = $request->validate([
             'email'=> ['required', 'string', 'email:rfc,filter'],
             'otp'=> ['required', 'string', 'size:6'],
@@ -525,6 +584,10 @@ class AuthController extends Controller
      */
     public function resendOtp(Request $request): JsonResponse
     {
+        $request->merge([
+            'email' => $this->normalizeEmail($request->input('email')),
+        ]);
+
         $validated = $request->validate([
             'email'=> ['required', 'string', 'email:rfc,filter'],
             'type'=> ['required', 'string', 'in:email_verification,password_reset'],
@@ -687,5 +750,16 @@ class AuthController extends Controller
             'facebook', 'facebook.com' => 'facebook.com',
             default => null,
         };
+    }
+
+    private function normalizeEmail(mixed $email): ?string
+    {
+        if (!is_string($email)) {
+            return null;
+        }
+
+        $normalized = strtolower(trim($email));
+
+        return $normalized !== '' ? $normalized : null;
     }
 }
