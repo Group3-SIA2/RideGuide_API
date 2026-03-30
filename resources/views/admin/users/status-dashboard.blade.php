@@ -82,6 +82,10 @@
                                     </button>
                                 </div>
                                 <div class="modal-body">
+                                    <div class="mb-3">
+                                        <p class="text-muted mb-1">ID Number: <strong>{{ $discount->ID_number ?? 'N/A' }}</strong></p>
+                                        <p class="text-muted mb-0">Classification: <strong>{{ optional($discount->classificationType)->classification_name ?? 'No classification' }}</strong></p>
+                                    </div>
                                     <div class="row">
                                         @php $hasDiscountImages = false; @endphp
                                         @if($discountFrontUrl)
@@ -538,7 +542,7 @@
                             </td>
                             <td>
                                 <span class="d-block">ID #: {{ $discount->ID_number }}</span>
-                                <small class="text-muted">{{ optional($discount->classificationType)->name ?? 'No classification' }}</small>
+                                <small class="text-muted">{{ optional($discount->classificationType)->classification_name ?? 'No classification' }}</small>
                             </td>
                             <td>
                                 <span class="rg-status-badge {{ $discount->verification_status === 'verified' ? 'rg-status-active' : ($discount->verification_status === 'rejected' ? 'rg-status-danger' : 'rg-status-pending') }}">
