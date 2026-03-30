@@ -43,66 +43,24 @@
             </div>
         </div>
 
-        {{-- Commuters --}}
-        <div class="col-12 col-sm-6 col-xl-3 mb-3">
-            <div class="rg-stat-card rg-stat-card-equal h-100">
-                <div class="rg-stat-icon">
-                    <i class="fas fa-user-friends"></i>
-                </div>
-                <div class="rg-stat-body">
-                    <p class="rg-stat-label">Commuters</p>
-                    <h3 class="rg-stat-value">{{ number_format($totalCommuters) }}</h3>
-                    <span class="rg-stat-sub">Registered commuters</span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Drivers --}}
-        <div class="col-12 col-sm-6 col-xl-3 mb-3">
-            <div class="rg-stat-card rg-stat-card-equal h-100">
-                <div class="rg-stat-icon">
-                    <i class="fas fa-id-card"></i>
-                </div>
-                <div class="rg-stat-body">
-                    <p class="rg-stat-label">Drivers</p>
-                    <h3 class="rg-stat-value">{{ number_format($totalDrivers) }}</h3>
-                    <span class="rg-stat-sub">{{ $totalDriverProfiles }} with profiles</span>
+        {{-- Dynamic Role Cards --}}
+        @foreach($allRoles as $role)
+            <div class="col-12 col-sm-6 col-xl-3 mb-3">
+                <div class="rg-stat-card rg-stat-card-equal h-100">
+                    <div class="rg-stat-icon">
+                        <i class="fas fa-user-tag"></i>
+                    </div>
+                    <div class="rg-stat-body">
+                        <p class="rg-stat-label">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</p>
+                        <h3 class="rg-stat-value">{{ number_format($roleCounts[$role->name] ?? 0) }}</h3>
+                        <span class="rg-stat-sub">{{ $role->description ?? 'Users with this role' }}</span>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        {{-- Admins --}}
-        <div class="col-12 col-sm-6 col-xl-3 mb-3">
-            <div class="rg-stat-card rg-stat-card-equal h-100">
-                <div class="rg-stat-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <div class="rg-stat-body">
-                    <p class="rg-stat-label">Admins</p>
-                    <h3 class="rg-stat-value">{{ number_format($totalAdmins) }}</h3>
-                    <span class="rg-stat-sub">Panel administrators</span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Super Admins --}}
-        <div class="col-12 col-sm-6 col-xl-3 mb-3">
-            <div class="rg-stat-card rg-stat-card-equal h-100">
-                <div class="rg-stat-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <div class="rg-stat-body">
-                    <p class="rg-stat-label">Super Admins</p>
-                    <h3 class="rg-stat-value">{{ number_format($totalSuperAdmins) }}</h3>
-                    <span class="rg-stat-sub">Panel super administrators</span>
-                </div>
-            </div>
-        </div>
-
-    </div>
+        @endforeach
 
     {{-- Recent Users --}}
-    <div class="row mt-2">
+    <div class="row mt-2 w-100">
         <div class="col-12">
             <div class="rg-card">
                 <div class="rg-card-header">
@@ -114,8 +72,10 @@
                         <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name or email…" value="{{ request('search') }}">
                         <select id="rg-filter" name="role" class="rg-filter-select">
                             <option value="">All Roles</option>
-                            @foreach(['admin', 'super_admin', 'driver', 'commuter'] as $r)
-                                <option value="{{ $r }}" {{ request('role') === $r ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $r)) }}</option>
+                            @foreach($allRoles as $role)
+                                <option value="{{ $role->name }}" {{ request('role') === $role->name ? 'selected' : '' }}>
+                                    {{ ucfirst(str_replace('_', ' ', $role->name)) }}
+                                </option>
                             @endforeach
                         </select>
                         <button type="submit" class="rg-btn-search"><i class="fas fa-search"></i> Search</button>
