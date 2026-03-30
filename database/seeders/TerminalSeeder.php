@@ -16,14 +16,14 @@ class TerminalSeeder extends Seeder
     public function run(): void
     {
         $terminals = [
-            ['terminal_name' => 'Lagao Public Transport Terminal', 'barangay' => 'Lagao', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.12176000, 'longitude' => 125.17409000],
-            ['terminal_name' => 'Calumpang Public Transport Terminal', 'barangay' => 'Calumpang', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.11124000, 'longitude' => 125.17197000],
-            ['terminal_name' => 'Pioneer Avenue Transport Hub', 'barangay' => 'Dadiangas South', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.11688000, 'longitude' => 125.17120000],
-            ['terminal_name' => 'Roxas East Transport Hub', 'barangay' => 'Dadiangas East', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.11524000, 'longitude' => 125.17764000],
-            ['terminal_name' => 'Lagao Tricycle Terminal', 'barangay' => 'Lagao', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.12328000, 'longitude' => 125.16832000],
-            ['terminal_name' => 'City Heights Tricycle Terminal', 'barangay' => 'City Heights', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.12561000, 'longitude' => 125.17351000],
-            ['terminal_name' => 'Conel E-Jeepney Terminal', 'barangay' => 'Conel', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.09086000, 'longitude' => 125.13485000],
-            ['terminal_name' => 'Tambler E-Jeepney Terminal', 'barangay' => 'Tambler', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.09237000, 'longitude' => 125.15742000],
+            ['terminal_name' => 'LCR Terminal', 'barangay' => 'Dadiangas East', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.1135678, 'longitude' => 125.1703239],
+            ['terminal_name' => 'Save More Calumpang Terminal', 'barangay' => 'Calumpang', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.077254, 'longitude' => 125.146266],
+            ['terminal_name' => 'P. Acharon Blvd Terminal', 'barangay' => 'Dadiangas West', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.107059, 'longitude' => 125.170965],
+            ['terminal_name' => 'Roxas East Transport Hub', 'barangay' => 'Dadiangas East', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.113095, 'longitude' => 125.173277],
+            ['terminal_name' => 'Lagao E-Jeep Terminal', 'barangay' => 'Lagao', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.127855, 'longitude' => 125.196691],
+            ['terminal_name' => 'Malakas Satellite Market Terminal', 'barangay' => 'City Heights', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.137967, 'longitude' => 125.171399],
+            ['terminal_name' => 'KCC Entrance Terminal', 'barangay' => 'Lagao', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.117283, 'longitude' => 125.185948],
+            ['terminal_name' => 'Bulaong Exit Terminal', 'barangay' => 'Dadiangas North', 'city' => 'General Santos City, South Cotabato', 'latitude' => 6.1127334, 'longitude' => 125.1630613],
         ];
 
         foreach ($terminals as $terminal) {
