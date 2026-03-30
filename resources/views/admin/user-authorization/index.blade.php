@@ -4,9 +4,13 @@
 
 @php
     $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
-    $authorizationIndexRoute = $panelPrefix . '.user-authorization.index';
-    $authorizationEditRoleRoute = $panelPrefix . '.user-authorization.edit-role';
-    $authorizationEditUserRoute = $panelPrefix . '.user-authorization.edit-user';
+    $authorizationIndexRoute      = $panelPrefix . '.user-authorization.index';
+    $authorizationEditRoleRoute   = $panelPrefix . '.user-authorization.edit-role';
+    $authorizationCreateRoleRoute = $panelPrefix . '.user-authorization.create-role';
+    $authorizationEditUserRoute   = $panelPrefix . '.user-authorization.edit-user';
+
+    // Only super admin may create new roles
+    $canCreateRole = auth()->user()?->hasRole(\App\Models\Role::SUPER_ADMIN) ?? false;
 @endphp
 
 @section('content_header')
@@ -16,7 +20,11 @@
             <p class="rg-page-subtitle">Manage roles and what each role is allowed to do.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-            
+            @if($canCreateRole)
+                <a href="{{ route($authorizationCreateRoleRoute) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus-circle mr-1"></i> New Role
+                </a>
+            @endif
             <span class="rg-badge">{{ $roles->count() }} roles</span>
         </div>
     </div>
@@ -84,7 +92,7 @@
                                     </td>
                                     <td>
                                         @if(in_array($role->name, $editableRoleNames, true))
-                                                          <a href="{{ route($authorizationEditRoleRoute, $role) }}"
+                                            <a href="{{ route($authorizationEditRoleRoute, $role) }}"
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-edit"></i> Edit Permissions
                                             </a>
@@ -189,7 +197,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                                     <a href="{{ route($authorizationEditUserRoute, $user) }}"
+                                        <a href="{{ route($authorizationEditUserRoute, $user) }}"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-user-shield"></i> Manage Roles
                                         </a>
