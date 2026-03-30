@@ -21,6 +21,8 @@ class Discount extends Model
         'ID_number',
         'ID_image_id',
         'classification_type_id',
+        'verification_status',
+        'rejection_reason',
     ];
 
     public function classificationType()
