@@ -3,16 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OtpMail;
 use App\Models\Discount;
 use App\Models\Driver;
 use App\Models\LicenseId;
 use App\Models\LicenseImage;
+use App\Models\Otp;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\vehicle as Vehicle;
 use App\Support\MediaStorage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UserManagementController extends Controller
 {
@@ -166,6 +171,132 @@ class UserManagementController extends Controller
         ]);
     }
 
+    // -------------------------------------------------------------------------
+    // Create User (Admin-side registration)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Show the Add User form.
+     */
+    public function createUser(Request $request)
+    {
+        $this->authorizePermissions($request, 'create_users');
+
+        return view('admin.users.create');
+    }
+
+    /**
+     * Store a newly created user, send OTP, and show the verification modal.
+     */
+    public function storeUser(Request $request)
+    {
+        $this->authorizePermissions($request, 'create_users');
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name'  => ['required', 'string', 'max:255'],
+            'email'      => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password'   => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::min(8)],
+        ]);
+
+        $user = \App\Models\User::create([
+            'first_name' => $validated['first_name'],
+            'last_name'  => $validated['last_name'],
+            'email'      => $validated['email'],
+            'password'   => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'status'     => \App\Models\User::STATUS_ACTIVE,
+        ]);
+
+        // Send OTP
+        $this->sendEmailVerificationOtp($user);
+
+        // Store session for verification
+        session(['admin_create_user:pending_id' => $user->id]);
+
+        // ✅ IMPORTANT: Stay on SAME page (this fixes your modal issue)
+        return redirect()->route(
+        str_starts_with($request->route()->getName(), 'super-admin.')
+            ? 'super-admin.user-status.create'
+            : 'admin.user-status.create'
+        )
+        ->with('show_otp_modal', true)
+        ->with('otp_email', $user->email)
+        ->with('otp_user_id', $user->id);
+    }
+
+    /**
+     * Verify the OTP that was sent after admin-created user registration.
+     */
+    public function verifyUserEmail(Request $request)
+    {
+        $this->authorizePermissions($request, 'create_users');
+
+        $validated = $request->validate([
+            'otp'     => ['required', 'digits:6'],
+            'user_id' => ['required', 'uuid', 'exists:users,id'],
+        ]);
+
+        $userId = (string) $validated['user_id'];
+        $pendingUserId = (string) session('admin_create_user:pending_id');
+
+        // Guard: only allow verifying the user that was just created in this session
+        if ($pendingUserId === '' || ! hash_equals($pendingUserId, $userId)) {
+            return response()->json(['message' => 'Unauthorized OTP verification attempt.'], 403);
+        }
+
+        $otp = Otp::where('user_id', $userId)
+            ->where('type', 'email_verification')
+            ->where('code', $validated['otp'])
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
+
+        if (!$otp) {
+            return response()->json(['message' => 'Invalid or expired OTP. Please try again.'], 422);
+        }
+
+        $otp->update(['used_at' => now()]);
+
+        User::where('id', $userId)->update(['email_verified_at' => now()]);
+
+        session()->forget('admin_create_user:pending_id');
+
+        return response()->json([
+            'message'  => 'Email verified successfully. User account is now active.',
+            'redirect' => route($this->panelRouteName($request, 'user-status.index')),
+        ]);
+    }
+
+    /**
+     * Resend the email-verification OTP for a pending admin-created user.
+     */
+    public function resendUserVerificationOtp(Request $request)
+    {
+        $this->authorizePermissions($request, 'create_users');
+
+        $validated = $request->validate([
+            'user_id' => ['required', 'uuid', 'exists:users,id'],
+        ]);
+
+        $userId = (string) $validated['user_id'];
+        $pendingUserId = (string) session('admin_create_user:pending_id');
+
+        if ($pendingUserId === '' || ! hash_equals($pendingUserId, $userId)) {
+            return response()->json(['message' => 'Unauthorized resend attempt.'], 403);
+        }
+
+        $user = User::findOrFail($userId);
+
+        $this->sendEmailVerificationOtp($user);
+
+        return response()->json(['message' => 'A new OTP has been sent to ' . $user->email . '.']);
+    }
+
+    // -------------------------------------------------------------------------
+    // Existing Status / Restore Methods (unchanged)
+    // -------------------------------------------------------------------------
+
     public function updateUserStatus(Request $request, User $user)
     {
         $this->authorizePermissions($request, 'manage_users');
@@ -280,7 +411,7 @@ class UserManagementController extends Controller
             ->with('success', 'All deleted users have been restored.');
     }
 
-     public function restoreDrivers(Request $request)
+    public function restoreDrivers(Request $request)
     {
         $this->authorizePermissions($request, 'manage_users');
 
@@ -293,7 +424,7 @@ class UserManagementController extends Controller
             ->with('success', 'All deleted drivers have been restored.');
     }
 
-     public function restoreVehicles(Request $request)
+    public function restoreVehicles(Request $request)
     {
         $this->authorizePermissions($request, 'manage_users');
 
@@ -301,17 +432,17 @@ class UserManagementController extends Controller
 
         return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'All deleted vehicles have been restored.');
-     }
+    }
 
-     public function restoreDiscounts(Request $request)
-     {
-         $this->authorizePermissions($request, 'manage_users');
+    public function restoreDiscounts(Request $request)
+    {
+        $this->authorizePermissions($request, 'manage_users');
 
-         Discount::onlyTrashed()->restore();
+        Discount::onlyTrashed()->restore();
 
-         return redirect()->route($this->panelRouteName($request, 'user-status.index'))
-             ->with('success', 'All deleted discounts have been restored.');
-      }
+        return redirect()->route($this->panelRouteName($request, 'user-status.index'))
+            ->with('success', 'All deleted discounts have been restored.');
+    }
 
     public function searchDeletedRecords(Request $request)
     {
@@ -369,6 +500,38 @@ class UserManagementController extends Controller
         return response()->json([
             'message' => ucfirst($validated['entity']) . ' restored successfully.',
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private Helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Invalidate any unused email_verification OTPs for the user, generate a
+     * fresh 6-digit code, persist it and send it via email.
+     */
+    private function sendEmailVerificationOtp(User $user): void
+    {
+        // Invalidate old unused email_verification OTPs
+        Otp::where('user_id', $user->id)
+            ->where('type', 'email_verification')
+            ->whereNull('used_at')
+            ->update(['used_at' => now()]);
+
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        Otp::create([
+            'user_id'    => $user->id,
+            'code'       => $code,
+            'type'       => 'email_verification',
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        Mail::to($user->email)->send(new OtpMail(
+            otpCode: $code,
+            type: 'email_verification',
+            recipientEmail: $user->email,
+        ));
     }
 
     private function restoreDriverLicenseData(Driver $driver): void
