@@ -3,8 +3,16 @@
 namespace App\Providers;
 
 use App\Models\Driver;
+use App\Models\Commuter;
+use App\Models\LicenseId;
+use App\Models\LicenseImage;
 use App\Models\Organization;
 use App\Models\Permission;
+use App\Observers\DashboardCommuterObserver;
+use App\Observers\DashboardDriverObserver;
+use App\Observers\DashboardLicenseObserver;
+use App\Observers\DashboardOrganizationObserver;
+use App\Observers\DashboardUserObserver;
 use App\Policies\DriverPolicy;
 use App\Policies\OrganizationPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -22,6 +30,13 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        User::observe(DashboardUserObserver::class);
+        Driver::observe(DashboardDriverObserver::class);
+        Commuter::observe(DashboardCommuterObserver::class);
+        Organization::observe(DashboardOrganizationObserver::class);
+        LicenseId::observe(DashboardLicenseObserver::class);
+        LicenseImage::observe(DashboardLicenseObserver::class);
+
         Gate::policy(Driver::class, DriverPolicy::class);
         Gate::policy(Organization::class, OrganizationPolicy::class);
 
