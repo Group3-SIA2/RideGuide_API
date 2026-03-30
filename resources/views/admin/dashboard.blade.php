@@ -23,7 +23,6 @@
 
     {{-- Stats Row --}}
     <div class="row align-items-stretch">
-
         {{-- Total Users --}}
         <div class="col-12 col-sm-6 col-xl-3 mb-3">
             <div class="rg-stat-card rg-stat-card-equal h-100">
@@ -42,8 +41,13 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        {{-- Dynamic Role Cards --}}
+    {{-- Dynamic Role Cards Row --}}
+    <div class="row align-items-stretch mt-5">
+        <div class="col-12 mb-3">
+            <h4 class="rg-page-title">User Roles</h4>
+        </div>
         @foreach($allRoles as $role)
             <div class="col-12 col-sm-6 col-xl-3 mb-3">
                 <div class="rg-stat-card rg-stat-card-equal h-100">
@@ -58,6 +62,7 @@
                 </div>
             </div>
         @endforeach
+    </div>
 
     {{-- Recent Users --}}
     <div class="row mt-2 w-100">
