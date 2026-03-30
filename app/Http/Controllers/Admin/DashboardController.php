@@ -74,6 +74,10 @@ class DashboardController extends Controller
             ]);
         }
 
+        // Fetch all terminals for the map and count
+        $terminals = \App\Models\Terminal::select('terminal_name', 'barangay', 'city', 'latitude', 'longitude')->get();
+        $totalTerminals = $terminals->count();
+
         return view('admin.dashboard', compact(
             'totalVerifiedUsers',
             'totalActiveUsers',
@@ -83,7 +87,8 @@ class DashboardController extends Controller
             'roleCounts',
             'totalDriverProfiles',
             'recentUsers',
-            
+            'terminals',
+            'totalTerminals',
         ));
     }
 }
