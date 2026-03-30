@@ -135,16 +135,25 @@ class DashboardController extends Controller
             return null;
         }
 
+        $discountVerificationStatus = $commuter->discount?->verification_status;
+        $discountRejectionReason = $commuter->discount?->rejection_reason;
+
         return [
             'id' => $commuter->id,
             'user_id' => $commuter->user_id,
             'discount_id' => $commuter->discount_id,
             'classification_name' => $commuter->discount?->classificationType?->classification_name ?? 'Regular',
+            'verification_status' => $discountVerificationStatus,
+            'rejection_reason' => $discountRejectionReason,
+            'discount_verification_status' => $discountVerificationStatus,
+            'discount_rejection_reason' => $discountRejectionReason,
             'discount' => $commuter->discount ? [
                 'id' => $commuter->discount->id,
                 'ID_number' => $commuter->discount->ID_number,
                 'ID_image_id' => $commuter->discount->ID_image_id,
                 'classification_type_id' => $commuter->discount->classification_type_id,
+                'verification_status' => $discountVerificationStatus,
+                'rejection_reason' => $discountRejectionReason,
                 'created_at' => $commuter->discount->created_at,
                 'updated_at' => $commuter->discount->updated_at,
                 'deleted_at' => $commuter->discount->deleted_at,
