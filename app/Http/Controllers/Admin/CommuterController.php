@@ -18,7 +18,7 @@ class CommuterController extends Controller
     {
         $this->authorizePermissions($request, 'view_commuters', 'manage_commuters');
 
-        $query = Commuter::with('user', 'discount.classificationType');
+        $query = Commuter::with('user', 'discount.classificationType', 'discount.idImage');
 
         if ($search = $request->input('search')) {
             $query->whereHas('user', function ($q) use ($search) {
