@@ -19,6 +19,7 @@ class PermissionSeeder extends Seeder
         $permissions = [
             // User Management
             ['name' => 'view_users',         'display_name' => 'View Users',            'group' => 'users',         'description' => 'Can view the list of users.'],
+            ['name' => 'create_users',       'display_name' => 'Create Users',          'group' => 'users',         'description' => 'Can register new user accounts and verify their email via OTP.'],
             ['name' => 'manage_users',       'display_name' => 'Manage Users',          'group' => 'users',         'description' => 'Can manage user status and restoration workflows.'],
             ['name' => 'edit_users',         'display_name' => 'Edit Users',            'group' => 'users',         'description' => 'Can edit existing user accounts.'],
             ['name' => 'delete_users',       'display_name' => 'Delete Users',          'group' => 'users',         'description' => 'Can delete user accounts.'],
@@ -47,9 +48,8 @@ class PermissionSeeder extends Seeder
             ['name' => 'delete_organization_terminals', 'display_name' => 'Delete Organization Terminals', 'group' => 'organizations', 'description' => 'Can remove linked terminals from owned organizations.'],
 
             // Dashboard
-            ['name' => 'view_admin_dashboard',     'display_name' => 'View Admin Dashboard',  'group' => 'dashboard',     'description' => 'Can view the admin dashboard.'],
-            ['name' => 'view_organization_dashboard',  'display_name' => 'View Organization Dashboard','group' => 'dashboard',     'description' => 'Can view the organization manager dashboard.'],
-
+            ['name' => 'view_admin_dashboard',        'display_name' => 'View Admin Dashboard',        'group' => 'dashboard', 'description' => 'Can view the admin dashboard.'],
+            ['name' => 'view_organization_dashboard', 'display_name' => 'View Organization Dashboard', 'group' => 'dashboard', 'description' => 'Can view the organization manager dashboard.'],
 
             // Backup & Restore
             ['name' => 'view_backups',       'display_name' => 'View Backups',          'group' => 'backups',       'description' => 'Can view backup list.'],
@@ -77,11 +77,10 @@ class PermissionSeeder extends Seeder
 
         $seededPermissionNames = collect($permissions)->pluck('name')->all();
 
-        // Admin can manage users but cannot create/register new user accounts.
+        // Admin gets all seeded permissions (create_users is now included).
         $adminRole = Role::where('name', Role::ADMIN)->first();
         if ($adminRole) {
             $adminPermissions = Permission::whereIn('name', $seededPermissionNames)
-                ->where('name', '!=', 'create_users')
                 ->pluck('id')
                 ->toArray();
             $adminRole->permissions()->sync($adminPermissions);
