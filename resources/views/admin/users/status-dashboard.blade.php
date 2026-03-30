@@ -20,6 +20,10 @@
             <p class="rg-page-subtitle">Review accounts and update statuses across users, drivers, vehicles, and discounts.</p>
         </div>
         <div class="d-flex flex-column align-items-md-end">
+            <a href="{{ route($panelPrefix . '.user-status.create') }}" class="btn btn-outline-success mb-2 align-self-md-end">
+                <i class="fas fa-user-plus mr-1"></i>
+                Create New User
+            </a>
             <button type="button" class="btn btn-outline-primary mt-3 align-self-md-end" data-toggle="modal" data-target="#restoreRecordsModal">
                 <i class="fas fa-history mr-1"></i>
                 Restore Deleted Records
