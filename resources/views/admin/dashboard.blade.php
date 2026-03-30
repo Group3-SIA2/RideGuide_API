@@ -9,7 +9,6 @@
             <p class="rg-page-subtitle">Welcome back, {{ trim((auth()->user()->first_name ?? '') . ' ' . (auth()->user()->last_name ?? '')) }}.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-           
             <span class="rg-badge">{{ now()->format('l, F j Y') }}</span>
         </div>
     </div>
@@ -41,6 +40,19 @@
                 </div>
             </div>
         </div>
+        {{-- Total Terminals --}}
+        <div class="col-12 col-sm-6 col-xl-3 mb-3">
+            <div class="rg-stat-card rg-stat-card-equal h-100">
+                <div class="rg-stat-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="rg-stat-body">
+                    <p class="rg-stat-label">Total Terminals</p>
+                    <h3 class="rg-stat-value">{{ number_format($totalTerminals) }}</h3>
+                    <span class="rg-stat-sub">Registered terminals</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Dynamic Role Cards Row --}}
@@ -62,6 +74,20 @@
                 </div>
             </div>
         @endforeach
+    </div>
+
+    {{-- Leaflet Map for General Santos City --}}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="rg-card">
+                <div class="rg-card-header">
+                    <h6 class="rg-card-title mb-0">Terminals</h6>
+                </div>
+                <div class="rg-card-body" style="height: 400px;">
+                    <div id="gensan-map" style="width: 100%; height: 350px; border-radius: 8px;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Recent Users --}}
@@ -140,7 +166,12 @@
 
 @stop
 
+@section('css')
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+@stop
+
 @section('js')
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var search = document.getElementById('rg-search');
@@ -179,6 +210,36 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('rg-filter-form').addEventListener('submit', function(e) {
         e.preventDefault();
         load();
+    });
+
+    var gensanMap = L.map('gensan-map', {
+        center: [6.1164, 125.1716], // General Santos City coordinates
+        zoom: 13,
+        dragging: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
+        keyboard: true,
+        zoomControl: true,
+        tap: true,
+        touchZoom: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(gensanMap);
+
+    // Terminal data from backend
+    var terminals = @json($terminals);
+    terminals.forEach(function(terminal) {
+        if (terminal.latitude && terminal.longitude) {
+            var popupContent = '<strong>' + terminal.terminal_name + '</strong><br>' +
+                (terminal.barangay ? 'Barangay: ' + terminal.barangay + '<br>' : '') +
+                (terminal.city ? 'City: ' + terminal.city : '');
+            L.marker([terminal.latitude, terminal.longitude])
+                .addTo(gensanMap)
+                .bindPopup(popupContent);
+        }
     });
 });
 </script>
