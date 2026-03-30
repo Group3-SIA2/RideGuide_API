@@ -114,6 +114,8 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::put('/user-authorization/role/{role}',         [UserAuthorizationController::class, 'updateRole'])->name('user-authorization.update-role');
         Route::get('/user-authorization/user/{user}/edit',    [UserAuthorizationController::class, 'editUser'])->name('user-authorization.edit-user');
         Route::put('/user-authorization/user/{user}',         [UserAuthorizationController::class, 'updateUser'])->name('user-authorization.update-user');
+        Route::get( 'user-authorization/roles/create', [UserAuthorizationController::class, 'createRole'])->name('user-authorization.create-role');
+        Route::post('user-authorization/roles',         [UserAuthorizationController::class, 'storeRole'])->name('user-authorization.store-role');
 
         Route::get('/user-status', [UserManagementController::class, 'index'])->name('user-status.index');
         Route::patch('/user-status/users/{user}', [UserManagementController::class, 'updateUserStatus'])->name('user-status.users.update');
@@ -161,6 +163,8 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::put('/user-authorization/role/{role}', [UserAuthorizationController::class, 'updateRole'])->name('user-authorization.update-role');
         Route::get('/user-authorization/user/{user}/edit', [UserAuthorizationController::class, 'editUser'])->name('user-authorization.edit-user');
         Route::put('/user-authorization/user/{user}', [UserAuthorizationController::class, 'updateUser'])->name('user-authorization.update-user');
+        Route::get( 'user-authorization/roles/create', [UserAuthorizationController::class, 'createRole'])->name('user-authorization.create-role');
+        Route::post('user-authorization/roles',         [UserAuthorizationController::class, 'storeRole'])->name('user-authorization.store-role');
 
         Route::get('/user-status', [UserManagementController::class, 'index'])->name('user-status.index');
         Route::patch('/user-status/users/{user}', [UserManagementController::class, 'updateUserStatus'])->name('user-status.users.update');
