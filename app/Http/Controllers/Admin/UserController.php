@@ -62,8 +62,11 @@ class UserController extends Controller
             ]);
         }
 
+        $allRoles = Role::orderBy('name')->get();
+
         return view('admin.users.index', compact(
             'users',
+            'allRoles',
             'totalActiveUsers',
             'totalInactiveUsers',
             'totalSuspendedUsers'

@@ -43,11 +43,11 @@ class DashboardController extends Controller
         $totalActiveUsers   = User::where('status', User::STATUS_ACTIVE)->count();
         $totalInactiveUsers = User::where('status', User::STATUS_INACTIVE)->count();
         $totalSuspendedUsers = User::where('status', User::STATUS_SUSPENDED)->count();
-        $totalAdmins        = User::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->count();
-        $totalSuperAdmins   = User::whereHas('roles', fn ($q) => $q->where('name', 'super_admin'))->count();
-        $totalDrivers       = User::whereHas('roles', fn ($q) => $q->where('name', 'driver'))->count();
-        $totalCommuters     = User::whereHas('roles', fn ($q) => $q->where('name', 'commuter'))->count();
-        $totalOrganizations   = User::whereHas('roles', fn ($q) => $q->where('name', 'organization'))->count();
+        $allRoles = \App\Models\Role::orderBy('name')->get();
+        $roleCounts = [];
+        foreach ($allRoles as $role) {
+            $roleCounts[$role->name] = \App\Models\User::whereHas('roles', fn($q) => $q->where('name', $role->name))->count();
+        }
         $totalDriverProfiles = Driver::count();
 
         $recentQuery = User::with('roles')
@@ -79,11 +79,8 @@ class DashboardController extends Controller
             'totalActiveUsers',
             'totalInactiveUsers',
             'totalSuspendedUsers',
-            'totalAdmins',
-            'totalDrivers',
-            'totalCommuters',
-            'totalOrganizations',
-            'totalSuperAdmins',
+            'allRoles',
+            'roleCounts',
             'totalDriverProfiles',
             'recentUsers',
             

@@ -34,8 +34,8 @@
                         <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name or email…" value="{{ request('search') }}">
                         <select id="rg-filter" name="role" class="rg-filter-select">
                             <option value="">All Roles</option>
-                            @foreach(['admin', 'super_admin', 'organization', 'driver', 'commuter'] as $r)
-                                <option value="{{ $r }}" {{ request('role') === $r ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $r)) }}</option>
+                            @foreach($allRoles as $role)
+                                <option value="{{ $role->name }}" {{ request('role') === $role->name ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $role->name)) }}</option>
                             @endforeach
                         </select>
                         <select id="rg-filter-status" name="status" class="rg-filter-select">

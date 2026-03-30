@@ -37,6 +37,63 @@ class UserAuthorizationController extends Controller
     }
 
     /**
+     * Show the form to create a new role with its permissions.
+     */
+    public function createRole(Request $request)
+    {
+        $this->authorizePermissions($request, 'manage_authorization');
+
+        if (!$request->user()->hasRole(Role::SUPER_ADMIN)) {
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
+                ->with('error', 'You are not allowed to create new roles.');
+        }
+
+        $permissions = Permission::orderBy('group')->orderBy('display_name')->get();
+        $permissionGroups = $permissions->groupBy('group');
+
+        return view('admin.user-authorization.create-role', compact('permissions', 'permissionGroups'));
+    }
+
+    /**
+     * Store a newly created role with its permissions.
+     */
+    public function storeRole(Request $request)
+    {
+        $this->authorizePermissions($request, 'manage_authorization');
+
+        if (!$request->user()->hasRole(Role::SUPER_ADMIN)) {
+            return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
+                ->with('error', 'You are not allowed to create new roles.');
+        }
+
+        $validated = $request->validate([
+            'name'          => [
+                'required',
+                'string',
+                'max:64',
+                'regex:/^[a-z][a-z0-9_]*$/',
+                'unique:roles,name',
+            ],
+            'description'   => ['nullable', 'string', 'max:255'],
+            'permissions'   => ['nullable', 'array'],
+            'permissions.*' => ['uuid', 'exists:permissions,id'],
+        ], [
+            'name.regex'  => 'Role name must be lowercase letters, digits, or underscores and start with a letter.',
+            'name.unique' => 'A role with this name already exists.',
+        ]);
+
+        $role = Role::create([
+            'name'        => $validated['name'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        $role->permissions()->sync($validated['permissions'] ?? []);
+
+        return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
+            ->with('success', "Role \"{$role->name}\" created successfully.");
+    }
+
+    /**
      * Show the permission editor for a specific role (checkboxes).
      */
     public function editRole(Request $request, Role $role)
@@ -59,7 +116,7 @@ class UserAuthorizationController extends Controller
     /**
      * Update the permissions for a specific role.
      */
-        public function updateRole(Request $request, Role $role)
+    public function updateRole(Request $request, Role $role)
     {
         $this->authorizePermissions($request, 'manage_authorization');
 
@@ -121,8 +178,9 @@ class UserAuthorizationController extends Controller
         }
 
         $user->load('roles.permissions');
-        $assignableRoleNames = $this->assignableRoleNamesFor($currentUser, $user);
-        $displayRoleNames = $assignableRoleNames;
+        $assignableRoles     = $this->assignableRolesFor($currentUser, $user);
+        $assignableRoleNames = $assignableRoles->pluck('name')->all();
+        $displayRoleNames    = $assignableRoleNames;
 
         $isAdminEditingSelf = $currentUser->hasRole(Role::ADMIN)
             && !$currentUser->hasRole(Role::SUPER_ADMIN)
@@ -132,19 +190,16 @@ class UserAuthorizationController extends Controller
             $displayRoleNames[] = Role::ADMIN;
         }
 
-        $roles = Role::whereIn('name', $displayRoleNames)->orderBy('name')->get();
-        $disabledRoleNames = $this->disabledRoleNamesForEdit($request->user(), $user);
-        $lockedRoleIds = $roles
+        $roles           = Role::whereIn('name', $displayRoleNames)->orderBy('name')->get();
+        $disabledRoleNames = $this->disabledRoleNamesForEdit($currentUser, $user);
+        $lockedRoleIds   = $roles
             ->filter(fn (Role $role) => $isAdminEditingSelf && $role->name === Role::ADMIN)
-            ->pluck('id')
-            ->values()
-            ->all();
+            ->pluck('id')->values()->all();
         $disabledRoleIds = $roles
             ->filter(fn (Role $role) => in_array($role->name, $disabledRoleNames, true))
-            ->pluck('id')
-            ->values()
-            ->all();
-        $permissions = Permission::orderBy('group')->orderBy('display_name')->get();
+            ->pluck('id')->values()->all();
+
+        $permissions      = Permission::orderBy('group')->orderBy('display_name')->get();
         $permissionGroups = $permissions->groupBy('group');
 
         // Collect all permissions the user currently has through their roles
@@ -156,7 +211,10 @@ class UserAuthorizationController extends Controller
         }
         $userPermissionIds = array_unique($userPermissionIds);
 
-        return view('admin.user-authorization.edit-user', compact('user', 'roles', 'permissions', 'permissionGroups', 'userPermissionIds', 'lockedRoleIds', 'disabledRoleIds'));
+        return view('admin.user-authorization.edit-user', compact(
+            'user', 'roles', 'permissions', 'permissionGroups',
+            'userPermissionIds', 'lockedRoleIds', 'disabledRoleIds'
+        ));
     }
 
     /**
@@ -173,9 +231,7 @@ class UserAuthorizationController extends Controller
                 ->with('error', 'You are not allowed to manage roles for this user.');
         }
 
-        $assignableRoleIds = Role::whereIn('name', $this->assignableRoleNamesFor($currentUser, $user))
-            ->pluck('id')
-            ->all();
+        $assignableRoleIds = $this->assignableRolesFor($currentUser, $user)->pluck('id')->all();
 
         $validated = $request->validate([
             'roles'   => ['nullable', 'array'],
@@ -195,17 +251,13 @@ class UserAuthorizationController extends Controller
             }
         }
 
-        $selectedRoleNames = Role::query()
-            ->whereIn('id', $selectedRoleIds)
-            ->pluck('name')
-            ->all();
-
+        $selectedRoleNames = Role::whereIn('id', $selectedRoleIds)->pluck('name')->all();
         $disabledRoleNames = $this->disabledRoleNamesForEdit($currentUser, $user);
         $blockedSelections = array_values(array_intersect($selectedRoleNames, $disabledRoleNames));
 
         if (!empty($blockedSelections)) {
             $label = collect($blockedSelections)
-                ->map(fn (string $roleName) => ucwords(str_replace('_', ' ', $roleName)))
+                ->map(fn (string $n) => ucwords(str_replace('_', ' ', $n)))
                 ->implode(', ');
 
             return redirect()->route($this->panelRouteName($request, 'user-authorization.edit-user'), $user)
@@ -220,7 +272,7 @@ class UserAuthorizationController extends Controller
         }
 
         $user->roles()->sync($selectedRoleIds);
-        
+
         return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
             ->with('success', "Roles for \"{$user->first_name} {$user->last_name}\" updated successfully.");
     }
@@ -252,35 +304,44 @@ class UserAuthorizationController extends Controller
         return false;
     }
 
-    private function assignableRoleNamesFor(User $currentUser, ?User $targetUser = null): array
+    /**
+     * Returns an Eloquent Collection of Role models the current user may assign.
+     *
+     * Super Admin → every role except super_admin itself (they can grant anything).
+     * Admin       → built-in non-admin roles + any custom (non-system) roles.
+     * Others      → nothing.
+     */
+    private function assignableRolesFor(User $currentUser, ?User $targetUser = null): \Illuminate\Database\Eloquent\Collection
     {
         if ($currentUser->hasRole(Role::SUPER_ADMIN)) {
-            return [
-                Role::SUPER_ADMIN,
-                Role::ADMIN,
-                Role::DRIVER,
-                Role::COMMUTER,
-                Role::ORGANIZATION,
-            ];
+            // Super admin can assign every role
+            return Role::orderBy('name')->get();
         }
 
         if ($currentUser->hasRole(Role::ADMIN)) {
-            return [
-                Role::DRIVER,
-                Role::COMMUTER,
-                Role::ORGANIZATION,
-            ];
+            // Admin can assign the three built-in non-admin roles
+            // PLUS any custom roles (roles whose name is not one of the four system role constants)
+            $systemRoles = [Role::SUPER_ADMIN, Role::ADMIN];
+
+            return Role::whereNotIn('name', $systemRoles)
+                ->orderBy('name')
+                ->get();
         }
 
-        return [];
+        return Role::whereRaw('0 = 1')->get(); // empty collection
+    }
+
+    /**
+     * Kept for backward-compat with updateUser (needs name array for validation message).
+     */
+    private function assignableRoleNamesFor(User $currentUser, ?User $targetUser = null): array
+    {
+        return $this->assignableRolesFor($currentUser, $targetUser)->pluck('name')->all();
     }
 
     private function roleCombinationError(array $selectedRoleIds): ?string
     {
-        $selectedRoleNames = Role::query()
-            ->whereIn('id', $selectedRoleIds)
-            ->pluck('name')
-            ->all();
+        $selectedRoleNames = Role::whereIn('id', $selectedRoleIds)->pluck('name')->all();
 
         if (in_array(Role::SUPER_ADMIN, $selectedRoleNames, true) && count($selectedRoleNames) > 1) {
             return 'Super Admin cannot be combined with other roles.';
@@ -295,7 +356,7 @@ class UserAuthorizationController extends Controller
 
             if (!empty($adminConflicts)) {
                 $label = collect($adminConflicts)
-                    ->map(fn (string $roleName) => ucwords(str_replace('_', ' ', $roleName)))
+                    ->map(fn (string $n) => ucwords(str_replace('_', ' ', $n)))
                     ->implode(', ');
 
                 return "Admin cannot be combined with: {$label}.";
