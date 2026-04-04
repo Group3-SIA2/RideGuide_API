@@ -408,6 +408,13 @@ return [
                     'active' => ['super-admin/organizations/manager/assignments*'],
                     'can'    => 'menu_org_super_admin_assignments',
                 ],
+                [
+                    'text'   => 'Fare Management',
+                    'route'  => 'super-admin.organizations.fares.overview',
+                    'icon'   => 'fas fa-fw fa-coins',
+                    'active' => ['super-admin/organizations/manager/fares*'],
+                    'can'    => 'menu_org_super_admin_fares',
+                ],
             ],
         ],
         [
@@ -444,6 +451,13 @@ return [
                     'active' => ['admin/organizations/manager/assignments*'],
                     'can'    => 'menu_org_admin_assignments',
                 ],
+                [
+                    'text'   => 'Fare Management',
+                    'route'  => 'admin.organizations.fares.overview',
+                    'icon'   => 'fas fa-fw fa-coins',
+                    'active' => ['admin/organizations/manager/fares*'],
+                    'can'    => 'menu_org_admin_fares',
+                ],
             ],
         ],
         [
@@ -459,6 +473,13 @@ return [
             'icon'   => 'fas fa-fw fa-user-plus',
             'active' => ['org-manager/organizations/manager/assignments*'],
             'can'    => 'menu_org_role_assignments',
+        ],
+        [
+            'text'   => 'Fare Management',
+            'route'  => 'org-manager.organizations.fares.overview',
+            'icon'   => 'fas fa-fw fa-coins',
+            'active' => ['org-manager/organizations/manager/fares*'],
+            'can'    => 'menu_org_role_fares',
         ],
 
         // System
