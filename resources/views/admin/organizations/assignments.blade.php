@@ -13,6 +13,16 @@
     $unassignRoute = $panelPrefix . '.organizations.assignments.unassign';
     $terminalsStoreRoute = $panelPrefix . '.organizations.terminals.store';
     $terminalsRemoveRoute = $panelPrefix . '.organizations.terminals.remove';
+    $driverTerminalMapData = ($organizationTerminals ?? collect())->map(function ($terminal) {
+        return [
+            'id' => $terminal->id,
+            'name' => $terminal->terminal_name,
+            'barangay' => $terminal->barangay,
+            'city' => $terminal->city,
+            'lat' => $terminal->latitude,
+            'lng' => $terminal->longitude,
+        ];
+    })->values();
 @endphp
 
 @section('content_header')
@@ -129,14 +139,14 @@
                                         </td>
                                         <td>
                                             <div class="d-flex gap-1">
-                                                <form method="POST" action="{{ route($updateRoute, $driver->id) }}">
-                                                    @csrf
-                                                    @method('PUT')
-                                                    @if(!empty($selectedOrganizationId))
-                                                        <input type="hidden" name="organization_id" value="{{ $selectedOrganizationId }}">
-                                                    @endif
-                                                    <button type="submit" class="btn btn-sm btn-outline-primary">Update</button>
-                                                </form>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-primary js-driver-update"
+                                                    data-update-url="{{ route($updateRoute, $driver->id) }}"
+                                                    data-driver-name="{{ trim(($driver->user->first_name ?? '') . ' ' . ($driver->user->last_name ?? '')) ?: 'Driver' }}"
+                                                >
+                                                    Update
+                                                </button>
                                                 <form method="POST" action="{{ route($unassignRoute, $driver->id) }}" onsubmit="return confirm('Unassign this driver from your organization?');">
                                                     @csrf
                                                     @method('DELETE')
@@ -248,8 +258,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="form-text text-muted">Select an existing terminal or complete the form below to create a new one.</small>
-                            <small id="terminal-mode-hint" class="form-text text-info">Choose one mode: select an existing terminal or enter details for a new terminal.</small>
+                            <small id="terminal-mode-hint" class="form-text text-info">Select an existing terminal or enter details for a new terminal.</small>
                         </div>
 
                         <div class="form-group mb-3 p-3">
@@ -267,6 +276,16 @@
                                 <label for="city">City</label>
                                 <input type="text" id="city" name="city" class="form-control" value="{{ old('city') }}">
                             </div>
+                        </div>
+
+                        <input type="hidden" id="terminal_latitude" name="latitude" value="{{ old('latitude') }}">
+                        <input type="hidden" id="terminal_longitude" name="longitude" value="{{ old('longitude') }}">
+
+                        <div class="form-group px-3 pb-3">
+                            <button type="button" class="btn btn-outline-info btn-sm" id="terminal-map-picker">
+                                Select Coordinates on Map
+                            </button>
+                            <small class="form-text text-muted">Optional: pin terminal location on the map.</small>
                         </div>
 
                         <button type="submit" class="rg-btn rg-btn-primary mb-3" style="margin-left: 1rem;">
@@ -352,7 +371,68 @@
                     <p class="mb-2"><strong>Name:</strong> <span id="terminal-detail-name">-</span></p>
                     <p class="mb-2"><strong>Barangay:</strong> <span id="terminal-detail-barangay">-</span></p>
                     <p class="mb-2"><strong>City:</strong> <span id="terminal-detail-city">-</span></p>
-                    <p class="mb-0"><strong>Coordinates:</strong> <span id="terminal-detail-coordinates">-</span></p>
+                    <p class="mb-3"><strong>Coordinates:</strong> <span id="terminal-detail-coordinates">-</span></p>
+                    <div id="terminal-detail-map" class="rg-map-modal"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="driverUpdateModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <form method="POST" id="driver-update-form">
+                    @csrf
+                    @method('PUT')
+                    @if(!empty($selectedOrganizationId))
+                        <input type="hidden" name="organization_id" value="{{ $selectedOrganizationId }}">
+                    @endif
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="driver-update-title">Assign Terminal</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="driver-terminal-select">Select Terminal</label>
+                            <select name="terminal_id" id="driver-terminal-select" class="form-control" required>
+                                <option value="">-- Select terminal --</option>
+                                @foreach($organizationTerminals as $terminal)
+                                    <option value="{{ $terminal->id }}">
+                                        {{ $terminal->terminal_name }} ({{ $terminal->barangay }}, {{ $terminal->city }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">Drivers can be linked to one terminal at a time.</small>
+                        </div>
+                        <div id="driver-terminal-map" class="rg-map-modal"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Assignment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="terminalMapModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Select Terminal Location</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2 text-muted">Click on the map to set latitude and longitude.</p>
+                    <div id="terminal-picker-map" class="rg-map-modal"></div>
+                    <p class="mt-3 mb-0"><strong>Selected:</strong> <span id="terminal-picker-coordinates">Not set</span></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -363,13 +443,26 @@
     @endif
 @stop
 
+@section('css')
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        .rg-map-modal {
+            height: 320px;
+            width: 100%;
+            border-radius: 10px;
+        }
+    </style>
+@stop
+
 @section('js')
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var terminalSelect = document.getElementById('terminal_id');
     var terminalNameInput = document.getElementById('terminal_name');
     var barangayInput = document.getElementById('barangay');
     var cityInput = document.getElementById('city');
+    var terminalMapButton = document.getElementById('terminal-map-picker');
 
     if (!terminalSelect || !terminalNameInput || !barangayInput || !cityInput) {
         return;
@@ -387,6 +480,10 @@ document.addEventListener('DOMContentLoaded', function () {
         newTerminalFields.forEach(function (field) {
             field.disabled = disabled;
         });
+
+        if (terminalMapButton) {
+            terminalMapButton.disabled = disabled;
+        }
     }
 
     function syncTerminalInputMode(source) {
@@ -426,16 +523,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (mode === 'existing') {
-            modeHint.textContent = 'Existing terminal selected, manual fields disabled.';
+            modeHint.textContent = 'Existing terminal selected.';
             return;
         }
 
         if (mode === 'manual') {
-            modeHint.textContent = 'New terminal details mode enabled, existing terminal selection disabled.';
+            modeHint.textContent = 'New terminal, Create a new terminal.';
             return;
         }
 
-        modeHint.textContent = 'Choose one mode: select an existing terminal or enter details for a new terminal.';
+        modeHint.textContent = 'Select an existing terminal or enter details for a new terminal.';
     }
 
     terminalSelect.addEventListener('change', function () {
@@ -452,6 +549,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var terminalViewButtons = document.querySelectorAll('.js-terminal-view');
     var terminalDetailsModal = document.getElementById('terminalDetailsModal');
+    var terminalDetailMap;
+    var terminalDetailMarker;
 
     if (terminalViewButtons.length && terminalDetailsModal) {
         terminalViewButtons.forEach(function (button) {
@@ -469,6 +568,177 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('terminal-detail-coordinates').textContent = coordinates;
 
                 $('#terminalDetailsModal').modal('show');
+
+                $('#terminalDetailsModal').off('shown.bs.modal').on('shown.bs.modal', function () {
+                    var mapContainer = document.getElementById('terminal-detail-map');
+                    if (!mapContainer) {
+                        return;
+                    }
+
+                    var lat = latitude ? parseFloat(latitude) : 6.1164;
+                    var lng = longitude ? parseFloat(longitude) : 125.1716;
+
+                    if (!terminalDetailMap) {
+                        terminalDetailMap = L.map('terminal-detail-map', {
+                            center: [lat, lng],
+                            zoom: latitude && longitude ? 15 : 13,
+                        });
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; OpenStreetMap contributors'
+                        }).addTo(terminalDetailMap);
+                    }
+
+                    terminalDetailMap.setView([lat, lng], latitude && longitude ? 15 : 13);
+                    terminalDetailMap.invalidateSize();
+
+                    if (terminalDetailMarker) {
+                        terminalDetailMap.removeLayer(terminalDetailMarker);
+                    }
+
+                    if (latitude && longitude) {
+                        terminalDetailMarker = L.marker([lat, lng]).addTo(terminalDetailMap);
+                    }
+                });
+            });
+        });
+    }
+
+    var updateButtons = document.querySelectorAll('.js-driver-update');
+    var driverUpdateModal = document.getElementById('driverUpdateModal');
+    var driverUpdateForm = document.getElementById('driver-update-form');
+    var driverUpdateTitle = document.getElementById('driver-update-title');
+    var driverTerminalMap;
+    var driverTerminalMarkers = [];
+    var driverTerminalData = @json($driverTerminalMapData);
+
+    if (updateButtons.length && driverUpdateModal && driverUpdateForm) {
+        updateButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var updateUrl = button.getAttribute('data-update-url');
+                var driverName = button.getAttribute('data-driver-name') || 'Driver';
+
+                driverUpdateForm.setAttribute('action', updateUrl);
+                if (driverUpdateTitle) {
+                    driverUpdateTitle.textContent = 'Assign Terminal for ' + driverName;
+                }
+
+                $('#driverUpdateModal').modal('show');
+
+                $('#driverUpdateModal').off('shown.bs.modal').on('shown.bs.modal', function () {
+                    var mapContainer = document.getElementById('driver-terminal-map');
+                    if (!mapContainer) {
+                        return;
+                    }
+
+                    if (!driverTerminalMap) {
+                        driverTerminalMap = L.map('driver-terminal-map', {
+                            center: [6.1164, 125.1716],
+                            zoom: 13,
+                        });
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; OpenStreetMap contributors'
+                        }).addTo(driverTerminalMap);
+                    }
+
+                    driverTerminalMap.invalidateSize();
+
+                    driverTerminalMarkers.forEach(function (marker) {
+                        driverTerminalMap.removeLayer(marker);
+                    });
+                    driverTerminalMarkers = [];
+
+                    var bounds = L.latLngBounds();
+
+                    driverTerminalData.forEach(function (terminal) {
+                        if (!terminal.lat || !terminal.lng) {
+                            return;
+                        }
+
+                        var marker = L.marker([terminal.lat, terminal.lng]).addTo(driverTerminalMap);
+                        marker.bindPopup('<strong>' + terminal.name + '</strong><br>' + [terminal.barangay, terminal.city].filter(Boolean).join(', '));
+                        marker.on('click', function () {
+                            var terminalSelect = document.getElementById('driver-terminal-select');
+                            if (terminalSelect) {
+                                terminalSelect.value = terminal.id;
+                            }
+                        });
+                        driverTerminalMarkers.push(marker);
+                        bounds.extend([terminal.lat, terminal.lng]);
+                    });
+
+                    if (bounds.isValid()) {
+                        driverTerminalMap.fitBounds(bounds.pad(0.2));
+                    }
+                });
+            });
+        });
+    }
+
+    var terminalMapButton = document.getElementById('terminal-map-picker');
+    var terminalMapModal = document.getElementById('terminalMapModal');
+    var terminalPickerMap;
+    var terminalPickerMarker;
+    var terminalLatInput = document.getElementById('terminal_latitude');
+    var terminalLngInput = document.getElementById('terminal_longitude');
+    var terminalPickerCoordinates = document.getElementById('terminal-picker-coordinates');
+
+    if (terminalMapButton && terminalMapModal) {
+        terminalMapButton.addEventListener('click', function () {
+            $('#terminalMapModal').modal('show');
+
+            $('#terminalMapModal').off('shown.bs.modal').on('shown.bs.modal', function () {
+                var mapContainer = document.getElementById('terminal-picker-map');
+                if (!mapContainer) {
+                    return;
+                }
+
+                var lat = terminalLatInput && terminalLatInput.value ? parseFloat(terminalLatInput.value) : 6.1164;
+                var lng = terminalLngInput && terminalLngInput.value ? parseFloat(terminalLngInput.value) : 125.1716;
+
+                if (!terminalPickerMap) {
+                    terminalPickerMap = L.map('terminal-picker-map', {
+                        center: [lat, lng],
+                        zoom: 13,
+                    });
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(terminalPickerMap);
+
+                    terminalPickerMap.on('click', function (event) {
+                        var point = event.latlng;
+                        if (terminalPickerMarker) {
+                            terminalPickerMap.removeLayer(terminalPickerMarker);
+                        }
+                        terminalPickerMarker = L.marker(point).addTo(terminalPickerMap);
+
+                        if (terminalLatInput) {
+                            terminalLatInput.value = point.lat.toFixed(6);
+                        }
+                        if (terminalLngInput) {
+                            terminalLngInput.value = point.lng.toFixed(6);
+                        }
+                        if (terminalPickerCoordinates) {
+                            terminalPickerCoordinates.textContent = point.lat.toFixed(6) + ', ' + point.lng.toFixed(6);
+                        }
+                    });
+                }
+
+                terminalPickerMap.setView([lat, lng], 13);
+                terminalPickerMap.invalidateSize();
+
+                if (terminalPickerMarker) {
+                    terminalPickerMap.removeLayer(terminalPickerMarker);
+                }
+
+                if (terminalLatInput && terminalLngInput && terminalLatInput.value && terminalLngInput.value) {
+                    terminalPickerMarker = L.marker([lat, lng]).addTo(terminalPickerMap);
+                    if (terminalPickerCoordinates) {
+                        terminalPickerCoordinates.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+                    }
+                }
             });
         });
     }
