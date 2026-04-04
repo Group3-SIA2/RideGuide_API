@@ -75,7 +75,7 @@ class FareController extends Controller
         $commuter = $request->user()?->commuter;
 
         if ($commuter && $commuter->discount && $commuter->discount->verification_status === Discount::VERIFICATION_VERIFIED) {
-            $fare *= 0.2; // 20% discount
+            $fare *= 0.8; // 80% of the original fare
             $discountApplied = true;
         }
 
