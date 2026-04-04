@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\EmergencyContactController;
 use App\Http\Controllers\Api\VehicleController;
+use App\Http\Controllers\Api\FareController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -124,5 +125,10 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         Route::put('/update/{id}',      'updateVehicle')->name('api.vehicles.update');
         Route::delete('/delete/{id}',   'deleteVehicle')->name('api.vehicles.delete');
         Route::put('/restore/{id}', 'restoreVehicle')->name('api.vehicles.restore');
+    });
+
+    // Fare Routes
+    Route::controller(FareController::class)->prefix('fare')->group(function (): void {
+        Route::post('/calculate', 'calculateFare')->name('api.fare.calculate');
     });
 });
