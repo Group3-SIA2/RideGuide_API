@@ -157,30 +157,15 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-12 col-md-6">
-                                        <div class="rg-form-group mb-0">
-                                            <label class="rg-form-label rg-form-label-sm" for="hq_lat">Latitude</label>
-                                            <input id="hq_lat" name="hq_lat" type="text"
-                                                   class="rg-form-control @error('hq_lat') is-invalid @enderror"
-                                                   value="{{ old('hq_lat', $addr->lat ?? '') }}"
-                                                   placeholder="e.g. 6.1164 (optional)">
-                                            @error('hq_lat')
-                                                <p class="rg-form-error">{{ $message }}</p>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-md-6">
-                                        <div class="rg-form-group mb-0">
-                                            <label class="rg-form-label rg-form-label-sm" for="hq_lng">Longitude</label>
-                                            <input id="hq_lng" name="hq_lng" type="text"
-                                                   class="rg-form-control @error('hq_lng') is-invalid @enderror"
-                                                   value="{{ old('hq_lng', $addr->lng ?? '') }}"
-                                                   placeholder="e.g. 125.1716 (optional)">
-                                            @error('hq_lng')
-                                                <p class="rg-form-error">{{ $message }}</p>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                    <input id="hq_lat" name="hq_lat" type="hidden"
+                                           value="{{ old('hq_lat', $addr->lat ?? '') }}">
+                                    <input id="hq_lng" name="hq_lng" type="hidden"
+                                           value="{{ old('hq_lng', $addr->lng ?? '') }}">
+                                </div>
+                                <div class="mt-3">
+                                    <label class="rg-form-label rg-form-label-sm">Select Location on Map</label>
+                                    <div id="hq-map" class="rg-map-modal"></div>
+                                    <small class="text-muted">Click on the map to set latitude and longitude.</small>
                                 </div>
                             </div>
                             <p class="rg-form-hint">Street and Barangay are required if you want to set a head office address.</p>
@@ -230,4 +215,68 @@
         </div>
     </div>
 
+@stop
+
+@section('css')
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        .rg-map-modal {
+            height: 260px;
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,.08);
+            margin-top: 0.35rem;
+        }
+    </style>
+@stop
+
+@section('js')
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var mapContainer = document.getElementById('hq-map');
+            if (!mapContainer) {
+                return;
+            }
+
+            var latInput = document.getElementById('hq_lat');
+            var lngInput = document.getElementById('hq_lng');
+            var lat = latInput && latInput.value ? parseFloat(latInput.value) : 6.1164;
+            var lng = lngInput && lngInput.value ? parseFloat(lngInput.value) : 125.1716;
+
+            var hqMap = L.map('hq-map', {
+                center: [lat, lng],
+                zoom: 13,
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(hqMap);
+
+            var hqMarker = null;
+            if (latInput && lngInput && latInput.value && lngInput.value) {
+                hqMarker = L.circleMarker([lat, lng], {
+                    radius: 7,
+                    color: '#2563eb',
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.9,
+                }).addTo(hqMap);
+            }
+
+            hqMap.on('click', function (event) {
+                var point = event.latlng;
+                if (hqMarker) {
+                    hqMap.removeLayer(hqMarker);
+                }
+                hqMarker = L.marker(point).addTo(hqMap);
+
+                if (latInput) {
+                    latInput.value = point.lat.toFixed(6);
+                }
+                if (lngInput) {
+                    lngInput.value = point.lng.toFixed(6);
+                }
+            });
+        });
+    </script>
 @stop
