@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\EmergencyContactController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\FareController;
+use App\Http\Controllers\Api\FeedbackController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -130,5 +131,15 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
     // Fare Routes
     Route::controller(FareController::class)->prefix('fare')->group(function (): void {
         Route::post('/calculate', 'calculateFare')->name('api.fare.calculate');
+    });
+
+    // Feedback Routes
+    Route::controller(FeedbackController::class)->prefix('feedback')->group(function (): void {
+        Route::post('/', 'newFeedback')->name('api.feedback.create');
+        Route::get('/trip/{tripId}', 'getAllFeedbackByTrip')->name('api.feedback.trip');
+        Route::get('/{id}', 'readFeedback')->name('api.feedback.read');
+        Route::put('/{id}', 'updateFeedback')->name('api.feedback.update');
+        Route::delete('/{id}', 'deleteFeedback')->name('api.feedback.delete');
+        Route::put('/{id}/restore', 'restoreFeedback')->name('api.feedback.restore');
     });
 });
