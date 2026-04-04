@@ -151,22 +151,8 @@
                                            placeholder="e.g. Unit 3B (optional)">
                                 </div>
                             </div>
-                            <div class="col-12 col-md-6">
-                                <div class="rg-form-group mb-0">
-                                    <label class="rg-form-label rg-form-label-sm" for="modal-hq-lat">Latitude</label>
-                                    <input id="modal-hq-lat" name="hq_lat" type="text"
-                                           class="rg-form-control"
-                                           placeholder="e.g. 6.1164 (optional)">
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <div class="rg-form-group mb-0">
-                                    <label class="rg-form-label rg-form-label-sm" for="modal-hq-lng">Longitude</label>
-                                    <input id="modal-hq-lng" name="hq_lng" type="text"
-                                           class="rg-form-control"
-                                           placeholder="e.g. 125.1716 (optional)">
-                                </div>
-                            </div>
+                            <input id="modal-hq-lat" name="hq_lat" type="hidden">
+                            <input id="modal-hq-lng" name="hq_lng" type="hidden">
                         </div>
 
                         <div class="mt-3">
