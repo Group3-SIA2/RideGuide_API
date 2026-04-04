@@ -32,6 +32,8 @@
         $assignmentsQuery = array_filter([
             'organization_id' => $selectedOrganizationId ?? ($managedOrganization->id ?? null),
         ]);
+        $terminalMapData = collect();
+        $hqAddressData = null;
     @endphp
 
     @if(($organizationsForAdmin ?? collect())->isNotEmpty())
@@ -54,6 +56,50 @@
                             </select>
                             <a href="{{ route($dashboardRoute) }}" class="rg-btn-clear">Clear</a>
                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($managedOrganization)
+        @php
+            $terminalMapData = ($assignedTerminals ?? collect())->map(function ($terminal) {
+                $drivers = $terminal->driverAssignments ?? collect();
+
+                return [
+                    'id' => $terminal->id,
+                    'name' => $terminal->terminal_name,
+                    'lat' => $terminal->latitude,
+                    'lng' => $terminal->longitude,
+                    'barangay' => $terminal->barangay,
+                    'city' => $terminal->city,
+                    'drivers_count' => $drivers->filter(fn ($assignment) => (bool) $assignment->driver)->count(),
+                ];
+            })->values();
+
+            $hqAddressData = null;
+            if ($managedOrganization?->hqAddress) {
+                $hqAddressData = [
+                    'lat' => $managedOrganization->hqAddress->lat,
+                    'lng' => $managedOrganization->hqAddress->lng,
+                    'formatted' => $managedOrganization->hqAddress->formatted,
+                ];
+            }
+        @endphp
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="rg-card">
+                    <div class="rg-card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="rg-card-dot"></span>
+                            <h6 class="rg-card-title mb-0">Organization Map</h6>
+                        </div>
+                        <span class="rg-badge">{{ ($assignedTerminals ?? collect())->count() }} terminals</span>
+                    </div>
+                    <div class="rg-card-body">
+                        <div id="organization-map" aria-label="Organization terminals and HQ address"></div>
                     </div>
                 </div>
             </div>
@@ -207,4 +253,104 @@
             </div>
         </div>
     @endif
+@stop
+
+@section('css')
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #organization-map {
+            height: 360px;
+            width: 100%;
+            border-radius: 12px;
+        }
+
+        .rg-map-list {
+            margin: 0.5rem 0 0;
+            padding-left: 1.1rem;
+        }
+
+        .rg-map-empty {
+            margin: 0.5rem 0 0;
+            color: #6c757d;
+        }
+    </style>
+@stop
+
+@section('js')
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var mapElement = document.getElementById('organization-map');
+
+            if (!mapElement) {
+                return;
+            }
+
+            var hqAddress = @json($hqAddressData);
+            var terminals = @json($terminalMapData);
+
+            var fallbackCenter = [6.1164, 125.1716];
+            var initialCenter = fallbackCenter;
+
+            if (hqAddress && hqAddress.lat && hqAddress.lng) {
+                initialCenter = [hqAddress.lat, hqAddress.lng];
+            } else if (terminals.length && terminals[0].lat && terminals[0].lng) {
+                initialCenter = [terminals[0].lat, terminals[0].lng];
+            }
+
+            var map = L.map('organization-map', {
+                center: initialCenter,
+                zoom: 13,
+                dragging: true,
+                scrollWheelZoom: true,
+                doubleClickZoom: true,
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            var bounds = L.latLngBounds();
+
+            if (hqAddress && hqAddress.lat && hqAddress.lng) {
+                var hqMarker = L.circleMarker([hqAddress.lat, hqAddress.lng], {
+                    radius: 7,
+                    color: '#2563eb',
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.9,
+                });
+
+                hqMarker.addTo(map)
+                    .bindPopup('<strong>HQ Address</strong><br>' + (hqAddress.formatted || 'No address details'));
+
+                bounds.extend([hqAddress.lat, hqAddress.lng]);
+            }
+
+            terminals.forEach(function (terminal) {
+                if (!terminal.lat || !terminal.lng) {
+                    return;
+                }
+
+                var driverCount = Number(terminal.drivers_count || 0);
+                var driverSummary = driverCount
+                    ? '<p class="rg-map-empty">' + driverCount + ' assigned driver' + (driverCount === 1 ? '' : 's') + '.</p>'
+                    : '<p class="rg-map-empty">No assigned drivers.</p>';
+
+                var locationLabel = [terminal.barangay, terminal.city].filter(Boolean).join(', ');
+                var popupContent = '<strong>' + terminal.name + '</strong><br>' +
+                    '<span class="rg-td-muted">' + (locationLabel || 'Location not set') + '</span>' +
+                    '<div class="mt-2"><strong>Assigned Drivers</strong>' + driverSummary + '</div>';
+
+                L.marker([terminal.lat, terminal.lng])
+                    .addTo(map)
+                    .bindPopup(popupContent);
+
+                bounds.extend([terminal.lat, terminal.lng]);
+            });
+
+            if (bounds.isValid()) {
+                map.fitBounds(bounds.pad(0.15));
+            }
+        });
+    </script>
 @stop
