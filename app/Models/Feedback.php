@@ -17,25 +17,28 @@ class Feedback extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'user_id',
-        'driver_id',
+        'commuter_id',
+        'trip_id',
         'rating',
         'comment',
-        'feedback_type',
-        'status',
     ];
 
     protected $casts = [
         'rating' => 'integer',
     ];
 
-    public function user()
+    public function commuter()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Commuter::class, 'commuter_id');
     }
 
-    public function driver()
+    public function images()
     {
-        return $this->belongsTo(Driver::class, 'driver_id');
+        return $this->hasMany(FeedbackImage::class, 'feedback_id');
+    }
+
+    public function videos()
+    {
+        return $this->hasMany(FeedbackVideo::class, 'feedback_id');
     }
 }
