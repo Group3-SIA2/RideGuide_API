@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->decimal('base_fare_4KM', 8, 2)->notNull();
             $table->decimal('per_km_rate', 8, 2)->notNull();
+            $table->decimal('route_standard_fare', 8, 2)->notNull(); // Terminal to Terminal fare
             $table->date('effective_date')->notNull();
 
             $table->timestamps();
