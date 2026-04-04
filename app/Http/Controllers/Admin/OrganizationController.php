@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrganizationRequest;
 use App\Http\Requests\UpdateOrganizationRequest;
 use App\Models\Driver;
+use App\Models\DriverAssignTerminal;
 use App\Models\DriverOrganizationAssignmentLog;
 use App\Models\HqAddress;
 use App\Models\Organization;
@@ -130,6 +131,13 @@ class OrganizationController extends Controller
                 ->get();
 
             $assignedTerminals = $managedOrganization->terminals()
+                ->with([
+                    'driverAssignments' => function ($query) use ($managedOrganization) {
+                        $query->whereHas('driver', function ($driverQuery) use ($managedOrganization) {
+                            $driverQuery->where('organization_id', $managedOrganization->id);
+                        })->with(['driver.user', 'driver.licenseId']);
+                    },
+                ])
                 ->orderBy('terminal_name')
                 ->get([
                     'terminals.id',
@@ -141,6 +149,8 @@ class OrganizationController extends Controller
                 ]);
 
             $totalAssignedTerminals = $assignedTerminals->count();
+
+            $managedOrganization->load('hqAddress');
         }
 
         return view('admin.organizations.manager-dashboard', compact(
@@ -285,6 +295,8 @@ class OrganizationController extends Controller
             ],
             'barangay'      => ['required_without:terminal_id', 'nullable', 'string', 'max:255'],
             'city'          => ['required_without:terminal_id', 'nullable', 'string', 'max:255'],
+            'latitude'      => ['nullable', 'numeric'],
+            'longitude'     => ['nullable', 'numeric'],
         ], [
             'terminal_name.required_without' => 'Terminal name is required when not selecting an existing terminal.',
             'barangay.required_without' => 'Barangay is required when not selecting an existing terminal.',
@@ -322,8 +334,8 @@ class OrganizationController extends Controller
                     'terminal_name' => $normalizedTerminalName,
                     'barangay'      => $normalizedBarangay,
                     'city'          => $normalizedCity,
-                    'latitude'      => null,
-                    'longitude'     => null,
+                    'latitude'      => $validated['latitude'] ?? null,
+                    'longitude'     => $validated['longitude'] ?? null,
                 ]);
             }
         } else {
@@ -419,8 +431,44 @@ class OrganizationController extends Controller
 
         $this->authorize('assignToOwnedOrganization', [$driver, $targetOrganization]);
 
+        $validated = $request->validate([
+            'terminal_id' => ['required', 'uuid', Rule::exists('terminals', 'id')],
+        ]);
+
+        $terminalId = $validated['terminal_id'];
+        $terminalLinked = OrganizationTerminal::query()
+            ->where('organization_id', $targetOrganization->id)
+            ->where('terminal_id', $terminalId)
+            ->exists();
+
+        if (! $terminalLinked) {
+            return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $this->buildOrganizationQuery($request))
+                ->with('error', 'Please select a terminal linked to the selected organization.');
+        }
+
         $oldOrganizationId = $driver->organization_id;
         $driver->update(['organization_id' => $targetOrganization->id]);
+
+        DriverAssignTerminal::query()
+            ->where('driver_id', $driver->id)
+            ->where('terminal_id', '!=', $terminalId)
+            ->delete();
+
+        $assignment = DriverAssignTerminal::withTrashed()
+            ->where('driver_id', $driver->id)
+            ->where('terminal_id', $terminalId)
+            ->first();
+
+        if ($assignment) {
+            if ($assignment->trashed()) {
+                $assignment->restore();
+            }
+        } else {
+            DriverAssignTerminal::create([
+                'driver_id' => $driver->id,
+                'terminal_id' => $terminalId,
+            ]);
+        }
 
         $this->logDriverAssignmentAction(
             $driver,
