@@ -218,7 +218,7 @@
             </div>
 
             <div class="col-12 col-xl-7">
-                <div class="rg-card">
+                <div class="rg-card p-3">
                     <div class="rg-card-header d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-2">
                             <span class="rg-card-dot"></span>
