@@ -8,6 +8,7 @@ use App\Models\Organization;
 use App\Models\OrganizationFareRate;
 use App\Models\PassengerStart;
 use App\Models\PassengerStop;
+use App\Models\Discount;
 
 class FareController extends Controller
 {
@@ -70,10 +71,19 @@ class FareController extends Controller
             $fare = $baseFare + ($perKmRate * $excessDistance);
         }
 
+        $discountApplied = false;
+        $commuter = $request->user()?->commuter;
+
+        if ($commuter && $commuter->discount && $commuter->discount->verification_status === Discount::VERIFICATION_VERIFIED) {
+            $fare *= 0.2; // 20% discount
+            $discountApplied = true;
+        }
+
         return response()->json([
             'success' => true,
             'fare' => round($fare, 2),
             'terminal_to_terminal' => $isTerminalToTerminal,
+            'discount_applied' => $discountApplied,
         ]);
     }
 
