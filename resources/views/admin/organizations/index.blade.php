@@ -169,6 +169,12 @@
                             </div>
                         </div>
 
+                        <div class="mt-3">
+                            <label class="rg-form-label rg-form-label-sm">Select Location on Map</label>
+                            <div id="modal-hq-map" class="rg-map-modal"></div>
+                            <small class="text-muted">Click on the map to set latitude and longitude.</small>
+                        </div>
+
                         {{-- Inline feedback shown after AJAX response --}}
                         <div id="modal-address-feedback" class="mt-3" style="display:none;"></div>
                     </div>
@@ -189,6 +195,7 @@
 @stop
 
 @section('css')
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
 /* ── Address Modal Styles ── */
 .rg-modal-content {
@@ -257,10 +264,18 @@
     font-size: .78rem;
     margin-bottom: .25rem;
 }
+.rg-map-modal {
+    height: 260px;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,.08);
+    margin-top: 0.35rem;
+}
 </style>
 @stop
 
 @section('js')
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 // Adress MODAL
 function openAddressModal(btn) {
@@ -295,6 +310,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var form    = document.getElementById('form-address-update');
     var feedback = document.getElementById('modal-address-feedback');
     var saveBtn  = document.getElementById('btn-save-address');
+    var hqMap;
+    var hqMarker;
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -435,6 +452,61 @@ document.addEventListener('DOMContentLoaded', function () {
         load();
     });
     bindPagin();
+
+    $('#modal-address').on('shown.bs.modal', function () {
+        var mapContainer = document.getElementById('modal-hq-map');
+        if (!mapContainer) {
+            return;
+        }
+
+        var latInput = document.getElementById('modal-hq-lat');
+        var lngInput = document.getElementById('modal-hq-lng');
+        var lat = latInput && latInput.value ? parseFloat(latInput.value) : 6.1164;
+        var lng = lngInput && lngInput.value ? parseFloat(lngInput.value) : 125.1716;
+
+        if (!hqMap) {
+            hqMap = L.map('modal-hq-map', {
+                center: [lat, lng],
+                zoom: 13,
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(hqMap);
+
+            hqMap.on('click', function (event) {
+                var point = event.latlng;
+                if (hqMarker) {
+                    hqMap.removeLayer(hqMarker);
+                }
+                hqMarker = L.marker(point).addTo(hqMap);
+
+                if (latInput) {
+                    latInput.value = point.lat.toFixed(6);
+                }
+                if (lngInput) {
+                    lngInput.value = point.lng.toFixed(6);
+                }
+            });
+        }
+
+        hqMap.setView([lat, lng], 13);
+        hqMap.invalidateSize();
+
+        if (hqMarker) {
+            hqMap.removeLayer(hqMarker);
+            hqMarker = null;
+        }
+
+        if (latInput && lngInput && latInput.value && lngInput.value) {
+            hqMarker = L.circleMarker([lat, lng], {
+                radius: 7,
+                color: '#2563eb',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.9,
+            }).addTo(hqMap);
+        }
+    });
 });
 </script>
 @stop
