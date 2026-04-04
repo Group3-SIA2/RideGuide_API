@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\UserAuthorizationController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\Auth2faController;
 use App\Http\Controllers\Admin\TransactionLogController;
+use App\Http\Controllers\Admin\FareController;
 
 /*
 |--------------------------------------------------------------------------
@@ -90,6 +91,13 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/organizations/{id}/restore',  [OrganizationController::class, 'restore'])->name('organizations.restore');
         Route::get('/organizations/manager/dashboard', [OrganizationController::class, 'managerDashboard'])->name('organizations.manager-dashboard');
         Route::get('/organizations/manager/assignments', [OrganizationController::class, 'assignmentIndex'])->name('organizations.assignments.index');
+        Route::get('/organizations/manager/fares', [FareController::class, 'index'])->name('organizations.fares.index');
+        Route::get('/organizations/manager/fares/overview', [FareController::class, 'overview'])->name('organizations.fares.overview');
+        Route::post('/organizations/manager/fares', [FareController::class, 'store'])->name('organizations.fares.store');
+        Route::post('/organizations/manager/fares/routes', [FareController::class, 'createRouteFare'])->name('organizations.fares.routes.store');
+        Route::put('/organizations/manager/fares/routes/{routeFare}', [FareController::class, 'updateRouteFare'])->name('organizations.fares.routes.update');
+
+
         Route::post('/organizations/manager/terminals', [OrganizationController::class, 'storeTerminal'])->name('organizations.terminals.store');
         Route::delete('/organizations/manager/terminals/{terminal}', [OrganizationController::class, 'unassignTerminal'])->name('organizations.terminals.remove');
         Route::post('/organizations/manager/assignments/drivers/{driver}/assign', [OrganizationController::class, 'assignDriver'])->name('organizations.assignments.assign');
@@ -156,6 +164,11 @@ Route::middleware(['auth', 'active.user'])->group(function () {
 
         Route::get('/organizations/manager/dashboard', [OrganizationController::class, 'managerDashboard'])->name('organizations.manager-dashboard');
         Route::get('/organizations/manager/assignments', [OrganizationController::class, 'assignmentIndex'])->name('organizations.assignments.index');
+        Route::get('/organizations/manager/fares', [FareController::class, 'index'])->name('organizations.fares.index');
+        Route::get('/organizations/manager/fares/overview', [FareController::class, 'overview'])->name('organizations.fares.overview');
+        Route::post('/organizations/manager/fares', [FareController::class, 'store'])->name('organizations.fares.store');
+        Route::post('/organizations/manager/fares/routes', [FareController::class, 'createRouteFare'])->name('organizations.fares.routes.store');
+        Route::put('/organizations/manager/fares/routes/{routeFare}', [FareController::class, 'updateRouteFare'])->name('organizations.fares.routes.update');
         Route::post('/organizations/manager/terminals', [OrganizationController::class, 'storeTerminal'])->name('organizations.terminals.store');
         Route::delete('/organizations/manager/terminals/{terminal}', [OrganizationController::class, 'unassignTerminal'])->name('organizations.terminals.remove');
         Route::post('/organizations/manager/assignments/drivers/{driver}/assign', [OrganizationController::class, 'assignDriver'])->name('organizations.assignments.assign');
@@ -198,6 +211,11 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::get('/dashboard', [OrganizationController::class, 'managerDashboard'])->name('dashboard');
         Route::get('/organizations/manager/dashboard', [OrganizationController::class, 'managerDashboard'])->name('organizations.manager-dashboard');
         Route::get('/organizations/manager/assignments', [OrganizationController::class, 'assignmentIndex'])->name('organizations.assignments.index');
+        Route::get('/organizations/manager/fares', [FareController::class, 'index'])->name('organizations.fares.index');
+        Route::get('/organizations/manager/fares/overview', [FareController::class, 'overview'])->name('organizations.fares.overview');
+        Route::post('/organizations/manager/fares', [FareController::class, 'store'])->name('organizations.fares.store');
+        Route::post('/organizations/manager/fares/routes', [FareController::class, 'createRouteFare'])->name('organizations.fares.routes.store');
+        Route::put('/organizations/manager/fares/routes/{routeFare}', [FareController::class, 'updateRouteFare'])->name('organizations.fares.routes.update');
         Route::post('/organizations/manager/terminals', [OrganizationController::class, 'storeTerminal'])->name('organizations.terminals.store');
         Route::delete('/organizations/manager/terminals/{terminal}', [OrganizationController::class, 'unassignTerminal'])->name('organizations.terminals.remove');
         Route::post('/organizations/manager/assignments/drivers/{driver}/assign', [OrganizationController::class, 'assignDriver'])->name('organizations.assignments.assign');
