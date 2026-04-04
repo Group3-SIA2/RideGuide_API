@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('trips', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('driver_id')->notNull();
+            $table->datetime('departure_time')->notNull();
+            $table->datetime('return_time')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
