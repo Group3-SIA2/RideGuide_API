@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
 use App\Models\LicenseId;
 use App\Models\LicenseImage;
-use App\Models\Organization;
-use Illuminate\Validation\Rule;
 use App\Support\DashboardCache;
 use App\Support\MediaStorage;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class DriverController extends Controller
 {
@@ -23,21 +22,21 @@ class DriverController extends Controller
         if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
-        
-        if (!$user->hasRole('driver')) {
+
+        if (! $user->hasRole('driver')) {
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
-        
+
         // Check if the user already has a driver profile
         if (Driver::where('user_id', $user->id)->exists()) {
             return response()->json(['error' => 'You already have a driver profile.'], 400);
         }
-        
+
         $validatedData = $request->validate([
-            'organization_id' => ['nullable','string','exists:organizations,id'],
-            'license_id_number' => ['required','string','max:255', Rule::unique('license_id', 'license_id'), 'regex:/^[A-Za-z0-9\s-]+$/'],
-            'license_image_front' => ['required', 'image', 'max:2048'],
-            'license_image_back' => ['nullable', 'image', 'max:2048'],
+            'organization_id' => ['nullable', 'string', 'exists:organizations,id'],
+            'license_id_number' => ['required', 'string', 'max:255', Rule::unique('license_id', 'license_id'), 'regex:/^[A-Za-z0-9\s-]+$/'],
+            'license_image_front' => ['required', ...MediaStorage::imageValidationRules()],
+            'license_image_back' => ['nullable', ...MediaStorage::imageValidationRules()],
         ]);
 
         $licenseImage = LicenseImage::create([
@@ -52,8 +51,6 @@ class DriverController extends Controller
             'image_id' => $licenseImage->id,
             'verification_status' => LicenseId::VERIFICATION_STATUS_UNVERIFIED,
         ]);
-
-
 
         $driver = Driver::create([
             'user_id' => $request->user()->id,
@@ -77,7 +74,7 @@ class DriverController extends Controller
             ->find($id);
 
         // Debugging: Check if the driver profile is being retrieved correctly
-        //$driverProfile = Driver::where('id', $id)->first();
+        // $driverProfile = Driver::where('id', $id)->first();
         // $driverProfile = Driver::where('id', $id)->first();
 
         // dd($driver);
@@ -91,7 +88,7 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        if ($driver->user_id !== $user->id && !$user->hasRole('admin')) {
+        if ($driver->user_id !== $user->id && ! $user->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -102,9 +99,9 @@ class DriverController extends Controller
 
     public function updateProfile(Request $request, $id): JsonResponse
     {
-        $driver = Driver::with(['user','organization','licenseId.image','usersEmergencyContact.emergencyContact'])->find($id);
+        $driver = Driver::with(['user', 'organization', 'licenseId.image', 'usersEmergencyContact.emergencyContact'])->find($id);
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
@@ -113,7 +110,7 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        if ($driver->user_id !== $user->id && !$user->hasRole('admin')) {
+        if ($driver->user_id !== $user->id && ! $user->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -121,13 +118,13 @@ class DriverController extends Controller
 
         if ($user->hasRole('admin')) {
             $validatedData = $request->validate([
-                'organization_id' => ['nullable','string','exists:organizations,id'],
+                'organization_id' => ['nullable', 'string', 'exists:organizations,id'],
                 'license_id_number' => [
-                    'sometimes','string','max:255','regex:/^[A-Za-z0-9\s-]+$/',
+                    'sometimes', 'string', 'max:255', 'regex:/^[A-Za-z0-9\s-]+$/',
                     Rule::unique('license_id', 'license_id')->ignore(optional($license)->id),
                 ],
-                'license_image_front' => ['nullable', 'image', 'max:2048'],
-                'license_image_back' => ['nullable', 'image', 'max:2048'],
+                'license_image_front' => ['nullable', ...MediaStorage::imageValidationRules()],
+                'license_image_back' => ['nullable', ...MediaStorage::imageValidationRules()],
                 'license_verification_status' => ['sometimes', Rule::in([
                     LicenseId::VERIFICATION_STATUS_UNVERIFIED,
                     LicenseId::VERIFICATION_STATUS_VERIFIED,
@@ -141,7 +138,7 @@ class DriverController extends Controller
                 ['license_number', 'verification_status', 'organization_id']
             );
 
-            if (!empty($disallowedFields)) {
+            if (! empty($disallowedFields)) {
                 return response()->json([
                     'error' => 'You can only update your license ID images.',
                     'disallowed_fields' => array_values($disallowedFields),
@@ -150,11 +147,11 @@ class DriverController extends Controller
 
             $validatedData = $request->validate([
                 'license_id_number' => [
-                    'sometimes','string','max:255','regex:/^[A-Za-z0-9\s-]+$/',
+                    'sometimes', 'string', 'max:255', 'regex:/^[A-Za-z0-9\s-]+$/',
                     Rule::unique('license_id', 'license_id')->ignore(optional($license)->id),
                 ],
-                'license_image_front' => ['nullable', 'image', 'max:2048'],
-                'license_image_back' => ['nullable', 'image', 'max:2048'],
+                'license_image_front' => ['nullable', ...MediaStorage::imageValidationRules()],
+                'license_image_back' => ['nullable', ...MediaStorage::imageValidationRules()],
             ]);
         }
 
@@ -166,7 +163,7 @@ class DriverController extends Controller
             }
         }
 
-        if (!empty($driverUpdates)) {
+        if (! empty($driverUpdates)) {
             $driver->update($driverUpdates);
         }
 
@@ -190,15 +187,15 @@ class DriverController extends Controller
                 }
             }
 
-            if (!empty($licenseUpdates)) {
+            if (! empty($licenseUpdates)) {
                 $license->update($licenseUpdates);
             }
 
             if ($request->hasFile('license_image_front') || $request->hasFile('license_image_back')) {
                 $image = $license->image;
 
-                if (!$image) {
-                    if (!$request->hasFile('license_image_front')) {
+                if (! $image) {
+                    if (! $request->hasFile('license_image_front')) {
                         return response()->json([
                             'error' => 'Front image is required when uploading license images for the first time.',
                         ], 422);
@@ -221,7 +218,7 @@ class DriverController extends Controller
                         $imageUpdates['image_back'] = MediaStorage::putFile('driver_license_ids', $request->file('license_image_back'));
                     }
 
-                    if (!empty($imageUpdates)) {
+                    if (! empty($imageUpdates)) {
                         $image->update($imageUpdates);
                     }
                 }
@@ -240,14 +237,14 @@ class DriverController extends Controller
 
     public function deleteProfile($id): JsonResponse
     {
-        $driver = Driver::with(['user','organization','licenseId.image','usersEmergencyContact.emergencyContact'])->find($id);
+        $driver = Driver::with(['user', 'organization', 'licenseId.image', 'usersEmergencyContact.emergencyContact'])->find($id);
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
         // admin only
-        if (!auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -283,7 +280,7 @@ class DriverController extends Controller
         }
 
         // admin only
-        if (!$user->hasRole('admin')) {
+        if (! $user->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -316,24 +313,25 @@ class DriverController extends Controller
 
     private function formatDriver(Driver $driver): array
     {
-    $emergency = $driver->usersEmergencyContact?->emergencyContact;
-    $license = $driver->licenseId;
-    $image = $license?->image;
-    $frontPath = $image?->image_front;
-    $backPath = $image?->image_back;
+        $emergency = $driver->usersEmergencyContact?->emergencyContact;
+        $license = $driver->licenseId;
+        $image = $license?->image;
+        $frontPath = $image?->image_front;
+        $backPath = $image?->image_back;
+
         return [
-            'id'                  => $driver->id,
-            'user_id'             => $driver->user_id,
-            'user'                => $driver->user ? [
-                'id'          => $driver->user->id,
-                'first_name'  => $driver->user->first_name,
-                'last_name'   => $driver->user->last_name,
+            'id' => $driver->id,
+            'user_id' => $driver->user_id,
+            'user' => $driver->user ? [
+                'id' => $driver->user->id,
+                'first_name' => $driver->user->first_name,
+                'last_name' => $driver->user->last_name,
                 'middle_name' => $driver->user->middle_name,
-                'email'       => $driver->user->email,
+                'email' => $driver->user->email,
             ] : null,
-            'organization'        => $driver->organization ? [
-                'id'                => $driver->organization->id,
-                'name'              => $driver->organization->name,
+            'organization' => $driver->organization ? [
+                'id' => $driver->organization->id,
+                'name' => $driver->organization->name,
                 'organization_type' => $driver->organization->organization_type,
             ] : null,
             'verification_status' => $license?->verification_status,
@@ -356,9 +354,9 @@ class DriverController extends Controller
                 'contact_phone_number' => $emergency->contact_phone_number,
                 'contact_relationship' => $emergency->contact_relationship,
             ] : null,
-            'created_at'          => $driver->created_at,
-            'updated_at'          => $driver->updated_at,
-            'deleted_at'          => $driver->deleted_at,
+            'created_at' => $driver->created_at,
+            'updated_at' => $driver->updated_at,
+            'deleted_at' => $driver->deleted_at,
         ];
     }
 }
