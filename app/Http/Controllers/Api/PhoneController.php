@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Otp;
 use App\Models\User;
+use App\Support\InputValidation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * Phone Number Authentication via iProgSMS
@@ -33,8 +33,10 @@ use Illuminate\Validation\Rules\Password;
 class PhoneController extends Controller
 {
     private const OTP_COOLDOWN_SECONDS = 60;
-    private const OTP_DAILY_LIMIT      = 3;
-    private const OTP_EXPIRY_MINUTES   = 5; // mirrors iProgSMS default OTP lifetime
+
+    private const OTP_DAILY_LIMIT = 3;
+
+    private const OTP_EXPIRY_MINUTES = 5; // mirrors iProgSMS default OTP lifetime
 
     // -------------------------------------------------------------------------
     // Public Endpoints
@@ -50,7 +52,7 @@ class PhoneController extends Controller
     {
         $validated = $request->validate([
             'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
-            'password'=> ['required', 'string', Password::min(8)->mixedCase()->symbols()],
+            'password' => InputValidation::passwordRequiredRules(),
         ]);
 
         $phone = $this->normalizePhone($validated['phone_number']);
@@ -64,7 +66,7 @@ class PhoneController extends Controller
 
         $user = User::create([
             'phone_number' => $phone,
-            'password'     => $validated['password'],
+            'password' => $validated['password'],
         ]);
 
         $sent = $this->sendOtp($user, 'phone_verification');
@@ -82,9 +84,9 @@ class PhoneController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Registration successful. An OTP has been sent to your phone number.',
-            'data'    => [
+            'data' => [
                 'user' => [
-                    'id'           => $user->id,
+                    'id' => $user->id,
                     'phone_number' => $user->phone_number,
                 ],
             ],
@@ -102,11 +104,11 @@ class PhoneController extends Controller
     {
         $validated = $request->validate([
             'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
-            'password'     => ['required', 'string'],
+            'password' => ['required', 'string'],
         ]);
 
         $phone = $this->normalizePhone($validated['phone_number']);
-        $user  = User::where('phone_number', $phone)->first();
+        $user = User::where('phone_number', $phone)->first();
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return response()->json([
@@ -179,12 +181,12 @@ class PhoneController extends Controller
     {
         $validated = $request->validate([
             'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
-            'otp'          => ['required', 'string', 'size:6'],
-            'type'         => ['required', 'string', 'in:phone_verification,login_2fa'],
+            'otp' => ['required', 'string', 'size:6'],
+            'type' => ['required', 'string', 'in:phone_verification,login_2fa'],
         ]);
 
         $phone = $this->normalizePhone($validated['phone_number']);
-        $user  = User::where('phone_number', $phone)->first();
+        $user = User::where('phone_number', $phone)->first();
 
         if (! $user) {
             return response()->json([
@@ -241,13 +243,13 @@ class PhoneController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Phone number verified successfully. You are now logged in.',
-                'data'    => [
+                'data' => [
                     'user' => [
-                        'id'                => $user->id,
-                        'phone_number'      => $user->phone_number,
+                        'id' => $user->id,
+                        'phone_number' => $user->phone_number,
                         'phone_verified_at' => $user->phone_verified_at,
                     ],
-                    'token'      => $token,
+                    'token' => $token,
                     'token_type' => 'Bearer',
                 ],
             ], 200);
@@ -260,13 +262,13 @@ class PhoneController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login successful.',
-            'data'    => [
+            'data' => [
                 'user' => [
-                    'id'                => $user->id,
-                    'phone_number'      => $user->phone_number,
+                    'id' => $user->id,
+                    'phone_number' => $user->phone_number,
                     'phone_verified_at' => $user->phone_verified_at,
                 ],
-                'token'      => $token,
+                'token' => $token,
                 'token_type' => 'Bearer',
             ],
         ], 200);
@@ -286,9 +288,9 @@ class PhoneController extends Controller
         ]);
 
         $phone = $this->normalizePhone($validated['phone_number']);
-        $user  = User::where('phone_number', $phone)->first();
+        $user = User::where('phone_number', $phone)->first();
 
-        if (!$user) {
+        if (! $user) {
             // Return success even if user not found to prevent phone number enumeration
             return response()->json([
                 'success' => true,
@@ -311,7 +313,7 @@ class PhoneController extends Controller
 
         $sent = $this->sendOtp($user, 'password_reset');
 
-        if (!$sent) {
+        if (! $sent) {
             return response()->json([
                 'success' => false,
                 'message' => 'We could not send the password reset OTP. Please try again.',
@@ -334,14 +336,14 @@ class PhoneController extends Controller
     {
         $validated = $request->validate([
             'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
-            'otp'          => ['required', 'string', 'size:6'],
-            'password'     => ['required', 'string', 'confirmed', Password::min(8)->mixedCase()->symbols()],
+            'otp' => ['required', 'string', 'size:6'],
+            'password' => InputValidation::passwordConfirmedRules(),
         ]);
 
         $phone = $this->normalizePhone($validated['phone_number']);
-        $user  = User::where('phone_number', $phone)->first();
+        $user = User::where('phone_number', $phone)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not found.',
@@ -356,7 +358,7 @@ class PhoneController extends Controller
             ->latest()
             ->first();
 
-        if (!$otp) {
+        if (! $otp) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired OTP.',
@@ -369,7 +371,7 @@ class PhoneController extends Controller
             $validated['otp']
         );
 
-        if (!$verified) {
+        if (! $verified) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired OTP.',
@@ -417,11 +419,11 @@ class PhoneController extends Controller
     {
         $validated = $request->validate([
             'phone_number' => ['required', 'string', 'regex:/^(\+639|639|09)\d{9}$/'],
-            'type'         => ['required', 'string', 'in:phone_verification'],
+            'type' => ['required', 'string', 'in:phone_verification'],
         ]);
 
         $phone = $this->normalizePhone($validated['phone_number']);
-        $user  = User::where('phone_number', $phone)->first();
+        $user = User::where('phone_number', $phone)->first();
 
         // Generic message to prevent phone number enumeration
         if (! $user) {
@@ -453,7 +455,7 @@ class PhoneController extends Controller
         if ($dailyCount >= self::OTP_DAILY_LIMIT) {
             return response()->json([
                 'success' => false,
-                'message' => 'You have reached the maximum of ' . self::OTP_DAILY_LIMIT . ' OTP requests for today. Please try again tomorrow.',
+                'message' => 'You have reached the maximum of '.self::OTP_DAILY_LIMIT.' OTP requests for today. Please try again tomorrow.',
             ], 429);
         }
 
@@ -479,8 +481,8 @@ class PhoneController extends Controller
      */
     private function sendOtp(User $user, string $type): bool
     {
-        $response = Http::post(config('services.iprogsms.url') . '/send_otp', [
-            'api_token'    => config('services.iprogsms.api_token'),
+        $response = Http::post(config('services.iprogsms.url').'/send_otp', [
+            'api_token' => config('services.iprogsms.api_token'),
             'phone_number' => $this->toLocalPhone($user->phone_number),
         ]);
 
@@ -496,9 +498,9 @@ class PhoneController extends Controller
 
         // Record dispatch for rate limiting & pending-OTP checks
         Otp::create([
-            'user_id'    => $user->id,
-            'code'       => 'iprogs', // sentinel – iProgSMS manages the real code
-            'type'       => $type,
+            'user_id' => $user->id,
+            'code' => 'iprogs', // sentinel – iProgSMS manages the real code
+            'type' => $type,
             'expires_at' => now()->addMinutes(self::OTP_EXPIRY_MINUTES),
         ]);
 
@@ -511,10 +513,10 @@ class PhoneController extends Controller
      */
     private function verifyWithIProgSMS(string $localPhone, string $otp): bool
     {
-        $response = Http::post(config('services.iprogsms.url') . '/verify_otp', [
-            'api_token'    => config('services.iprogsms.api_token'),
+        $response = Http::post(config('services.iprogsms.url').'/verify_otp', [
+            'api_token' => config('services.iprogsms.api_token'),
             'phone_number' => $localPhone,
-            'otp'          => $otp,
+            'otp' => $otp,
         ]);
 
         return $response->successful() && $response->json('status') === 'success';
@@ -529,11 +531,11 @@ class PhoneController extends Controller
         $phone = preg_replace('/[\s\-()]/', '', $phone);
 
         if (str_starts_with($phone, '09')) {
-            return '+63' . substr($phone, 1); // 09XXXXXXXXX  → +639XXXXXXXXX
+            return '+63'.substr($phone, 1); // 09XXXXXXXXX  → +639XXXXXXXXX
         }
 
         if (str_starts_with($phone, '639')) {
-            return '+' . $phone;              // 639XXXXXXXXX → +639XXXXXXXXX
+            return '+'.$phone;              // 639XXXXXXXXX → +639XXXXXXXXX
         }
 
         return $phone; // already +639XXXXXXXXX
@@ -546,6 +548,6 @@ class PhoneController extends Controller
     private function toLocalPhone(string $e164): string
     {
         // +639XXXXXXXXX → strip '+63', prepend '0' → 09XXXXXXXXX
-        return '0' . substr($e164, 3);
+        return '0'.substr($e164, 3);
     }
 }

@@ -7,6 +7,7 @@ use App\Models\PlateNumber;
 use App\Models\vehicle;
 use App\Models\vehicleImage;
 use App\Models\vehicleType;
+use App\Support\InputValidation;
 use App\Support\MediaStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,8 +25,8 @@ class VehicleController extends Controller
         }
 
         $request->validate([
-            'vehicle_type' => 'required|string',
-            'description' => 'required|string',
+            'vehicle_type' => InputValidation::safeStringRules(required: true, max: 255),
+            'description' => InputValidation::safeStringRules(required: true, max: 500),
             'image_front' => ['required', ...MediaStorage::imageValidationRules()],
             'image_back' => ['required', ...MediaStorage::imageValidationRules()],
             'image_left' => ['required', ...MediaStorage::imageValidationRules()],
@@ -115,8 +116,8 @@ class VehicleController extends Controller
             ->first();
 
         $request->validate([
-            'vehicle_type' => 'sometimes|required|string',
-            'description' => 'sometimes|required|string',
+            'vehicle_type' => ['sometimes', ...InputValidation::safeStringRules(required: true, max: 255)],
+            'description' => ['sometimes', ...InputValidation::safeStringRules(required: true, max: 500)],
             'image_front' => ['sometimes', 'required', ...MediaStorage::imageValidationRules()],
             'image_back' => ['sometimes', 'required', ...MediaStorage::imageValidationRules()],
             'image_left' => ['sometimes', 'required', ...MediaStorage::imageValidationRules()],
