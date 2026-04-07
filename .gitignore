@@ -21,6 +21,7 @@
 /storage/pail
 /service-account.json
 /vendor
+/.worktrees
 Homestead.json
 Homestead.yaml
 Thumbs.db
