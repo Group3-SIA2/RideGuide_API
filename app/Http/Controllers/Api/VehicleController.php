@@ -2,36 +2,34 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Models\PlateNumber;
 use App\Models\vehicle;
 use App\Models\vehicleImage;
 use App\Models\vehicleType;
-use App\Models\PlateNumber;
-use App\Models\Driver;
 use App\Support\MediaStorage;
-
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
     public function addVehicle(Request $request): JsonResponse
     {
-        if (!$request->isMethod('POST')) {
+        if (! $request->isMethod('POST')) {
             return response()->json(['message' => 'Method Not Allowed'], 405);
         }
 
-        if (!$request->user() || !$request->user()->hasRole('driver')) {
+        if (! $request->user() || ! $request->user()->hasRole('driver')) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $request->validate([
             'vehicle_type' => 'required|string',
             'description' => 'required|string',
-            'image_front' => 'required|image',
-            'image_back' => 'required|image',
-            'image_left' => 'required|image',
-            'image_right' => 'required|image',
+            'image_front' => ['required', ...MediaStorage::imageValidationRules()],
+            'image_back' => ['required', ...MediaStorage::imageValidationRules()],
+            'image_left' => ['required', ...MediaStorage::imageValidationRules()],
+            'image_right' => ['required', ...MediaStorage::imageValidationRules()],
             'plate_number' => 'required|string|unique:plate_number,plate_number',
         ]);
 
@@ -54,7 +52,7 @@ class VehicleController extends Controller
 
         $driver = $request->user()->driver;
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json(['message' => 'Driver profile not found'], 422);
         }
 
@@ -71,18 +69,19 @@ class VehicleController extends Controller
             ->first();
 
         $this->appendVehicleImageUrls($vehicleDetails);
+
         return response()->json(['message' => 'Vehicle added successfully', 'vehicle' => $vehicleDetails], 201);
     }
 
     public function listVehicledPerDriver(Request $request)
     {
-        if (!$request->user() || !$request->user()->hasRole('driver')) {
+        if (! $request->user() || ! $request->user()->hasRole('driver')) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $driver = $request->user()->driver;
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json(['message' => 'Driver profile not found'], 422);
         }
 
@@ -97,17 +96,17 @@ class VehicleController extends Controller
 
     public function updateVehicle(Request $request, $id): JsonResponse
     {
-        if (!$request->isMethod('put')) {
+        if (! $request->isMethod('put')) {
             return response()->json(['message' => 'Method Not Allowed'], 405);
         }
 
-        if (!$request->user() || !$request->user()->hasRole('driver')) {
+        if (! $request->user() || ! $request->user()->hasRole('driver')) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $driver = $request->user()->driver;
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json(['message' => 'Driver profile not found'], 422);
         }
 
@@ -118,11 +117,11 @@ class VehicleController extends Controller
         $request->validate([
             'vehicle_type' => 'sometimes|required|string',
             'description' => 'sometimes|required|string',
-            'image_front' => 'sometimes|required|image',
-            'image_back' => 'sometimes|required|image',
-            'image_left' => 'sometimes|required|image',
-            'image_right' => 'sometimes|required|image',
-            'plate_number' => 'sometimes|required|string|unique:plate_number,plate_number,' . $vehicle->plateNumber->id,
+            'image_front' => ['sometimes', 'required', ...MediaStorage::imageValidationRules()],
+            'image_back' => ['sometimes', 'required', ...MediaStorage::imageValidationRules()],
+            'image_left' => ['sometimes', 'required', ...MediaStorage::imageValidationRules()],
+            'image_right' => ['sometimes', 'required', ...MediaStorage::imageValidationRules()],
+            'plate_number' => 'sometimes|required|string|unique:plate_number,plate_number,'.$vehicle->plateNumber->id,
         ]);
 
         if ($request->hasFile('image_front') || $request->hasFile('image_back') || $request->hasFile('image_left') || $request->hasFile('image_right')) {
@@ -164,28 +163,29 @@ class VehicleController extends Controller
             ->first();
 
         $this->appendVehicleImageUrls($vehicleDetails);
+
         return response()->json(['message' => 'Vehicle updated successfully', 'vehicle' => $vehicleDetails], 200);
     }
 
     public function deleteVehicle(Request $request, $id): JsonResponse
     {
-        if (!$request->isMethod('delete')) {
+        if (! $request->isMethod('delete')) {
             return response()->json(['message' => 'Method Not Allowed'], 405);
         }
 
-        if (!$request->user() || !$request->user()->hasRole('driver')) {
+        if (! $request->user() || ! $request->user()->hasRole('driver')) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $driver = $request->user()->driver;
 
-        if (!$driver) {
+        if (! $driver) {
             return response()->json(['message' => 'Driver profile not found'], 422);
         }
 
         $vehicle = vehicle::where('id', $id)->where('driver_id', $driver->id)->first();
 
-        if (!$vehicle) {
+        if (! $vehicle) {
             return response()->json(['message' => 'Vehicle not found'], 404);
         }
 
@@ -196,17 +196,17 @@ class VehicleController extends Controller
 
     public function restoreVehicle(Request $request, string $id): JsonResponse
     {
-        if (!$request->isMethod('put')) {
+        if (! $request->isMethod('put')) {
             return response()->json(['message' => 'Method Not Allowed'], 405);
         }
 
         $user = $request->user();
-        if (!$user || !$user->hasRole('driver')) {
+        if (! $user || ! $user->hasRole('driver')) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $driver = $user->driver;
-        if (!$driver) {
+        if (! $driver) {
             return response()->json(['message' => 'Driver profile not found'], 422);
         }
 
@@ -215,7 +215,7 @@ class VehicleController extends Controller
             ->where('driver_id', $driver->id)
             ->first();
 
-        if (!$vehicle) {
+        if (! $vehicle) {
             return response()->json(['message' => 'Vehicle not found'], 404);
         }
 
