@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\EmergencyContactController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\FareController;
 use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\Api\TripController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -141,5 +142,15 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         Route::put('/{id}', 'updateFeedback')->name('api.feedback.update');
         Route::delete('/{id}', 'deleteFeedback')->name('api.feedback.delete');
         Route::put('/{id}/restore', 'restoreFeedback')->name('api.feedback.restore');
+    });
+
+    // Trip Routes
+    Route::controller(TripController::class)->prefix('trips')->group(function (): void {
+        Route::post('/', 'tripCreate')->name('api.trips.create');
+        Route::post('/{trip}/join', 'commuterJoin')->name('api.trips.join');
+        Route::post('/{trip}/start', 'tripStart')->name('api.trips.start');
+        Route::post('/{trip}/passengers/{tripPassenger}/pickup', 'passengerPickup')->name('api.trips.passengers.pickup');
+        Route::post('/{trip}/passengers/{tripPassenger}/dropoff', 'passengerStop')->name('api.trips.passengers.dropoff');
+        Route::post('/{trip}/end', 'tripEnd')->name('api.trips.end');
     });
 });
