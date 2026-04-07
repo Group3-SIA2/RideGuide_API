@@ -7,13 +7,13 @@ use App\Mail\OtpMail;
 use App\Models\Otp;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\InputValidation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 use Kreait\Firebase\Factory;
 use RuntimeException;
@@ -34,13 +34,13 @@ class AuthController extends Controller
         ]);
 
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email:rfc,filter', 'max:255', 'unique:users,email'],
-            'password'=> ['required', 'string', Password::min(8)->mixedCase()->symbols()],
+            'email' => ['required', 'string', 'email:rfc,filter', 'max:255', 'unique:users,email'],
+            'password' => InputValidation::passwordRequiredRules(),
         ]);
 
         $user = User::create([
-            'email'=> $validated['email'],
-            'password'=> $validated['password'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
             'status' => User::STATUS_ACTIVE,
             'status_reason' => null,
             'status_changed_at' => now(),
@@ -52,10 +52,10 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Registration successful. Please check your email for the OTP to verify your account.',
-            'data'=> [
-                'user'=> [
-                    'id'=> $user->id,
-                    'email'=> $user->email,
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
                     'status' => $user->status,
                     'status_reason' => $user->status_reason,
                     'status_changed_at' => $user->status_changed_at,
@@ -78,27 +78,27 @@ class AuthController extends Controller
         ]);
 
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email:rfc,filter'],
+            'email' => ['required', 'string', 'email:rfc,filter'],
             'password' => ['required', 'string'],
         ]);
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'The provided credentials are incorrect.',
             ], 401);
         }
 
-        if (!$user->isAccountActive()) {
+        if (! $user->isAccountActive()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Your account is not active.',
             ], 403);
         }
 
-        if (!$user->isEmailVerified()) {
+        if (! $user->isEmailVerified()) {
             // Resend email verification OTP
             $this->generateAndSendOtp($user, 'email_verification');
 
@@ -174,7 +174,7 @@ class AuthController extends Controller
         $providerFromToken = (string) data_get($claims, 'firebase.sign_in_provider', '');
         $requestedProvider = $this->normalizeSocialProvider($validated['provider'] ?? null);
 
-        if (!in_array($providerFromToken, ['google.com', 'facebook.com'], true)) {
+        if (! in_array($providerFromToken, ['google.com', 'facebook.com'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unsupported provider in Firebase token.',
@@ -200,7 +200,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        if (!is_string($email) || $email === '') {
+        if (! is_string($email) || $email === '') {
             return response()->json([
                 'success' => false,
                 'message' => 'Your social account did not provide an email address. Please use an account with email permission.',
@@ -252,7 +252,7 @@ class AuthController extends Controller
 
         $isNewUser = false;
 
-        if (!$user) {
+        if (! $user) {
             $nameParts = $this->splitDisplayName($displayName);
 
             $socialIdData = $providerFromToken === 'google.com'
@@ -269,7 +269,7 @@ class AuthController extends Controller
                 'status_changed_at' => now(),
                 ...$socialIdData,
             ]);
-            
+
             if ($emailVerified) {
                 $user->forceFill([
                     'email_verified_at' => now(),
@@ -301,7 +301,7 @@ class AuthController extends Controller
             $user->refresh();
         }
 
-        if (!$user->isAccountActive()) {
+        if (! $user->isAccountActive()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Your account is not active.',
@@ -342,21 +342,21 @@ class AuthController extends Controller
         ]);
 
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email:rfc,filter'],
-            'otp'=> ['required', 'string', 'size:6'],
-            'type'=> ['required', 'string', 'in:email_verification,login_2fa'],
+            'email' => ['required', 'string', 'email:rfc,filter'],
+            'otp' => ['required', 'string', 'size:6'],
+            'type' => ['required', 'string', 'in:email_verification,login_2fa'],
         ]);
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not found.',
             ], 404);
         }
 
-        if (!$user->isAccountActive()) {
+        if (! $user->isAccountActive()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Your account is not active.',
@@ -371,7 +371,7 @@ class AuthController extends Controller
             ->latest()
             ->first();
 
-        if (!$otp) {
+        if (! $otp) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired OTP.',
@@ -394,11 +394,11 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Email verified successfully. You are now logged in.',
-                'data'=> [
+                'data' => [
                     'user' => [
-                        'id'=> $user->id,
-                        'email'=> $user->email,
-                        'email_verified_at'=> $user->email_verified_at,
+                        'id' => $user->id,
+                        'email' => $user->email,
+                        'email_verified_at' => $user->email_verified_at,
                         'status' => $user->status,
                         'status_reason' => $user->status_reason,
                         'status_changed_at' => $user->status_changed_at,
@@ -419,11 +419,11 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Login successful.',
-                'data'=> [
-                    'user'  => [
-                        'id'=> $user->id,
-                        'email'=> $user->email,
-                        'email_verified_at'=> $user->email_verified_at,
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'email' => $user->email,
+                        'email_verified_at' => $user->email_verified_at,
                         'status' => $user->status,
                         'status_reason' => $user->status_reason,
                         'status_changed_at' => $user->status_changed_at,
@@ -435,8 +435,8 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'success'=> false,
-            'message'=> 'Invalid OTP type.',
+            'success' => false,
+            'message' => 'Invalid OTP type.',
         ], 422);
     }
 
@@ -453,7 +453,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' =>'Logged out successfully.',
+            'message' => 'Logged out successfully.',
         ], 200);
     }
 
@@ -475,7 +475,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user) {
+        if (! $user) {
             // Return success even if user not found to prevent email enumeration
             return response()->json([
                 'success' => true,
@@ -517,17 +517,17 @@ class AuthController extends Controller
         ]);
 
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email:rfc,filter'],
-            'otp'=> ['required', 'string', 'size:6'],
-            'password'=> ['required', 'string', 'confirmed', Password::min(8)->mixedCase()->symbols()],
+            'email' => ['required', 'string', 'email:rfc,filter'],
+            'otp' => ['required', 'string', 'size:6'],
+            'password' => InputValidation::passwordConfirmedRules(),
         ]);
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
-                'success'=> false,
-                'message'=> 'User not found.',
+                'success' => false,
+                'message' => 'User not found.',
             ], 404);
         }
 
@@ -539,10 +539,10 @@ class AuthController extends Controller
             ->latest()
             ->first();
 
-        if (!$otp) {
+        if (! $otp) {
             return response()->json([
-                'success'=> false,
-                'message'=> 'Invalid or expired OTP.',
+                'success' => false,
+                'message' => 'Invalid or expired OTP.',
             ], 422);
         }
 
@@ -555,8 +555,8 @@ class AuthController extends Controller
 
         if ($dailyResetAttempts >= 3) {
             return response()->json([
-                'success'=> false,
-                'message'=> 'You have reached the maximum of 3 password reset attempts for today. Please try again tomorrow.',
+                'success' => false,
+                'message' => 'You have reached the maximum of 3 password reset attempts for today. Please try again tomorrow.',
             ], 429);
         }
 
@@ -564,7 +564,7 @@ class AuthController extends Controller
 
         // Update the password
         $user->update([
-            'password'=> $validated['password'],
+            'password' => $validated['password'],
         ]);
 
         // Revoke all existing tokens for security
@@ -589,16 +589,16 @@ class AuthController extends Controller
         ]);
 
         $validated = $request->validate([
-            'email'=> ['required', 'string', 'email:rfc,filter'],
-            'type'=> ['required', 'string', 'in:email_verification,password_reset'],
+            'email' => ['required', 'string', 'email:rfc,filter'],
+            'type' => ['required', 'string', 'in:email_verification,password_reset'],
         ]);
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
-                'success'=> true,
-                'message'=> 'If the email exists, a new OTP has been sent.',
+                'success' => true,
+                'message' => 'If the email exists, a new OTP has been sent.',
             ], 200);
         }
 
@@ -610,8 +610,8 @@ class AuthController extends Controller
 
         if ($recentOtp) {
             return response()->json([
-                'success'=> false,
-                'message'=> 'Please wait 60 seconds before requesting a new OTP.',
+                'success' => false,
+                'message' => 'Please wait 60 seconds before requesting a new OTP.',
             ], 429);
         }
 
@@ -623,16 +623,16 @@ class AuthController extends Controller
 
         if ($dailyResendCount >= 3) {
             return response()->json([
-                'success'=> false,
-                'message'=> 'You have reached the maximum of 3 OTP resend requests for today. Please try again tomorrow.',
+                'success' => false,
+                'message' => 'You have reached the maximum of 3 OTP resend requests for today. Please try again tomorrow.',
             ], 429);
         }
 
         $this->generateAndSendOtp($user, $validated['type']);
 
         return response()->json([
-            'success'=> true,
-            'message'=> 'If the email exists, a new OTP has been sent.',
+            'success' => true,
+            'message' => 'If the email exists, a new OTP has been sent.',
         ], 200);
     }
 
@@ -652,15 +652,15 @@ class AuthController extends Controller
 
         // Store OTP with 10-minute expiration
         Otp::create([
-            'user_id'=> $user->id,
-            'code'=> $code,
-            'type'=> $type,
+            'user_id' => $user->id,
+            'code' => $code,
+            'type' => $type,
             'expires_at' => now()->addMinutes(10),
         ]);
 
         // Send OTP via email (Gmail SMTP)
         Mail::to($user->email)->send(new OtpMail(
-            otpCode:$code,
+            otpCode: $code,
             type: $type,
             recipientEmail: $user->email,
         ));
@@ -673,11 +673,11 @@ class AuthController extends Controller
      */
     private function verifyFirebaseIdToken(string $idToken): array
     {
-        if (!class_exists(Factory::class)) {
+        if (! class_exists(Factory::class)) {
             throw new RuntimeException('Firebase Admin SDK is not installed. Run: composer require kreait/firebase-php');
         }
 
-        $factory = new Factory();
+        $factory = new Factory;
         $projectId = (string) config('services.firebase.project_id', '');
         $credentialsPath = (string) config('services.firebase.credentials', '');
         $credentialsJson = (string) config('services.firebase.credentials_json', '');
@@ -689,7 +689,7 @@ class AuthController extends Controller
         if ($credentialsJson !== '') {
             $decodedCredentials = json_decode($credentialsJson, true);
 
-            if (!is_array($decodedCredentials)) {
+            if (! is_array($decodedCredentials)) {
                 throw new RuntimeException('Invalid FIREBASE_CREDENTIALS_JSON value. Expected valid JSON object.');
             }
 
@@ -739,7 +739,7 @@ class AuthController extends Controller
 
     private function normalizeSocialProvider(mixed $provider): ?string
     {
-        if (!is_string($provider) || trim($provider) === '') {
+        if (! is_string($provider) || trim($provider) === '') {
             return null;
         }
 
@@ -754,7 +754,7 @@ class AuthController extends Controller
 
     private function normalizeEmail(mixed $email): ?string
     {
-        if (!is_string($email)) {
+        if (! is_string($email)) {
             return null;
         }
 

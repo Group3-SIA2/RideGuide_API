@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\EmergencyContact;
-use App\Models\UsersEmergencyContact;
 use App\Models\Commuter;
 use App\Models\Driver;
+use App\Models\EmergencyContact;
+use App\Models\UsersEmergencyContact;
+use App\Support\InputValidation;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class EmergencyContactController extends Controller
 {
@@ -25,9 +26,9 @@ class EmergencyContactController extends Controller
     public function addEmergencyContact(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
-            'contact_name' => 'required|string|max:255',
+            'contact_name' => InputValidation::nameRequiredRules(),
             'contact_phone_number' => 'required|string|max:20',
-            'contact_relationship' => 'nullable|string|max:255',
+            'contact_relationship' => InputValidation::safeStringRules(required: false, max: 255),
         ]);
 
         // Can only have one emergency contact per driver and commuter role, so check if one already exists
@@ -48,7 +49,7 @@ class EmergencyContactController extends Controller
             'contact_relationship' => $validatedData['contact_relationship'],
         ]);
 
-        //insert to UsersEmergencyContact pivot table
+        // insert to UsersEmergencyContact pivot table
         UsersEmergencyContact::create([
             'user_id' => auth()->id(),
             'emergency_contact_id' => $emergencyContact->id,
@@ -88,9 +89,9 @@ class EmergencyContactController extends Controller
         }
 
         $validatedData = $request->validate([
-            'contact_name' => 'sometimes|required|string|max:255',
+            'contact_name' => ['sometimes', ...InputValidation::nameRequiredRules()],
             'contact_phone_number' => 'sometimes|required|string|max:20',
-            'contact_relationship' => 'nullable|string|max:255',
+            'contact_relationship' => InputValidation::safeStringRules(required: false, max: 255),
         ]);
 
         $emergencyContact->update($validatedData);

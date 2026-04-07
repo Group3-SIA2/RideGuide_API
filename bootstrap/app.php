@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->api(prepend: [
+            \App\Http\Middleware\SanitizeApiInput::class,
+        ]);
+
         $middleware->alias([
             'permission' => \App\Http\Controllers\Auth\CheckPermission::class,
             'active.user' => \App\Http\Middleware\EnsureUserIsActive::class,
