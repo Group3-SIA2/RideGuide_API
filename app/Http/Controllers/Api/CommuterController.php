@@ -2,21 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Commuter;
-use App\Models\EmergencyContact;
-use App\Models\UsersEmergencyContact;
-use App\Models\Driver;
 use App\Models\Discount;
 use App\Models\DiscountImage;
 use App\Models\DiscountTypes;
-use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Validation\Rule;
 use App\Support\DashboardCache;
 use App\Support\MediaStorage;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CommuterController extends Controller
 {
@@ -42,12 +38,12 @@ class CommuterController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
         // Commuter role only
-        if (!$user->hasRole('commuter')) {
+        if (! $user->hasRole('commuter')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Only users with the commuter role can create a commuter profile.',
@@ -70,16 +66,18 @@ class CommuterController extends Controller
             ],
             'image_front' => [
                 Rule::requiredIf(fn () => $request->input('classification_name') !== 'Regular'),
-                'nullable', 'image', 'max:2048',
+                'nullable',
+                ...MediaStorage::imageValidationRules(),
             ],
             'image_back' => [
                 Rule::requiredIf(fn () => $request->input('classification_name') !== 'Regular'),
-                'nullable', 'image', 'max:2048',
+                'nullable',
+                ...MediaStorage::imageValidationRules(),
             ],
         ]);
 
         $classificationType = DiscountTypes::where('classification_name', $validated['classification_name'])->first();
-        if (!$classificationType) {
+        if (! $classificationType) {
             return response()->json([
                 'success' => false,
                 'message' => 'Classification type not found.',
@@ -92,12 +90,12 @@ class CommuterController extends Controller
         if ($validated['classification_name'] !== 'Regular') {
             $discountImage = DiscountImage::create([
                 'image_front' => MediaStorage::putFile('discount_ids', $request->file('image_front')),
-                'image_back'  => MediaStorage::putFile('discount_ids', $request->file('image_back')),
+                'image_back' => MediaStorage::putFile('discount_ids', $request->file('image_back')),
             ]);
 
             $discount = Discount::create([
-                'ID_number'              => $validated['ID_number'],
-                'ID_image_id'            => $discountImage->id,
+                'ID_number' => $validated['ID_number'],
+                'ID_image_id' => $discountImage->id,
                 'classification_type_id' => $classificationType->id,
             ]);
 
@@ -106,18 +104,16 @@ class CommuterController extends Controller
 
         // Create commuter profile
         $commuter = Commuter::create([
-            'user_id'     => $user->id,
+            'user_id' => $user->id,
             'discount_id' => $discountId,
         ]);
 
         DashboardCache::forgetUserDashboards($user->id);
 
-        
-
         return response()->json([
             'success' => true,
             'message' => 'Commuter profile created successfully.',
-            'data'    => $this->formatCommuter(
+            'data' => $this->formatCommuter(
                 $commuter->fresh('user', 'discount.classificationType', 'discount.idImage')
             ),
         ], 201);
@@ -139,13 +135,13 @@ class CommuterController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
         $commuter = Commuter::with('user', 'discount.classificationType', 'discount.idImage')->find($id);
 
-        if (!$commuter) {
+        if (! $commuter) {
             return response()->json([
                 'success' => false,
                 'message' => 'Commuter not found.',
@@ -153,7 +149,7 @@ class CommuterController extends Controller
         }
 
         // Commuter can only view their own profile, admin can view all
-        if (!$user->hasRole('admin') && $commuter->user_id !== $user->id) {
+        if (! $user->hasRole('admin') && $commuter->user_id !== $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. You can only view your own profile.',
@@ -162,7 +158,7 @@ class CommuterController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $this->formatCommuter($commuter),
+            'data' => $this->formatCommuter($commuter),
         ]);
     }
 
@@ -187,13 +183,13 @@ class CommuterController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
         $commuter = Commuter::with('user', 'discount.classificationType', 'discount.idImage')->find($id);
 
-        if (!$commuter) {
+        if (! $commuter) {
             return response()->json([
                 'success' => false,
                 'message' => 'Commuter not found.',
@@ -201,13 +197,12 @@ class CommuterController extends Controller
         }
 
         // Only admin or the owning commuter can update
-        if (!$user->hasRole('admin') && !($user->hasRole('commuter') && $commuter->user_id === $user->id)) {
+        if (! $user->hasRole('admin') && ! ($user->hasRole('commuter') && $commuter->user_id === $user->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Only Admin or the owning Commuter can update this profile.',
             ], 403);
         }
-        
 
         $validated = $request->validate([
             'classification_name' => ['sometimes', 'string', Rule::in(['Regular', 'Student', 'Senior Citizen', 'PWD'])],
@@ -215,14 +210,14 @@ class CommuterController extends Controller
                 'nullable', 'string', 'max:255', 'regex:/^[0-9\s]+$/',
                 Rule::unique('discounts', 'ID_number')->ignore($commuter->discount_id),
             ],
-            'image_front' => ['nullable', 'image', 'max:2048'],
-            'image_back'  => ['nullable', 'image', 'max:2048'],
+            'image_front' => ['nullable', ...MediaStorage::imageValidationRules()],
+            'image_back' => ['nullable', ...MediaStorage::imageValidationRules()],
         ]);
 
         if (isset($validated['classification_name'])) {
             $classificationType = DiscountTypes::where('classification_name', $validated['classification_name'])->first();
 
-            if (!$classificationType) {
+            if (! $classificationType) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Classification type not found.',
@@ -247,7 +242,7 @@ class CommuterController extends Controller
                 }
             } else {
                 // Switching to student/senior/PWD — need ID
-                if (!$commuter->discount_id && (!isset($validated['ID_number']))) {
+                if (! $commuter->discount_id && (! isset($validated['ID_number']))) {
                     return response()->json([
                         'success' => false,
                         'message' => 'ID number is required when switching to student, senior, or PWD classification.',
@@ -267,10 +262,10 @@ class CommuterController extends Controller
                         }
 
                         $image = $discount->idImage;
-                        if (!$image && ($request->hasFile('image_front') || $request->hasFile('image_back'))) {
+                        if (! $image && ($request->hasFile('image_front') || $request->hasFile('image_back'))) {
                             $image = DiscountImage::create([
                                 'image_front' => null,
-                                'image_back'  => null,
+                                'image_back' => null,
                             ]);
                             $updateData['ID_image_id'] = $image->id;
                         }
@@ -283,7 +278,7 @@ class CommuterController extends Controller
                             if ($request->hasFile('image_back')) {
                                 $imgUpdate['image_back'] = MediaStorage::putFile('discount_ids', $request->file('image_back'));
                             }
-                            if (!empty($imgUpdate)) {
+                            if (! empty($imgUpdate)) {
                                 $image->update($imgUpdate);
                             }
                         }
@@ -291,7 +286,7 @@ class CommuterController extends Controller
                         $discount->update($updateData);
                     }
                 } else {
-                    if (!$request->hasFile('image_front') || !$request->hasFile('image_back')) {
+                    if (! $request->hasFile('image_front') || ! $request->hasFile('image_back')) {
                         return response()->json([
                             'success' => false,
                             'message' => 'Both front and back ID images are required for non-regular classifications.',
@@ -300,12 +295,12 @@ class CommuterController extends Controller
 
                     $discountImage = DiscountImage::create([
                         'image_front' => MediaStorage::putFile('discount_ids', $request->file('image_front')),
-                        'image_back'  => MediaStorage::putFile('discount_ids', $request->file('image_back')),
+                        'image_back' => MediaStorage::putFile('discount_ids', $request->file('image_back')),
                     ]);
 
                     $discount = Discount::create([
-                        'ID_number'              => $validated['ID_number'],
-                        'ID_image_id'            => $discountImage->id,
+                        'ID_number' => $validated['ID_number'],
+                        'ID_image_id' => $discountImage->id,
                         'classification_type_id' => $classificationType->id,
                     ]);
                     $commuter->discount_id = $discount->id;
@@ -323,10 +318,10 @@ class CommuterController extends Controller
                     }
 
                     $image = $discount->idImage;
-                    if (!$image && ($request->hasFile('image_front') || $request->hasFile('image_back'))) {
+                    if (! $image && ($request->hasFile('image_front') || $request->hasFile('image_back'))) {
                         $image = DiscountImage::create([
                             'image_front' => null,
-                            'image_back'  => null,
+                            'image_back' => null,
                         ]);
                         $updateData['ID_image_id'] = $image->id;
                     }
@@ -339,12 +334,12 @@ class CommuterController extends Controller
                         if ($request->hasFile('image_back')) {
                             $imgUpdate['image_back'] = MediaStorage::putFile('discount_ids', $request->file('image_back'));
                         }
-                        if (!empty($imgUpdate)) {
+                        if (! empty($imgUpdate)) {
                             $image->update($imgUpdate);
                         }
                     }
 
-                    if (!empty($updateData)) {
+                    if (! empty($updateData)) {
                         $discount->update($updateData);
                     }
                 }
@@ -356,7 +351,7 @@ class CommuterController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Commuter profile updated successfully.',
-            'data'    => $this->formatCommuter(
+            'data' => $this->formatCommuter(
                 $commuter->fresh('user', 'discount.classificationType', 'discount.idImage')
             ),
         ]);
@@ -375,11 +370,11 @@ class CommuterController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        if (!$user->hasRole('admin')) {
+        if (! $user->hasRole('admin')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Only admins can delete commuter profiles.',
@@ -388,7 +383,7 @@ class CommuterController extends Controller
 
         $commuter = Commuter::with('user')->find($id);
 
-        if (!$commuter) {
+        if (! $commuter) {
             return response()->json([
                 'success' => false,
                 'message' => 'Commuter not found.',
@@ -431,11 +426,11 @@ class CommuterController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        if (!$user->hasRole('admin')) {
+        if (! $user->hasRole('admin')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Only admins can restore commuter profiles.',
@@ -444,7 +439,7 @@ class CommuterController extends Controller
 
         $commuter = Commuter::onlyTrashed()->with('user')->find($id);
 
-        if (!$commuter) {
+        if (! $commuter) {
             return response()->json([
                 'success' => false,
                 'message' => 'Commuter profile not found or not deleted.',
@@ -456,8 +451,8 @@ class CommuterController extends Controller
         if ($deletedAt->diffInDays(now()) > self::RESTORE_WINDOW_DAYS) {
             return response()->json([
                 'success' => false,
-                'message' => 'This profile was deleted more than ' . self::RESTORE_WINDOW_DAYS
-                    . ' days ago and can no longer be restored for data-privacy compliance.',
+                'message' => 'This profile was deleted more than '.self::RESTORE_WINDOW_DAYS
+                    .' days ago and can no longer be restored for data-privacy compliance.',
             ], 403);
         }
 
@@ -482,7 +477,7 @@ class CommuterController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Commuter profile restored successfully.',
-            'data'    => $this->formatCommuter(
+            'data' => $this->formatCommuter(
                 $commuter->fresh('user', 'discount.classificationType', 'discount.idImage')
             ),
         ]);
@@ -493,11 +488,11 @@ class CommuterController extends Controller
     private function formatCommuter(Commuter $commuter): array
     {
         $emergencyContact = $commuter->usersEmergencyContact?->emergencyContact;
-    $discountImage = $commuter->discount?->idImage;
-    $frontPath = $discountImage?->image_front;
-    $backPath = $discountImage?->image_back;
+        $discountImage = $commuter->discount?->idImage;
+        $frontPath = $discountImage?->image_front;
+        $backPath = $discountImage?->image_back;
 
-    return [
+        return [
             'id' => $commuter->id,
             'user_id' => $commuter->user_id,
             'user' => $commuter->user ? [
@@ -514,8 +509,8 @@ class CommuterController extends Controller
                 'images' => [
                     'front_path' => $frontPath,
                     'front_url' => $frontPath ? MediaStorage::url($frontPath) : null,
-                    'back_path'  => $backPath,
-                    'back_url'  => $backPath ? MediaStorage::url($backPath) : null,
+                    'back_path' => $backPath,
+                    'back_url' => $backPath ? MediaStorage::url($backPath) : null,
                 ],
                 'classification' => $commuter->discount->classificationType?->classification_name ?? 'Regular',
             ] : null,
@@ -524,8 +519,8 @@ class CommuterController extends Controller
                 'contact_name' => $emergencyContact->contact_name,
                 'contact_phone_number' => $emergencyContact->contact_phone_number,
                 'contact_relationship' => $emergencyContact->contact_relationship,
-             ] : null,
-            
+            ] : null,
+
         ];
     }
 }
