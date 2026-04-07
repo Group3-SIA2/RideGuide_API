@@ -8,6 +8,7 @@ use App\Models\Discount;
 use App\Models\DiscountImage;
 use App\Models\DiscountTypes;
 use App\Support\DashboardCache;
+use App\Support\InputValidation;
 use App\Support\MediaStorage;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -62,7 +63,7 @@ class CommuterController extends Controller
             'classification_name' => ['required', 'string', Rule::in(['Regular', 'Student', 'Senior Citizen', 'PWD'])],
             'ID_number' => [
                 Rule::requiredIf(fn () => $request->input('classification_name') !== 'Regular'),
-                'nullable', 'string', 'max:255', 'regex:/^[0-9\s]+$/', 'unique:discounts,ID_number',
+                ...InputValidation::safeStringRules(required: false, max: 255), 'regex:/^[0-9\s]+$/', 'unique:discounts,ID_number',
             ],
             'image_front' => [
                 Rule::requiredIf(fn () => $request->input('classification_name') !== 'Regular'),
@@ -207,7 +208,7 @@ class CommuterController extends Controller
         $validated = $request->validate([
             'classification_name' => ['sometimes', 'string', Rule::in(['Regular', 'Student', 'Senior Citizen', 'PWD'])],
             'ID_number' => [
-                'nullable', 'string', 'max:255', 'regex:/^[0-9\s]+$/',
+                ...InputValidation::safeStringRules(required: false, max: 255), 'regex:/^[0-9\s]+$/',
                 Rule::unique('discounts', 'ID_number')->ignore($commuter->discount_id),
             ],
             'image_front' => ['nullable', ...MediaStorage::imageValidationRules()],
