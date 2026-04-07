@@ -7,6 +7,7 @@ use App\Models\Driver;
 use App\Models\LicenseId;
 use App\Models\LicenseImage;
 use App\Support\DashboardCache;
+use App\Support\InputValidation;
 use App\Support\MediaStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,7 +35,7 @@ class DriverController extends Controller
 
         $validatedData = $request->validate([
             'organization_id' => ['nullable', 'string', 'exists:organizations,id'],
-            'license_id_number' => ['required', 'string', 'max:255', Rule::unique('license_id', 'license_id'), 'regex:/^[A-Za-z0-9\s-]+$/'],
+            'license_id_number' => [...InputValidation::safeStringRules(required: true, max: 255), Rule::unique('license_id', 'license_id'), 'regex:/^[A-Za-z0-9\s-]+$/'],
             'license_image_front' => ['required', ...MediaStorage::imageValidationRules()],
             'license_image_back' => ['nullable', ...MediaStorage::imageValidationRules()],
         ]);
@@ -120,7 +121,9 @@ class DriverController extends Controller
             $validatedData = $request->validate([
                 'organization_id' => ['nullable', 'string', 'exists:organizations,id'],
                 'license_id_number' => [
-                    'sometimes', 'string', 'max:255', 'regex:/^[A-Za-z0-9\s-]+$/',
+                    'sometimes',
+                    ...InputValidation::safeStringRules(required: true, max: 255),
+                    'regex:/^[A-Za-z0-9\s-]+$/',
                     Rule::unique('license_id', 'license_id')->ignore(optional($license)->id),
                 ],
                 'license_image_front' => ['nullable', ...MediaStorage::imageValidationRules()],
@@ -147,7 +150,9 @@ class DriverController extends Controller
 
             $validatedData = $request->validate([
                 'license_id_number' => [
-                    'sometimes', 'string', 'max:255', 'regex:/^[A-Za-z0-9\s-]+$/',
+                    'sometimes',
+                    ...InputValidation::safeStringRules(required: true, max: 255),
+                    'regex:/^[A-Za-z0-9\s-]+$/',
                     Rule::unique('license_id', 'license_id')->ignore(optional($license)->id),
                 ],
                 'license_image_front' => ['nullable', ...MediaStorage::imageValidationRules()],
