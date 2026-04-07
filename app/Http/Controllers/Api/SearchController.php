@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
-use App\Models\Driver;
 use App\Models\Commuter;
+use App\Models\Driver;
 use App\Models\LicenseId;
+use App\Support\InputValidation;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SearchController extends Controller
 {
@@ -15,7 +17,7 @@ class SearchController extends Controller
      * Search & filter drivers.
      *
      * GET /api/search/drivers
-     * 
+     *
      * Access:
      *   - Admin     : full search with all filters
      *   - Commuter  : search drivers (verified only, limited info)
@@ -27,21 +29,32 @@ class SearchController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
         $roleName = $user->role?->name;
 
         // Only admin and commuter can search drivers
-        if (!in_array($roleName, ['admin', 'commuter'])) {
+        if (! in_array($roleName, ['admin', 'commuter'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Drivers cannot search other drivers.',
             ], 403);
         }
 
-    $query = Driver::with('user', 'licenseId');
+        $validated = $request->validate([
+            'search' => InputValidation::safeSearchRules(120),
+            'verification_status' => ['nullable', Rule::in([
+                LicenseId::VERIFICATION_STATUS_UNVERIFIED,
+                LicenseId::VERIFICATION_STATUS_VERIFIED,
+                LicenseId::VERIFICATION_STATUS_REJECTED,
+            ])],
+            'sort_by' => ['nullable', Rule::in(['license_number', 'franchise_number', 'verification_status', 'created_at'])],
+            'sort_order' => ['nullable', Rule::in(['asc', 'desc'])],
+        ]);
+
+        $query = Driver::with('user', 'licenseId');
 
         // Commuters can only see verified drivers
         if ($roleName === 'commuter') {
@@ -51,36 +64,30 @@ class SearchController extends Controller
         }
 
         // Search by license number, franchise number, or driver name/email
-        if ($request->filled('search')) {
-            $search = $request->input('search');
+        if (! empty($validated['search'])) {
+            $search = $validated['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('license_number', 'LIKE', "%{$search}%")
-                  ->orWhere('franchise_number', 'LIKE', "%{$search}%")
-                  ->orWhereHas('user', function ($q) use ($search) {
-                      $q->where('first_name', 'LIKE', "%{$search}%")
-                        ->orWhere('last_name', 'LIKE', "%{$search}%")
-                        ->orWhere('email', 'LIKE', "%{$search}%");
-                  });
+                    ->orWhere('franchise_number', 'LIKE', "%{$search}%")
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('first_name', 'LIKE', "%{$search}%")
+                            ->orWhere('last_name', 'LIKE', "%{$search}%")
+                            ->orWhere('email', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
         // Filter by verification status (admin only)
-        if ($roleName === 'admin' && $request->filled('verification_status')) {
-            $status = $request->input('verification_status');
-            if (in_array($status, [
-                LicenseId::VERIFICATION_STATUS_UNVERIFIED,
-                LicenseId::VERIFICATION_STATUS_VERIFIED,
-                LicenseId::VERIFICATION_STATUS_REJECTED,
-            ])) {
-                $query->whereHas('licenseId', function ($builder) use ($status) {
-                    $builder->where('verification_status', $status);
-                });
-            }
+        $verificationStatus = $validated['verification_status'] ?? null;
+        if ($roleName === 'admin' && $verificationStatus !== null) {
+            $query->whereHas('licenseId', function ($builder) use ($verificationStatus) {
+                $builder->where('verification_status', $verificationStatus);
+            });
         }
 
         // Sort
-        $sortBy = $request->input('sort_by', 'created_at');
-        $sortOrder = $request->input('sort_order', 'desc');
+        $sortBy = $validated['sort_by'] ?? 'created_at';
+        $sortOrder = $validated['sort_order'] ?? 'desc';
         $allowedSorts = ['license_number', 'franchise_number', 'verification_status', 'created_at'];
 
         if (in_array($sortBy, $allowedSorts)) {
@@ -101,8 +108,8 @@ class SearchController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $drivers->map(fn ($driver) => $this->formatDriver($driver, $roleName)),
-            'total'   => $drivers->count(),
+            'data' => $drivers->map(fn ($driver) => $this->formatDriver($driver, $roleName)),
+            'total' => $drivers->count(),
         ]);
     }
 
@@ -110,7 +117,7 @@ class SearchController extends Controller
      * Search & filter commuters.
      *
      * GET /api/search/commuters
-     * 
+     *
      * Access:
      *   - Admin     : full search with all filters
      *   - Driver    : search commuters (limited info)
@@ -122,35 +129,42 @@ class SearchController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
         $roleName = $user->role?->name;
 
         // Only admin and driver can search commuters
-        if (!in_array($roleName, ['admin', 'driver'])) {
+        if (! in_array($roleName, ['admin', 'driver'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Only admins and drivers can search commuters.',
             ], 403);
         }
 
+        $validated = $request->validate([
+            'search' => InputValidation::safeSearchRules(120),
+            'classification' => ['nullable', Rule::in(['Regular', 'Student', 'Senior', 'PWD'])],
+            'sort_by' => ['nullable', Rule::in(['created_at'])],
+            'sort_order' => ['nullable', Rule::in(['asc', 'desc'])],
+        ]);
+
         $query = Commuter::with('user', 'discount.classificationType');
 
         // Search by user name or email
-        if ($request->filled('search')) {
-            $search = $request->input('search');
+        if (! empty($validated['search'])) {
+            $search = $validated['search'];
             $query->whereHas('user', function ($q) use ($search) {
                 $q->where('first_name', 'LIKE', "%{$search}%")
-                  ->orWhere('last_name', 'LIKE', "%{$search}%")
-                  ->orWhere('email', 'LIKE', "%{$search}%");
+                    ->orWhere('last_name', 'LIKE', "%{$search}%")
+                    ->orWhere('email', 'LIKE', "%{$search}%");
             });
         }
 
         // Filter by classification (through discount -> classificationType relationship)
-        if ($request->filled('classification')) {
-            $classification = $request->input('classification');
+        if (! empty($validated['classification'])) {
+            $classification = $validated['classification'];
             if (in_array($classification, ['Regular', 'Student', 'Senior', 'PWD'])) {
                 if ($classification === 'Regular') {
                     // Regular commuters have no discount record
@@ -165,8 +179,8 @@ class SearchController extends Controller
         }
 
         // Sort
-        $sortBy = $request->input('sort_by', 'created_at');
-        $sortOrder = $request->input('sort_order', 'desc');
+        $sortBy = $validated['sort_by'] ?? 'created_at';
+        $sortOrder = $validated['sort_order'] ?? 'desc';
         $allowedSorts = ['created_at'];
 
         if (in_array($sortBy, $allowedSorts)) {
@@ -177,8 +191,8 @@ class SearchController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $commuters->map(fn ($commuter) => $this->formatCommuter($commuter, $roleName)),
-            'total'   => $commuters->count(),
+            'data' => $commuters->map(fn ($commuter) => $this->formatCommuter($commuter, $roleName)),
+            'total' => $commuters->count(),
         ]);
     }
 
@@ -189,21 +203,21 @@ class SearchController extends Controller
     private function formatDriver(Driver $driver, string $viewerRole): array
     {
         $data = [
-            'id'               => $driver->id,
+            'id' => $driver->id,
             'franchise_number' => $driver->franchise_number,
-            'driver_name'      => $driver->user
-                ? $driver->user->first_name . ' ' . $driver->user->last_name
+            'driver_name' => $driver->user
+                ? $driver->user->first_name.' '.$driver->user->last_name
                 : null,
         ];
 
         // Admin sees full details
         if ($viewerRole === 'admin') {
-            $data['user_id']             = $driver->user_id;
-            $data['license_number']      = $driver->license_number;
+            $data['user_id'] = $driver->user_id;
+            $data['license_number'] = $driver->license_number;
             $data['verification_status'] = $driver->verification_status;
-            $data['email']               = $driver->user?->email;
-            $data['created_at']          = $driver->created_at;
-            $data['updated_at']          = $driver->updated_at;
+            $data['email'] = $driver->user?->email;
+            $data['created_at'] = $driver->created_at;
+            $data['updated_at'] = $driver->updated_at;
         }
 
         return $data;
@@ -218,21 +232,21 @@ class SearchController extends Controller
         $classificationName = $commuter->discount?->classificationType?->classification_name ?? 'Regular';
 
         $data = [
-            'id'                  => $commuter->id,
+            'id' => $commuter->id,
             'classification_name' => $classificationName,
-            'commuter_name'       => $commuter->user
-                ? $commuter->user->first_name . ' ' . $commuter->user->last_name
+            'commuter_name' => $commuter->user
+                ? $commuter->user->first_name.' '.$commuter->user->last_name
                 : null,
         ];
 
         // Admin sees full details
         if ($viewerRole === 'admin') {
-            $data['user_id']    = $commuter->user_id;
-            $data['email']      = $commuter->user?->email;
-            $data['discount']   = $commuter->discount ? [
-                'id'             => $commuter->discount->id,
-                'ID_number'      => $commuter->discount->ID_number,
-                'ID_image_path'  => $commuter->discount->ID_image_path,
+            $data['user_id'] = $commuter->user_id;
+            $data['email'] = $commuter->user?->email;
+            $data['discount'] = $commuter->discount ? [
+                'id' => $commuter->discount->id,
+                'ID_number' => $commuter->discount->ID_number,
+                'ID_image_path' => $commuter->discount->ID_image_path,
                 'classification' => $commuter->discount->classificationType?->classification_name ?? 'Regular',
             ] : null;
             $data['created_at'] = $commuter->created_at;
