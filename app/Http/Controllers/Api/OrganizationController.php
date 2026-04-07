@@ -4,20 +4,20 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrganizationRequest;
+use App\Models\Driver;
+use App\Models\HqAddress;
 use App\Models\Organization;
 use App\Models\OrganizationType;
 use App\Models\OrganizationUserRole;
 use App\Models\Role;
 use App\Models\User;
-use App\Models\Driver;
-use App\Models\DriverOrganizationAssignmentLog;
-use App\Models\HqAddress;
 use App\Rules\OrganizationOwnerEligible;
 use App\Support\DashboardCache;
+use App\Support\InputValidation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -30,6 +30,18 @@ class OrganizationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $filters = $request->validate([
+            'include_deleted' => ['nullable', 'boolean'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'search' => InputValidation::safeSearchRules(120),
+            'organization_type' => InputValidation::safeStringRules(required: false, max: 100),
+            'organization_type_id' => ['nullable', 'uuid'],
+            'owner_user_id' => ['nullable', 'uuid'],
+            'sort_by' => ['nullable', Rule::in(['name', 'status', 'created_at', 'updated_at'])],
+            'sort_dir' => ['nullable', Rule::in(['asc', 'desc'])],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
         $user = $request->user();
         $isAdmin = $this->isAdminUser($user);
 
@@ -38,73 +50,73 @@ class OrganizationController extends Controller
             'hqAddress',
         ]);
 
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $query->where('status', 'active');
         } else {
-            if ($request->boolean('include_deleted')) {
+            if (($filters['include_deleted'] ?? false) === true) {
                 $query->withTrashed();
             }
 
-            if ($status = $request->input('status')) {
+            if ($status = ($filters['status'] ?? null)) {
                 if (in_array($status, ['active', 'inactive'], true)) {
                     $query->where('status', $status);
                 }
             }
         }
 
-        $search = trim((string) $request->input('search', ''));
+        $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhereHas('organizationType', function ($typeQ) use ($search) {
-                      $typeQ->where('name', 'like', "%{$search}%")
-                          ->orWhere('description', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('hqAddress', function ($addressQ) use ($search) {
-                      $addressQ->where('barangay', 'like', "%{$search}%")
-                          ->orWhere('street', 'like', "%{$search}%")
-                          ->orWhere('subdivision', 'like', "%{$search}%")
-                          ->orWhere('floor_unit_room', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('organizationType', function ($typeQ) use ($search) {
+                        $typeQ->where('name', 'like', "%{$search}%")
+                            ->orWhere('description', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('hqAddress', function ($addressQ) use ($search) {
+                        $addressQ->where('barangay', 'like', "%{$search}%")
+                            ->orWhere('street', 'like', "%{$search}%")
+                            ->orWhere('subdivision', 'like', "%{$search}%")
+                            ->orWhere('floor_unit_room', 'like', "%{$search}%");
+                    });
             });
         }
 
-        if ($organizationType = $request->input('organization_type')) {
+        if ($organizationType = ($filters['organization_type'] ?? null)) {
             $query->whereHas('organizationType', function ($typeQ) use ($organizationType) {
                 $typeQ->where('name', $organizationType);
             });
         }
 
-        if ($organizationTypeId = $request->input('organization_type_id')) {
+        if ($organizationTypeId = ($filters['organization_type_id'] ?? null)) {
             $query->where('organization_type_id', $organizationTypeId);
         }
 
-        if ($ownerUserId = $request->input('owner_user_id')) {
+        if ($ownerUserId = ($filters['owner_user_id'] ?? null)) {
             $query->where('owner_user_id', $ownerUserId);
         }
 
         $sortableColumns = ['name', 'status', 'created_at', 'updated_at'];
-        $sortBy = $request->input('sort_by', 'name');
-        if (!in_array($sortBy, $sortableColumns, true)) {
+        $sortBy = $filters['sort_by'] ?? 'name';
+        if (! in_array($sortBy, $sortableColumns, true)) {
             $sortBy = 'name';
         }
 
-        $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $sortDir = strtolower((string) ($filters['sort_dir'] ?? 'asc')) === 'desc' ? 'desc' : 'asc';
 
-        $perPage       = max(1, min((int) $request->input('per_page', 20), 100));
+        $perPage = max(1, min((int) ($filters['per_page'] ?? 20), 100));
         $organizations = $query->orderBy($sortBy, $sortDir)->paginate($perPage)->withQueryString();
 
         return response()->json([
             'success' => true,
-            'data'    => $organizations,
-            'meta'    => [
+            'data' => $organizations,
+            'meta' => [
                 'filters' => [
                     'search' => $search !== '' ? $search : null,
-                    'organization_type' => $request->input('organization_type'),
-                    'organization_type_id' => $request->input('organization_type_id'),
-                    'owner_user_id' => $request->input('owner_user_id'),
-                    'status' => $request->input('status'),
-                    'include_deleted' => $isAdmin ? $request->boolean('include_deleted') : false,
+                    'organization_type' => $filters['organization_type'] ?? null,
+                    'organization_type_id' => $filters['organization_type_id'] ?? null,
+                    'owner_user_id' => $filters['owner_user_id'] ?? null,
+                    'status' => $filters['status'] ?? null,
+                    'include_deleted' => $isAdmin ? (($filters['include_deleted'] ?? false) === true) : false,
                 ],
                 'sort' => [
                     'by' => $sortBy,
@@ -121,20 +133,20 @@ class OrganizationController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $user  = auth()->user();
+        $user = auth()->user();
         $query = Organization::withCount('drivers')->with(['organizationType', 'hqAddress']);
 
         if ($this->isAdminUser($user) && request()->boolean('include_deleted')) {
             $query->withTrashed();
         }
 
-        if (!$user->hasRole('admin') && !$user->hasRole('super_admin')) {
+        if (! $user->hasRole('admin') && ! $user->hasRole('super_admin')) {
             $query->where('status', 'active');
         }
 
         $organization = $query->find($id);
 
-        if (!$organization) {
+        if (! $organization) {
             return response()->json([
                 'success' => false,
                 'message' => 'Organization not found.',
@@ -143,7 +155,7 @@ class OrganizationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $organization,
+            'data' => $organization,
         ], 200);
     }
 
@@ -180,7 +192,7 @@ class OrganizationController extends Controller
         unset($data['organization_type']);
 
         if (array_key_exists('description', $data)) {
-            if (!empty($resolvedOrganizationTypeId)) {
+            if (! empty($resolvedOrganizationTypeId)) {
                 $this->syncOrganizationTypeDescriptionById($resolvedOrganizationTypeId, $data['description'], true);
             } else {
                 $this->syncOrganizationTypeDescriptionByName($organizationTypeName, $data['description'], true);
@@ -211,7 +223,7 @@ class OrganizationController extends Controller
 
         $organization = Organization::create($data);
 
-        if (!empty($organization->owner_user_id)) {
+        if (! empty($organization->owner_user_id)) {
             $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
 
             if ($organizationRoleId) {
@@ -232,7 +244,7 @@ class OrganizationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Organization created successfully.',
-            'data'    => $organization,
+            'data' => $organization,
         ], 201);
     }
 
@@ -249,7 +261,7 @@ class OrganizationController extends Controller
             || $user->hasRole(Role::ADMIN)
             || $user->hasRole(Role::SUPER_ADMIN);
 
-        if (!$hasEligibleRole) {
+        if (! $hasEligibleRole) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Only organization, admin, or super_admin users can create an organization profile.',
@@ -264,7 +276,7 @@ class OrganizationController extends Controller
         }
 
         $validated = $request->validate([
-            'name'              => ['required', 'string', 'max:255', 'unique:organizations,name'],
+            'name' => ['required', 'string', 'max:255', 'unique:organizations,name'],
             'organization_type_id' => [
                 'required_without:organization_type',
                 'uuid',
@@ -276,16 +288,16 @@ class OrganizationController extends Controller
                 'max:100',
                 Rule::exists('organization_types', 'name')->whereNull('deleted_at'),
             ],
-            'description'       => ['nullable', 'string', 'max:1000'],
-            'hq_address'        => ['nullable', 'string', 'max:500'],
-            'hq_street'          => ['nullable', 'string', 'max:255'],
-            'hq_barangay'        => ['nullable', 'string', 'max:255'],
-            'hq_subdivision'     => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'hq_address' => ['nullable', 'string', 'max:500'],
+            'hq_street' => ['nullable', 'string', 'max:255'],
+            'hq_barangay' => ['nullable', 'string', 'max:255'],
+            'hq_subdivision' => ['nullable', 'string', 'max:255'],
             'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
-            'hq_lat'             => ['nullable', 'string', 'max:50'],
-            'hq_lng'             => ['nullable', 'string', 'max:50'],
-            'roles'             => ['sometimes', 'array', 'min:1'],
-            'roles.*'           => ['string', Rule::in([Role::DRIVER, Role::COMMUTER])],
+            'hq_lat' => ['nullable', 'string', 'max:50'],
+            'hq_lng' => ['nullable', 'string', 'max:50'],
+            'roles' => ['sometimes', 'array', 'min:1'],
+            'roles.*' => ['string', Rule::in([Role::DRIVER, Role::COMMUTER])],
         ]);
 
         $additionalRoles = array_unique($validated['roles'] ?? []);
@@ -298,7 +310,7 @@ class OrganizationController extends Controller
         $resolvedHqAddressId = $this->resolveHqAddressIdFromPayload($validated);
 
         if (array_key_exists('description', $validated)) {
-            if (!empty($resolvedOrganizationTypeId)) {
+            if (! empty($resolvedOrganizationTypeId)) {
                 $this->syncOrganizationTypeDescriptionById($resolvedOrganizationTypeId, $validated['description'], true);
             } else {
                 $this->syncOrganizationTypeDescriptionByName($validated['organization_type'] ?? null, $validated['description'], true);
@@ -317,11 +329,11 @@ class OrganizationController extends Controller
 
         $organization = DB::transaction(function () use ($validated, $user, $roles, $resolvedOrganizationTypeId, $resolvedHqAddressId) {
             $organization = Organization::create([
-                'name'           => $validated['name'],
+                'name' => $validated['name'],
                 'organization_type_id' => $resolvedOrganizationTypeId,
-                'hq_address'     => $resolvedHqAddressId,
-                'status'         => 'active',
-                'owner_user_id'  => $user->id,
+                'hq_address' => $resolvedHqAddressId,
+                'status' => 'active',
+                'owner_user_id' => $user->id,
             ]);
 
             $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
@@ -351,9 +363,9 @@ class OrganizationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Organization profile created successfully.',
-            'data'    => [
+            'data' => [
                 'organization' => $organization->fresh(),
-                'roles'        => $user->roles->pluck('name'),
+                'roles' => $user->roles->pluck('name'),
             ],
         ], 201);
     }
@@ -369,7 +381,7 @@ class OrganizationController extends Controller
         $organization = Organization::find($id);
         $user = auth()->user();
 
-        if (!$organization) {
+        if (! $organization) {
             return response()->json([
                 'success' => false,
                 'message' => 'Organization not found.',
@@ -379,7 +391,7 @@ class OrganizationController extends Controller
         $this->authorize('update', $organization);
 
         $validated = $request->validate([
-            'name'              => ['sometimes', 'string', 'max:255', Rule::unique('organizations', 'name')->ignore($organization->id)],
+            'name' => ['sometimes', 'string', 'max:255', Rule::unique('organizations', 'name')->ignore($organization->id)],
             'organization_type_id' => [
                 'sometimes',
                 'uuid',
@@ -391,19 +403,19 @@ class OrganizationController extends Controller
                 'max:100',
                 Rule::exists('organization_types', 'name')->whereNull('deleted_at'),
             ],
-            'description'       => ['nullable', 'string', 'max:1000'],
-            'hq_address'        => ['nullable', 'string', 'max:500'],
-            'hq_street'          => ['nullable', 'string', 'max:255'],
-            'hq_barangay'        => ['nullable', 'string', 'max:255'],
-            'hq_subdivision'     => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'hq_address' => ['nullable', 'string', 'max:500'],
+            'hq_street' => ['nullable', 'string', 'max:255'],
+            'hq_barangay' => ['nullable', 'string', 'max:255'],
+            'hq_subdivision' => ['nullable', 'string', 'max:255'],
             'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
-            'hq_lat'             => ['nullable', 'string', 'max:50'],
-            'hq_lng'             => ['nullable', 'string', 'max:50'],
-            'owner_user_id'     => [
+            'hq_lat' => ['nullable', 'string', 'max:50'],
+            'hq_lng' => ['nullable', 'string', 'max:50'],
+            'owner_user_id' => [
                 'sometimes',
                 'nullable',
                 'uuid',
-                new OrganizationOwnerEligible(),
+                new OrganizationOwnerEligible,
             ],
             'status' => ['sometimes', Rule::in(['active', 'inactive'])],
         ]);
@@ -421,7 +433,7 @@ class OrganizationController extends Controller
         }
 
         if (array_key_exists('description', $validated)) {
-            if (!empty($validated['organization_type_id'])) {
+            if (! empty($validated['organization_type_id'])) {
                 $this->syncOrganizationTypeDescriptionById($validated['organization_type_id'], $validated['description'], true);
             } else {
                 $this->syncOrganizationTypeDescriptionById($organization->organization_type_id, $validated['description'], true);
@@ -465,7 +477,7 @@ class OrganizationController extends Controller
 
         $organization->update($validated);
 
-        if (array_key_exists('owner_user_id', $validated) && !empty($validated['owner_user_id'])) {
+        if (array_key_exists('owner_user_id', $validated) && ! empty($validated['owner_user_id'])) {
             $organizationRoleId = Role::getIdbyName(Role::ORGANIZATION);
 
             if ($organizationRoleId) {
@@ -486,7 +498,7 @@ class OrganizationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Organization updated successfully.',
-            'data'    => $organization->fresh(),
+            'data' => $organization->fresh(),
         ], 200);
     }
 
@@ -499,7 +511,7 @@ class OrganizationController extends Controller
     {
         $organization = Organization::find($id);
 
-        if (!$organization) {
+        if (! $organization) {
             return response()->json([
                 'success' => false,
                 'message' => 'Organization not found.',
@@ -525,7 +537,7 @@ class OrganizationController extends Controller
     {
         $organization = Organization::withTrashed()->find($id);
 
-        if (!$organization) {
+        if (! $organization) {
             return response()->json([
                 'success' => false,
                 'message' => 'Organization not found.',
@@ -539,7 +551,7 @@ class OrganizationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Organization restored successfully.',
-            'data'    => $organization->fresh(),
+            'data' => $organization->fresh(),
         ], 200);
     }
 
@@ -552,7 +564,7 @@ class OrganizationController extends Controller
 
         $organizationType = OrganizationType::withTrashed()->firstOrNew(['name' => $typeName]);
 
-        if (!$organizationType->exists) {
+        if (! $organizationType->exists) {
             $organizationType->save();
         } elseif ($organizationType->trashed()) {
             $organizationType->restore();
@@ -571,7 +583,7 @@ class OrganizationController extends Controller
         }
 
         $organizationType = OrganizationType::withTrashed()->find($organizationTypeId);
-        if (!$organizationType) {
+        if (! $organizationType) {
             return;
         }
 
@@ -588,13 +600,14 @@ class OrganizationController extends Controller
     private function normalizeDescription(?string $description): ?string
     {
         $normalized = trim((string) $description);
+
         return $normalized === '' ? null : $normalized;
     }
 
     private function resolveOrganizationTypeIdFromPayload(array $payload, ?string $fallbackOrganizationTypeId = null): ?string
     {
         $organizationTypeId = $payload['organization_type_id'] ?? null;
-        if (!empty($organizationTypeId)) {
+        if (! empty($organizationTypeId)) {
             return $organizationTypeId;
         }
 
@@ -634,10 +647,10 @@ class OrganizationController extends Controller
         $hasStructuredAddressInput =
             $street !== ''
             || $barangay !== ''
-            || !is_null($subdivision)
-            || !is_null($floorUnitRoom)
-            || !is_null($latitude)
-            || !is_null($longitude);
+            || ! is_null($subdivision)
+            || ! is_null($floorUnitRoom)
+            || ! is_null($latitude)
+            || ! is_null($longitude);
 
         if ($hasStructuredAddressInput) {
             if ($street === '' || $barangay === '') {
@@ -658,6 +671,7 @@ class OrganizationController extends Controller
 
             if ($organization && $organization->hqAddress) {
                 $organization->hqAddress->update($addressData);
+
                 return $organization->hqAddress->id;
             }
 
@@ -677,7 +691,7 @@ class OrganizationController extends Controller
             return $hqAddress->id;
         }
 
-        if (!array_key_exists('hq_address', $payload)) {
+        if (! array_key_exists('hq_address', $payload)) {
             return $organization?->hq_address;
         }
 
@@ -688,7 +702,7 @@ class OrganizationController extends Controller
 
         if (Str::isUuid($hqAddressInput)) {
             $existingHqAddress = HqAddress::query()->find($hqAddressInput);
-            if (!$existingHqAddress) {
+            if (! $existingHqAddress) {
                 throw ValidationException::withMessages([
                     'hq_address' => 'Selected HQ address does not exist.',
                 ]);
@@ -724,7 +738,7 @@ class OrganizationController extends Controller
 
     private function isAdminUser(?User $user): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
