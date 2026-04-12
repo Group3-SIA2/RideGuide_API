@@ -38,6 +38,10 @@ class LogAdminTransactions
 			return $next($request);
 		}
 
+		if (Str::endsWith($routeName, '.logout')) {
+			return $next($request);
+		}
+
 		$module = $this->resolveModule($routeName, $request);
 		$transactionType = $this->resolveTransactionType($routeName, $request);
 		[$referenceType, $referenceId] = $this->resolveReference($request);
