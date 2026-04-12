@@ -207,13 +207,17 @@ class LogAdminTransactions
 		return $user->hasRole(Role::SUPER_ADMIN) || $user->hasRole(Role::ADMIN);
 	}
 
-	private function sanitizeForLog(mixed $value): mixed
+	private function sanitizeForLog(mixed $value, ?string $key = null): mixed
 	{
+		if ($key !== null && $this->isSensitiveKey($key)) {
+			return $this->maskSensitiveValue($value, $key);
+		}
+
 		if (is_array($value)) {
 			$sanitized = [];
 
 			foreach ($value as $key => $item) {
-				$sanitized[$key] = $this->sanitizeForLog($item);
+				$sanitized[$key] = $this->sanitizeForLog($item, (string) $key);
 			}
 
 			return $sanitized;
@@ -231,6 +235,72 @@ class LogAdminTransactions
 			return method_exists($value, '__toString') ? (string) $value : class_basename($value);
 		}
 
+		if (is_string($value) && str_contains($value, '@')) {
+			return $this->maskEmail($value);
+		}
+
 		return $value;
+	}
+
+	private function isSensitiveKey(string $key): bool
+	{
+		$normalized = Str::lower($key);
+		$sensitiveTerms = [
+			'password',
+			'passcode',
+			'otp',
+			'token',
+			'secret',
+			'api_key',
+			'authorization',
+			'cookie',
+			'session',
+			'remember',
+			'credential',
+			'private_key',
+			'email',
+		];
+
+		foreach ($sensitiveTerms as $term) {
+			if (str_contains($normalized, $term)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function maskSensitiveValue(mixed $value, string $key): mixed
+	{
+		if (is_array($value)) {
+			return '[redacted_array:' . $key . ']';
+		}
+
+		if (is_object($value)) {
+			return '[redacted_object:' . $key . ']';
+		}
+
+		if (is_string($value) && str_contains($value, '@')) {
+			return $this->maskEmail($value);
+		}
+
+		return '[redacted]';
+	}
+
+	private function maskEmail(string $email): string
+	{
+		$parts = explode('@', $email, 2);
+
+		if (count($parts) !== 2) {
+			return '[redacted]';
+		}
+
+		$local = $parts[0];
+		$domain = $parts[1];
+		$maskedLocal = strlen($local) <= 2
+			? str_repeat('*', strlen($local))
+			: substr($local, 0, 2) . str_repeat('*', max(strlen($local) - 2, 1));
+
+		return $maskedLocal . '@' . $domain;
 	}
 }

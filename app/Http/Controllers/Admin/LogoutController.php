@@ -39,7 +39,6 @@ class LogoutController extends Controller
                 referenceType: 'user',
                 referenceId: (string) $user->id,
                 after: [
-                    'email' => $user->email,
                     'role_scope' => $user->hasRole(Role::SUPER_ADMIN) ? Role::SUPER_ADMIN : Role::ADMIN,
                 ]
             );

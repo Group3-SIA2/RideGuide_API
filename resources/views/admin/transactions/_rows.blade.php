@@ -1,4 +1,42 @@
 @forelse($logs as $log)
+    @php
+        $redactLogData = function ($value, $key = null) use (&$redactLogData) {
+            $sensitiveTerms = ['password', 'passcode', 'otp', 'token', 'secret', 'authorization', 'cookie', 'session', 'credential', 'private_key'];
+
+            if ($key !== null) {
+                $normalized = strtolower((string) $key);
+                foreach ($sensitiveTerms as $term) {
+                    if (str_contains($normalized, $term)) {
+                        return '[redacted]';
+                    }
+                }
+            }
+
+            if (is_array($value)) {
+                $result = [];
+                foreach ($value as $childKey => $childValue) {
+                    $result[$childKey] = $redactLogData($childValue, (string) $childKey);
+                }
+                return $result;
+            }
+
+            if (is_string($value) && str_contains($value, '@')) {
+                $parts = explode('@', $value, 2);
+                if (count($parts) === 2) {
+                    $local = $parts[0];
+                    $maskedLocal = strlen($local) <= 2 ? str_repeat('*', strlen($local)) : substr($local, 0, 2) . str_repeat('*', max(strlen($local) - 2, 1));
+                    return $maskedLocal . '@' . $parts[1];
+                }
+                return '[redacted]';
+            }
+
+            return $value;
+        };
+
+        $safeBefore = $redactLogData($log->before_data ?? []);
+        $safeAfter = $redactLogData($log->after_data ?? []);
+        $safeMetadata = $redactLogData($log->metadata ?? []);
+    @endphp
     <tr>
         <td>
             <span class="text-muted">
@@ -92,13 +130,13 @@
 
                             <div class="mb-3">
                                 <strong>Before Data</strong>
-                                @if(empty($log->before_data))
+                                @if(empty($safeBefore))
                                     <div class="text-muted">No before snapshot.</div>
                                 @else
                                     <div class="table-responsive mt-2">
                                         <table class="table table-sm table-bordered mb-0">
                                             <tbody>
-                                                @foreach(($log->before_data ?? []) as $key => $value)
+                                                @foreach($safeBefore as $key => $value)
                                                     <tr>
                                                         <th style="width: 30%;" class="text-muted">{{ $key }}</th>
                                                         <td>
@@ -118,13 +156,13 @@
 
                             <div class="mb-3">
                                 <strong>After Data</strong>
-                                @if(empty($log->after_data))
+                                @if(empty($safeAfter))
                                     <div class="text-muted">No after snapshot.</div>
                                 @else
                                     <div class="table-responsive mt-2">
                                         <table class="table table-sm table-bordered mb-0">
                                             <tbody>
-                                                @foreach(($log->after_data ?? []) as $key => $value)
+                                                @foreach($safeAfter as $key => $value)
                                                     <tr>
                                                         <th style="width: 30%;" class="text-muted">{{ $key }}</th>
                                                         <td>
@@ -144,13 +182,13 @@
 
                             <div>
                                 <strong>Metadata</strong>
-                                @if(empty($log->metadata))
+                                @if(empty($safeMetadata))
                                     <div class="text-muted">No metadata recorded.</div>
                                 @else
                                     <div class="table-responsive mt-2">
                                         <table class="table table-sm table-bordered mb-0">
                                             <tbody>
-                                                @foreach(($log->metadata ?? []) as $key => $value)
+                                                @foreach($safeMetadata as $key => $value)
                                                     <tr>
                                                         <th style="width: 30%;" class="text-muted">{{ $key }}</th>
                                                         <td>
