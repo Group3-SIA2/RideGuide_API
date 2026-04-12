@@ -1,0 +1,160 @@
+diff --git a/node_modules/proxy-from-env/index.cjs b/node_modules/proxy-from-env/index.cjs
+index ede2a9f..fac325e 100644
+--- a/node_modules/proxy-from-env/index.cjs
++++ b/node_modules/proxy-from-env/index.cjs
+@@ -17,6 +17,49 @@ function parseUrl(urlString) {
+   }
+ }
+ 
++function normalizeHostname(hostname) {
++  if (typeof hostname !== 'string') {
++    return '';
++  }
++
++  // Normalize RFC-compliant host spellings used in URL literals and NO_PROXY.
++  if (hostname.charAt(0) === '[' && hostname.charAt(hostname.length - 1) === ']') {
++    hostname = hostname.slice(1, -1);
++  }
++
++  return hostname.toLowerCase().replace(/\.+$/, '');
++}
++
++function parseNoProxyHostAndPort(proxy) {
++  // Bracketed IPv6 with optional :port, e.g. [::1]:8080.
++  var bracketed = proxy.match(/^\[([^\]]+)\](?::(\d+))?$/);
++  if (bracketed) {
++    return {
++      hostname: bracketed[1],
++      port: bracketed[2] ? parseInt(bracketed[2]) : 0,
++    };
++  }
++
++  // Only treat host:port as such when there is exactly one colon.
++  var firstColon = proxy.indexOf(':');
++  var lastColon = proxy.lastIndexOf(':');
++  if (firstColon > -1 && firstColon === lastColon) {
++    var maybePort = proxy.slice(lastColon + 1);
++    if (/^\d+$/.test(maybePort)) {
++      return {
++        hostname: proxy.slice(0, lastColon),
++        port: parseInt(maybePort),
++      };
++    }
++  }
++
++  // Bare IPv6 literals (e.g. ::1) and hostnames without explicit ports.
++  return {
++    hostname: proxy,
++    port: 0,
++  };
++}
++
+ /**
+  * @param {string|object|URL} url - The URL as a string or URL instance, or a
+  *   compatible object (such as the result from legacy url.parse).
+@@ -58,6 +101,7 @@ function getProxyForUrl(url) {
+  * @private
+  */
+ function shouldProxy(hostname, port) {
++  hostname = normalizeHostname(hostname);
+   var NO_PROXY = getEnv('no_proxy').toLowerCase();
+   if (!NO_PROXY) {
+     return true;  // Always proxy if NO_PROXY is not set.
+@@ -70,13 +114,14 @@ function shouldProxy(hostname, port) {
+     if (!proxy) {
+       return true;  // Skip zero-length hosts.
+     }
+-    var parsedProxy = proxy.match(/^(.+):(\d+)$/);
+-    var parsedProxyHostname = parsedProxy ? parsedProxy[1] : proxy;
+-    var parsedProxyPort = parsedProxy ? parseInt(parsedProxy[2]) : 0;
++    var parsedProxyEntry = parseNoProxyHostAndPort(proxy);
++    var parsedProxyHostname = parsedProxyEntry.hostname;
++    var parsedProxyPort = parsedProxyEntry.port;
+     if (parsedProxyPort && parsedProxyPort !== port) {
+       return true;  // Skip if ports don't match.
+     }
+ 
++    parsedProxyHostname = normalizeHostname(parsedProxyHostname);
+     if (!/^[.*]/.test(parsedProxyHostname)) {
+       // No wildcards, so stop proxying if there is an exact match.
+       return hostname !== parsedProxyHostname;
+diff --git a/node_modules/proxy-from-env/index.js b/node_modules/proxy-from-env/index.js
+index 333f45a..cdfb3d4 100644
+--- a/node_modules/proxy-from-env/index.js
++++ b/node_modules/proxy-from-env/index.js
+@@ -17,6 +17,49 @@ function parseUrl(urlString) {
+   }
+ }
+ 
++function normalizeHostname(hostname) {
++  if (typeof hostname !== 'string') {
++    return '';
++  }
++
++  // Normalize RFC-compliant host spellings used in URL literals and NO_PROXY.
++  if (hostname.charAt(0) === '[' && hostname.charAt(hostname.length - 1) === ']') {
++    hostname = hostname.slice(1, -1);
++  }
++
++  return hostname.toLowerCase().replace(/\.+$/, '');
++}
++
++function parseNoProxyHostAndPort(proxy) {
++  // Bracketed IPv6 with optional :port, e.g. [::1]:8080.
++  var bracketed = proxy.match(/^\[([^\]]+)\](?::(\d+))?$/);
++  if (bracketed) {
++    return {
++      hostname: bracketed[1],
++      port: bracketed[2] ? parseInt(bracketed[2]) : 0,
++    };
++  }
++
++  // Only treat host:port as such when there is exactly one colon.
++  var firstColon = proxy.indexOf(':');
++  var lastColon = proxy.lastIndexOf(':');
++  if (firstColon > -1 && firstColon === lastColon) {
++    var maybePort = proxy.slice(lastColon + 1);
++    if (/^\d+$/.test(maybePort)) {
++      return {
++        hostname: proxy.slice(0, lastColon),
++        port: parseInt(maybePort),
++      };
++    }
++  }
++
++  // Bare IPv6 literals (e.g. ::1) and hostnames without explicit ports.
++  return {
++    hostname: proxy,
++    port: 0,
++  };
++}
++
+ /**
+  * @param {string|object|URL} url - The URL as a string or URL instance, or a
+  *   compatible object (such as the result from legacy url.parse).
+@@ -58,6 +101,7 @@ export function getProxyForUrl(url) {
+  * @private
+  */
+ function shouldProxy(hostname, port) {
++  hostname = normalizeHostname(hostname);
+   var NO_PROXY = getEnv('no_proxy').toLowerCase();
+   if (!NO_PROXY) {
+     return true;  // Always proxy if NO_PROXY is not set.
+@@ -70,13 +114,14 @@ function shouldProxy(hostname, port) {
+     if (!proxy) {
+       return true;  // Skip zero-length hosts.
+     }
+-    var parsedProxy = proxy.match(/^(.+):(\d+)$/);
+-    var parsedProxyHostname = parsedProxy ? parsedProxy[1] : proxy;
+-    var parsedProxyPort = parsedProxy ? parseInt(parsedProxy[2]) : 0;
++    var parsedProxyEntry = parseNoProxyHostAndPort(proxy);
++    var parsedProxyHostname = parsedProxyEntry.hostname;
++    var parsedProxyPort = parsedProxyEntry.port;
+     if (parsedProxyPort && parsedProxyPort !== port) {
+       return true;  // Skip if ports don't match.
+     }
+ 
++    parsedProxyHostname = normalizeHostname(parsedProxyHostname);
+     if (!/^[.*]/.test(parsedProxyHostname)) {
+       // No wildcards, so stop proxying if there is an exact match.
+       return hostname !== parsedProxyHostname;
