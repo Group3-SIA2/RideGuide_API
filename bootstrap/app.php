@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \App\Http\Controllers\Auth\CheckPermission::class,
             'active.user' => \App\Http\Middleware\EnsureUserIsActive::class,
             'panel.role' => \App\Http\Middleware\EnsurePanelRole::class,
+            'admin.audit' => \App\Http\Middleware\LogAdminTransactions::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
