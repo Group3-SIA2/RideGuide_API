@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Role;
 use App\Support\TransactionLogbook;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,12 @@ class LogAdminTransactions
 {
 	public function handle(Request $request, Closure $next): Response
 	{
+		$user = $request->user();
+
+		if (! $user || ! $this->isAuditableActor($user)) {
+			return $next($request);
+		}
+
 		if (! in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
 			return $next($request);
 		}
@@ -31,6 +38,7 @@ class LogAdminTransactions
 		$module = $this->resolveModule($routeName, $request);
 		$transactionType = $this->resolveTransactionType($routeName, $request);
 		[$referenceType, $referenceId] = $this->resolveReference($request);
+		$before = $this->resolveBeforeData($request);
 
 		$after = [
 			'input' => $this->sanitizeForLog($request->except([
@@ -55,10 +63,13 @@ class LogAdminTransactions
 				status: $status,
 				referenceType: $referenceType,
 				referenceId: $referenceId,
+				before: $before,
 				after: $after,
 				reason: $reason,
 				metadata: [
 					'route_name' => $routeName,
+					'panel' => Str::before($routeName, '.'),
+					'http_method' => $request->method(),
 					'response_status' => $response->getStatusCode(),
 				]
 			);
@@ -72,10 +83,13 @@ class LogAdminTransactions
 				status: 'failed',
 				referenceType: $referenceType,
 				referenceId: $referenceId,
+				before: $before,
 				after: $after,
 				reason: Str::limit($e->getMessage(), 190),
 				metadata: [
 					'route_name' => $routeName,
+					'panel' => Str::before($routeName, '.'),
+					'http_method' => $request->method(),
 					'exception' => class_basename($e),
 				]
 			);
@@ -91,6 +105,7 @@ class LogAdminTransactions
 		string $status,
 		?string $referenceType,
 		?string $referenceId,
+		?array $before,
 		array $after,
 		?string $reason,
 		array $metadata
@@ -103,7 +118,7 @@ class LogAdminTransactions
 				status: $status,
 				referenceType: $referenceType,
 				referenceId: $referenceId,
-				before: null,
+				before: $before,
 				after: $after,
 				reason: $reason,
 				metadata: $metadata
@@ -153,6 +168,28 @@ class LogAdminTransactions
 		}
 
 		return [null, null];
+	}
+
+	private function resolveBeforeData(Request $request): ?array
+	{
+		$params = optional($request->route())->parameters() ?? [];
+
+		foreach ($params as $value) {
+			if ($value instanceof Model) {
+				return $this->sanitizeForLog($value->getAttributes());
+			}
+		}
+
+		return null;
+	}
+
+	private function isAuditableActor(object $user): bool
+	{
+		if (! method_exists($user, 'hasRole')) {
+			return false;
+		}
+
+		return $user->hasRole(Role::SUPER_ADMIN) || $user->hasRole(Role::ADMIN);
 	}
 
 	private function sanitizeForLog(mixed $value): mixed
