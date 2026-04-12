@@ -47,6 +47,10 @@ class PermissionSeeder extends Seeder
             ['name' => 'create_organization_terminals', 'display_name' => 'Create Organization Terminals', 'group' => 'organizations', 'description' => 'Can create and link new terminals to owned organizations.'],
             ['name' => 'delete_organization_terminals', 'display_name' => 'Delete Organization Terminals', 'group' => 'organizations', 'description' => 'Can remove linked terminals from owned organizations.'],
 
+            // Fare Management
+            ['name' => 'view_fare_rates', 'display_name' => 'View Fare Rates', 'group' => 'fares', 'description' => 'Can view fare rate configurations.'],
+            ['name' => 'manage_fare_rates', 'display_name' => 'Manage Fare Rates', 'group' => 'fares', 'description' => 'Can create or update fare rate configurations.'],
+
             // Dashboard
             ['name' => 'view_admin_dashboard',        'display_name' => 'View Admin Dashboard',        'group' => 'dashboard', 'description' => 'Can view the admin dashboard.'],
             ['name' => 'view_organization_dashboard', 'display_name' => 'View Organization Dashboard', 'group' => 'dashboard', 'description' => 'Can view the organization manager dashboard.'],
@@ -100,6 +104,8 @@ class PermissionSeeder extends Seeder
                 'delete_organization_terminals',
                 'view_organization_dashboard',
                 'manage_organization_terminals',
+                'view_fare_rates',
+                'manage_fare_rates',
             ])->pluck('id')->toArray();
 
             $organizationRole->permissions()->sync($organizationPermissions);

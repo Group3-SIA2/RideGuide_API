@@ -98,7 +98,7 @@ class RestoreDatabase extends Command
         Storage::delete($localPath);
 
         if ($result) {
-            $this->info('✅ Database restored successfully from: ' . $fileName);
+            $this->info("Database restored successfully from: {$fileName}");
             return Command::SUCCESS;
         }
 
@@ -218,8 +218,8 @@ class RestoreDatabase extends Command
      */
     private function restoreFromFile(string $localPath): bool
     {
-        $dbHost = env('DB_HOST', '127.0.0.1');
-        $dbPort = env('DB_PORT', '3306');
+        $dbHost = env('DB_HOST');
+        $dbPort = env('DB_PORT');
         $dbName = env('DB_DATABASE');
         $dbUser = env('DB_USERNAME');
         $dbPass = env('DB_PASSWORD');

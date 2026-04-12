@@ -17,8 +17,7 @@ return new class extends Migration
             $table->uuid('trip_id')->notNull();
             $table->integer('rating')->notNull()->check('rating >= 1 AND rating <= 5');
             $table->text('comment')->nullable();
-            $table->string('image')->nullable();
-            $table->string('video')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 

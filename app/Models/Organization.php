@@ -118,6 +118,17 @@ class Organization extends Model
         return $this->hasMany(OrganizationUserRole::class, 'organization_id');
     }
 
+    public function fareRates(): HasMany
+    {
+        return $this->hasMany(OrganizationFareRate::class, 'organization_id');
+    }
+
+    public function currentFareRate()
+    {
+        return $this->hasOne(OrganizationFareRate::class, 'organization_id')
+            ->latest('created_at');
+    }
+
     public function managerUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'organization_user_role', 'organization_id', 'user_id')

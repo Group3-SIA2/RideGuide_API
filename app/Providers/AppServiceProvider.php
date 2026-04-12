@@ -98,6 +98,8 @@ class AppServiceProvider extends ServiceProvider
                 'assign_drivers_to_organization',
                 'view_organization_assignments',
                 'manage_organization_types',
+                'view_fare_rates',
+                'manage_fare_rates',
             ]);
         });
 
@@ -124,6 +126,11 @@ class AppServiceProvider extends ServiceProvider
                 ]);
         });
 
+        Gate::define('menu_org_super_admin_fares', function (User $user) {
+            return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasAnyPermission(['view_fare_rates', 'manage_fare_rates']);
+        });
+
         Gate::define('menu_org_super_admin_types', function (User $user) {
             return $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('manage_organization_types');
@@ -140,6 +147,8 @@ class AppServiceProvider extends ServiceProvider
                 'assign_drivers_to_organization',
                 'view_organization_assignments',
                 'manage_organization_types',
+                'view_fare_rates',
+                'manage_fare_rates',
             ]);
         });
 
@@ -167,6 +176,12 @@ class AppServiceProvider extends ServiceProvider
                     'delete_organization_terminals',
                     'manage_organization_terminals',
                 ]);
+        });
+
+        Gate::define('menu_org_admin_fares', function (User $user) {
+            return $user->hasRole(\App\Models\Role::ADMIN)
+                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && $user->hasAnyPermission(['view_fare_rates', 'manage_fare_rates']);
         });
 
         Gate::define('menu_org_admin_types', function (User $user) {
@@ -199,6 +214,15 @@ class AppServiceProvider extends ServiceProvider
                     'delete_organization_terminals',
                     'manage_organization_terminals',
                 ]);
+        });
+
+        Gate::define('menu_org_role_fares', function (User $user) {
+            if ($user->hasRole(\App\Models\Role::SUPER_ADMIN)) {
+                return false;
+            }
+
+            return ($user->hasRole(\App\Models\Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
+                && $user->hasAnyPermission(['view_fare_rates', 'manage_fare_rates']);
         });
 
         Gate::define('menu_super_admin_users', function (User $user) {
