@@ -31,8 +31,8 @@ class BackupDatabase extends Command
         $this->info('Starting database backup...');
 
         // Database credentials from .env
-        $dbHost = env('DB_HOST', '127.0.0.1');
-        $dbPort = env('DB_PORT', '3306');
+        $dbHost = env('DB_HOST');
+        $dbPort = env('DB_PORT');
         $dbName = env('DB_DATABASE');
         $dbUser = env('DB_USERNAME');
         $dbPass = env('DB_PASSWORD');
