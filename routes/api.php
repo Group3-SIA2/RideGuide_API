@@ -153,4 +153,4 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         Route::put('/{id}/restore', 'restoreFeedback')->name('api.feedback.restore');
     });
 });
-});
+
