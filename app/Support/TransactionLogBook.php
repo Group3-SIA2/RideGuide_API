@@ -17,13 +17,15 @@ class TransactionLogbook
         ?array $before = null,
         ?array $after = null,
         ?string $reason = null,
-        array $metadata = []
+        array $metadata = [],
+        ?string $actorUserId = null,
+        ?string $actorEmail = null
     ): void {
         $user = $request->user();
 
         AdminTransactionLog::create([
-            'actor_user_id' => $user?->id,
-            'actor_email' => $user?->email,
+            'actor_user_id' => $actorUserId ?? $user?->id,
+            'actor_email' => $actorEmail ?? $user?->email,
             'module' => $module,
             'transaction_type' => $transactionType,
             'reference_type' => $referenceType,

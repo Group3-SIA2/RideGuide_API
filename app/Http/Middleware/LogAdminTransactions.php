@@ -21,6 +21,9 @@ class LogAdminTransactions
 			return $next($request);
 		}
 
+		$actorUserId = (string) $user->id;
+		$actorEmail = $user->email;
+
 		if (! in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
 			return $next($request);
 		}
@@ -66,6 +69,8 @@ class LogAdminTransactions
 				before: $before,
 				after: $after,
 				reason: $reason,
+				actorUserId: $actorUserId,
+				actorEmail: $actorEmail,
 				metadata: [
 					'route_name' => $routeName,
 					'panel' => Str::before($routeName, '.'),
@@ -86,6 +91,8 @@ class LogAdminTransactions
 				before: $before,
 				after: $after,
 				reason: Str::limit($e->getMessage(), 190),
+				actorUserId: $actorUserId,
+				actorEmail: $actorEmail,
 				metadata: [
 					'route_name' => $routeName,
 					'panel' => Str::before($routeName, '.'),
@@ -108,6 +115,8 @@ class LogAdminTransactions
 		?array $before,
 		array $after,
 		?string $reason,
+		string $actorUserId,
+		?string $actorEmail,
 		array $metadata
 	): void {
 		try {
@@ -121,7 +130,9 @@ class LogAdminTransactions
 				before: $before,
 				after: $after,
 				reason: $reason,
-				metadata: $metadata
+				metadata: $metadata,
+				actorUserId: $actorUserId,
+				actorEmail: $actorEmail
 			);
 		} catch (Throwable $e) {
 			report($e);
