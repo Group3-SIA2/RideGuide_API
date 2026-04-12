@@ -2,12 +2,13 @@
 
 namespace App\Providers;
 
-use App\Models\Driver;
 use App\Models\Commuter;
+use App\Models\Driver;
 use App\Models\LicenseId;
 use App\Models\LicenseImage;
 use App\Models\Organization;
 use App\Models\Permission;
+use App\Models\User;
 use App\Observers\DashboardCommuterObserver;
 use App\Observers\DashboardDriverObserver;
 use App\Observers\DashboardLicenseObserver;
@@ -15,11 +16,14 @@ use App\Observers\DashboardOrganizationObserver;
 use App\Observers\DashboardUserObserver;
 use App\Policies\DriverPolicy;
 use App\Policies\OrganizationPolicy;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
-use App\Models\User;
-use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +34,24 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Paginator::useBootstrapFour();
+
+        RateLimiter::for('api-upload-auth', function (Request $request) {
+            $actorKey = (string) ($request->user()?->id ?? $request->ip());
+
+            return [
+                Limit::perMinute((int) config('media_uploads.rate_limits.authenticated_uploads_per_minute', 20))
+                    ->by($actorKey),
+                Limit::perMinute((int) config('media_uploads.rate_limits.authenticated_uploads_per_ip_per_minute', 60))
+                    ->by($request->ip()),
+            ];
+        });
+
+        RateLimiter::for('api-upload-public', function (Request $request) {
+            return Limit::perMinute((int) config('media_uploads.rate_limits.public_uploads_per_ip_per_minute', 10))
+                ->by($request->ip());
+        });
+
         User::observe(DashboardUserObserver::class);
         Driver::observe(DashboardDriverObserver::class);
         Commuter::observe(DashboardCommuterObserver::class);
@@ -66,7 +88,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('menu_org_super_admin_group', function (User $user) {
-            if (!$user->hasRole(\App\Models\Role::SUPER_ADMIN)) {
+            if (! $user->hasRole(\App\Models\Role::SUPER_ADMIN)) {
                 return false;
             }
 
@@ -115,7 +137,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::define('menu_org_admin_group', function (User $user) {
-            if (!$user->hasRole(\App\Models\Role::ADMIN) || $user->hasRole(\App\Models\Role::SUPER_ADMIN)) {
+            if (! $user->hasRole(\App\Models\Role::ADMIN) || $user->hasRole(\App\Models\Role::SUPER_ADMIN)) {
                 return false;
             }
 
@@ -132,19 +154,19 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_org_admin_dashboard', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('view_organization_dashboard');
         });
 
         Gate::define('menu_org_admin_organizations', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('view_organizations');
         });
 
         Gate::define('menu_org_admin_assignments', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasAnyPermission([
                     'view_organization_assignments',
                     'assign_drivers_to_organization',
@@ -164,7 +186,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_org_admin_types', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('manage_organization_types');
         });
 
@@ -210,7 +232,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_users', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('view_users');
         });
 
@@ -221,7 +243,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_commuters', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasAnyPermission(['view_commuters', 'manage_commuters']);
         });
 
@@ -232,7 +254,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_drivers', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasAnyPermission(['view_drivers', 'manage_drivers']);
         });
 
@@ -243,7 +265,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_user_management', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('manage_users');
         });
 
@@ -254,7 +276,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_user_authorization', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('manage_authorization');
         });
 
@@ -264,13 +286,13 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_profile', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN);
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN);
         });
 
         Gate::define('menu_org_profile', function (User $user) {
             return ($user->hasRole(\App\Models\Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
-                && !$user->hasRole(\App\Models\Role::ADMIN);
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::ADMIN);
         });
 
         Gate::define('menu_super_admin_backups', function (User $user) {
@@ -280,7 +302,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_backups', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('view_backups');
         });
 
@@ -291,7 +313,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_transactions', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
                 && $user->hasPermission('view_transactions');
         });
 
@@ -301,13 +323,13 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('menu_admin_logout', function (User $user) {
             return $user->hasRole(\App\Models\Role::ADMIN)
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN);
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN);
         });
 
         Gate::define('menu_org_logout', function (User $user) {
             return ($user->hasRole(\App\Models\Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-                && !$user->hasRole(\App\Models\Role::SUPER_ADMIN)
-                && !$user->hasRole(\App\Models\Role::ADMIN);
+                && ! $user->hasRole(\App\Models\Role::SUPER_ADMIN)
+                && ! $user->hasRole(\App\Models\Role::ADMIN);
         });
 
         View::composer('admin.*', function ($view) {

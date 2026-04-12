@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
 
@@ -28,8 +29,13 @@ class MediaStorage
         return self::$resolvedDisk = 'public';
     }
 
-    public static function putFile(string $directory, UploadedFile $file): string
+    /**
+     * @param  'image'|'document'  $category
+     */
+    public static function putFile(string $directory, UploadedFile $file, string $category = 'image'): string
     {
+        self::assertAllowedUpload($file, $category);
+
         $disk = self::disk();
         $storage = Storage::disk($disk);
         $driver = config("filesystems.disks.{$disk}.driver");
@@ -53,6 +59,38 @@ class MediaStorage
         return $path;
     }
 
+    /**
+     * Shared validation rules for image uploads at API endpoint level.
+     */
+    public static function imageValidationRules(): array
+    {
+        $extensions = implode(',', self::allowedImageExtensions());
+        $mimeTypes = implode(',', self::allowedImageMimeTypes());
+
+        return [
+            'file',
+            "mimes:{$extensions}",
+            "mimetypes:{$mimeTypes}",
+            'max:'.self::maxUploadSizeKilobytes(),
+        ];
+    }
+
+    /**
+     * Shared validation rules for document uploads at API endpoint level.
+     */
+    public static function documentValidationRules(): array
+    {
+        $extensions = implode(',', self::allowedDocumentExtensions());
+        $mimeTypes = implode(',', self::allowedDocumentMimeTypes());
+
+        return [
+            'file',
+            "mimes:{$extensions}",
+            "mimetypes:{$mimeTypes}",
+            'max:'.self::maxUploadSizeKilobytes(),
+        ];
+    }
+
     public static function url(?string $path): ?string
     {
         if (! $path) {
@@ -70,6 +108,7 @@ class MediaStorage
         if ($driver === 's3' && method_exists($storage, 'temporaryUrl')) {
             try {
                 $ttl = (int) config('filesystems.temporary_url_ttl', 15);
+
                 return $storage->temporaryUrl($path, now()->addMinutes($ttl));
             } catch (Throwable $e) {
                 Log::warning('MediaStorage temporary URL generation failed.', [
@@ -122,6 +161,7 @@ class MediaStorage
     {
         try {
             Storage::disk($disk);
+
             return true;
         } catch (Throwable $e) {
             Log::warning('MediaStorage disk unavailable', [
@@ -131,5 +171,75 @@ class MediaStorage
 
             return false;
         }
+    }
+
+    protected static function assertAllowedUpload(UploadedFile $file, string $category): void
+    {
+        if (! in_array($category, ['image', 'document'], true)) {
+            throw new RuntimeException("Unsupported media category [{$category}].");
+        }
+
+        $size = $file->getSize();
+        $maxBytes = self::maxUploadSizeKilobytes() * 1024;
+        if (! is_int($size) || $size <= 0 || $size > $maxBytes) {
+            throw ValidationException::withMessages([
+                'file' => ['Uploaded file exceeds the 10MB limit or is invalid.'],
+            ]);
+        }
+
+        $clientExtension = Str::lower($file->getClientOriginalExtension() ?? '');
+        $mimeType = Str::lower((string) $file->getMimeType());
+
+        $allowedExtensions = $category === 'document'
+            ? self::allowedDocumentExtensions()
+            : self::allowedImageExtensions();
+
+        $allowedMimeTypes = $category === 'document'
+            ? self::allowedDocumentMimeTypes()
+            : self::allowedImageMimeTypes();
+
+        if (! in_array($clientExtension, $allowedExtensions, true)) {
+            throw ValidationException::withMessages([
+                'file' => ['Unsupported file extension.'],
+            ]);
+        }
+
+        if (! in_array($mimeType, $allowedMimeTypes, true)) {
+            throw ValidationException::withMessages([
+                'file' => ['Unsupported file content type.'],
+            ]);
+        }
+    }
+
+    protected static function allowedImageExtensions(): array
+    {
+        return config('media_uploads.images.extensions', ['jpg', 'jpeg', 'png', 'webp']);
+    }
+
+    protected static function allowedImageMimeTypes(): array
+    {
+        return config('media_uploads.images.mimetypes', ['image/jpeg', 'image/png', 'image/webp']);
+    }
+
+    protected static function allowedDocumentExtensions(): array
+    {
+        return config('media_uploads.documents.extensions', ['pdf', 'csv']);
+    }
+
+    protected static function allowedDocumentMimeTypes(): array
+    {
+        return config('media_uploads.documents.mimetypes', [
+            'application/pdf',
+            'text/csv',
+            'text/plain',
+            'application/csv',
+            'application/vnd.ms-excel',
+            'text/comma-separated-values',
+        ]);
+    }
+
+    protected static function maxUploadSizeKilobytes(): int
+    {
+        return (int) config('media_uploads.max_file_size_kb', 10240);
     }
 }

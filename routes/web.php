@@ -68,7 +68,7 @@ Route::get('/facebook/data-deletion/status', [LegalController::class, 'dataDelet
 Route::middleware(['auth', 'active.user'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware('admin.audit')->group(function () {
         Route::get('/', fn () => redirect()->route('admin.dashboard'))->name('root');
         Route::get('/dashboard',  [DashboardController::class, 'index'])->name('dashboard');
 
@@ -138,7 +138,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/user-status/resend-otp',      [UserManagementController::class, 'resendUserVerificationOtp'])->name('user-status.resend-otp');
     });
 
-    Route::prefix('super-admin')->name('super-admin.')->middleware('panel.role:super-admin')->group(function () {
+    Route::prefix('super-admin')->name('super-admin.')->middleware(['panel.role:super-admin', 'admin.audit'])->group(function () {
         Route::get('/', fn () => redirect()->route('super-admin.dashboard'))->name('root');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -206,7 +206,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
     });
 
-    Route::prefix('org-manager')->name('org-manager.')->middleware('panel.role:org-manager')->group(function () {
+    Route::prefix('org-manager')->name('org-manager.')->middleware(['panel.role:org-manager', 'admin.audit'])->group(function () {
         Route::get('/', fn () => redirect()->route('org-manager.dashboard'))->name('root');
         Route::get('/dashboard', [OrganizationController::class, 'managerDashboard'])->name('dashboard');
         Route::get('/organizations/manager/dashboard', [OrganizationController::class, 'managerDashboard'])->name('organizations.manager-dashboard');

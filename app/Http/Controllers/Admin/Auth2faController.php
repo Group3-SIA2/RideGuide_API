@@ -7,6 +7,7 @@ use App\Mail\OtpMail;
 use App\Models\Otp;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\TransactionLogbook;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -100,6 +101,20 @@ class Auth2faController extends Controller
 
         Auth::login($user, (bool) session('2fa:remember', false));
         $request->session()->regenerate();
+
+        if ($user->hasRole(Role::SUPER_ADMIN) || $user->hasRole(Role::ADMIN)) {
+            TransactionLogbook::write(
+                request: $request,
+                module: 'auth',
+                transactionType: 'login',
+                status: 'success',
+                referenceType: 'user',
+                referenceId: (string) $user->id,
+                after: [
+                    'role_scope' => $user->hasRole(Role::SUPER_ADMIN) ? Role::SUPER_ADMIN : Role::ADMIN,
+                ]
+            );
+        }
 
         session()->forget(['2fa:user_id', '2fa:remember']);
 

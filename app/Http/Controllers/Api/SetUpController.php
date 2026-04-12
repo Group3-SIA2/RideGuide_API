@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Support\DashboardCache;
+use App\Support\InputValidation;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class SetUpController extends Controller
 {
@@ -14,20 +15,20 @@ class SetUpController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
         $validated = $request->validate([
-            'first_name'  => 'required|string|max:255|regex:/^[\p{L}\s]+$/u',
-            'last_name'   => 'required|string|max:255|regex:/^[\p{L}\s]+$/u',
-            'middle_name' => 'nullable|string|max:255|regex:/^[\p{L}\s]+$/u',
-            'roles'       => 'required|array|min:1',
-            'roles.*'     => 'string|in:driver,commuter,organization|distinct',
+            'first_name' => InputValidation::nameRequiredRules(),
+            'last_name' => InputValidation::nameRequiredRules(),
+            'middle_name' => InputValidation::nameNullableRules(),
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'string|in:driver,commuter,organization|distinct',
         ]);
 
-        $wasSetupBefore = !empty($user->first_name)
-            && !empty($user->last_name)
+        $wasSetupBefore = ! empty($user->first_name)
+            && ! empty($user->last_name)
             && $user->roles()->exists();
 
         $roleNames = array_unique($validated['roles']);
@@ -42,8 +43,8 @@ class SetUpController extends Controller
             ], 404);
         }
 
-        $user->first_name  = $validated['first_name'];
-        $user->last_name   = $validated['last_name'];
+        $user->first_name = $validated['first_name'];
+        $user->last_name = $validated['last_name'];
         $user->middle_name = $validated['middle_name'] ?? null;
         $user->save();
 
@@ -56,12 +57,12 @@ class SetUpController extends Controller
                 ? 'Your profile has been updated successfully.'
                 : 'You\'re All Set Up.',
             'data' => [
-                'id'          => $user->id,
-                'first_name'  => $user->first_name,
-                'last_name'   => $user->last_name,
+                'id' => $user->id,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
                 'middle_name' => $user->middle_name,
-                'email'       => $user->email,
-                'roles'       => $roles->pluck('name'),
+                'email' => $user->email,
+                'roles' => $roles->pluck('name'),
             ],
         ]);
     }
