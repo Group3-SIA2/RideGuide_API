@@ -18,6 +18,7 @@ use App\Policies\DriverPolicy;
 use App\Policies\OrganizationPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -33,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Paginator::useBootstrapFour();
+
         RateLimiter::for('api-upload-auth', function (Request $request) {
             $actorKey = (string) ($request->user()?->id ?? $request->ip());
 
