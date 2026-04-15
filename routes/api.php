@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\EmergencyContactController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\PhoneController;
+use App\Http\Controllers\Api\RouteController as TransitDataController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SetUpController;
 use App\Http\Controllers\Api\UserController;
@@ -105,6 +106,15 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
             Route::get('/commuters', 'searchCommuters')->name('api.search.commuters');
         });
 
+    // Transit data sync routes (Flutter cache + sqlite/mysql mirror sync).
+    Route::controller(TransitDataController::class)->group(function (): void {
+        Route::get('/terminals', 'terminals')->name('api.transit.terminals');
+        Route::get('/routes', 'routes')->name('api.transit.routes');
+        Route::get('/route-stops', 'routeStops')->name('api.transit.route-stops');
+        Route::get('/fares', 'fares')->name('api.transit.fares');
+        Route::get('/vehicle-types', 'vehicleTypes')->name('api.transit.vehicle-types');
+    });
+
     // Organization Routes
     Route::controller(OrganizationController::class)->prefix('organizations')->group(function (): void {
         Route::get('/', 'index')->name('api.organizations.index');
@@ -153,4 +163,3 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         Route::put('/{id}/restore', 'restoreFeedback')->name('api.feedback.restore');
     });
 });
-
