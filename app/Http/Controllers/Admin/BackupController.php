@@ -22,8 +22,7 @@ class BackupController extends Controller
         $this->supabaseUrl = env('SUPABASE_URL', '');
         $this->supabaseKey = env('SUPABASE_KEY', '');
     }
-
-    // List all Backups
+       
     public function index(Request $request): View|JsonResponse
     {
         $this->authorizePermissions($request, 'view_backups');
