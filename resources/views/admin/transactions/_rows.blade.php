@@ -195,7 +195,29 @@
                                                             @php
                                                                 $displayValue = $value;
 
-                                                                if ($key === 'ip' && is_string($value) && $value !== '') {
+                                                                $method = is_string($value) ? strtoupper($value) : '';
+                                                                $methodActionLabel = match ($method) {
+                                                                    'GET' => 'viewed',
+                                                                    'POST' => 'submitted',
+                                                                    'PUT', 'PATCH' => 'updated',
+                                                                    'DELETE' => 'deleted',
+                                                                    default => strtolower($method),
+                                                                };
+
+                                                                $actionLabel = match ((string) $log->transaction_type) {
+                                                                    'login' => 'logged in',
+                                                                    'logout' => 'logged out',
+                                                                    'register' => 'registered',
+                                                                    default => trim(str_replace('_', ' ', (string) $log->transaction_type)) !== ''
+                                                                        ? str_replace('_', ' ', (string) $log->transaction_type)
+                                                                        : $methodActionLabel,
+                                                                };
+
+                                                                if ($key === 'method' && is_string($value) && $value !== '') {
+                                                                    $displayValue = $method . ' / ' . $actionLabel;
+                                                                }
+
+                                                                if (in_array($key, ['ip', 'user_agent'], true) && is_string($value) && $value !== '') {
                                                                     $displayValue = encrypt($value);
                                                                 }
                                                             @endphp
