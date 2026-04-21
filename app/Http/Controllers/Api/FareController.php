@@ -12,6 +12,7 @@ use App\Models\Discount;
 
 class FareController extends Controller
 {
+    // Endpoint: /api/calculate-fare
     public function calculateFare(Request $request)
     {
         $validatedData = $request->validate([
@@ -42,7 +43,7 @@ class FareController extends Controller
         $routeStandardFare = (float) $fareRate->route_standard_fare;
 
         $isTerminalToTerminal = false;
-        $terminalThresholdKm = 0.3; // Assumption: within 300m counts as terminal proximity.
+        $terminalThresholdKm = 0.3; // 300m counts as terminal proximity.
 
         $startWaypoint = null;
         $stopWaypoint = null;
@@ -87,6 +88,7 @@ class FareController extends Controller
         ]);
     }
 
+    // Helper function to check if near any terminal
     private function isNearAnyTerminal(float $lat, float $lng, $terminals, float $thresholdKm): bool
     {
         foreach ($terminals as $terminal) {
@@ -102,7 +104,7 @@ class FareController extends Controller
 
         return false;
     }
-
+    // Haversine formula lat lng calculation
     private function haversineKm(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
         $earthRadius = 6371;
