@@ -172,13 +172,7 @@ class UserManagementController extends Controller
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Create User (Admin-side registration)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Show the Add User form.
-     */
+    // Admin Create User Methods
     public function createUser(Request $request)
     {
         $this->authorizePermissions($request, 'create_users');
@@ -186,9 +180,6 @@ class UserManagementController extends Controller
         return view('admin.users.create');
     }
 
-    /**
-     * Store a newly created user, send OTP, and show the verification modal.
-     */
     public function storeUser(Request $request)
     {
         $this->authorizePermissions($request, 'create_users');
@@ -214,7 +205,7 @@ class UserManagementController extends Controller
         // Store session for verification
         session(['admin_create_user:pending_id' => $user->id]);
 
-        // ✅ IMPORTANT: Stay on SAME page (this fixes your modal issue)
+        // Stay on SAME page (this fixes your modal issue)
         return redirect()->route(
         str_starts_with($request->route()->getName(), 'super-admin.')
             ? 'super-admin.user-status.create'
@@ -225,9 +216,6 @@ class UserManagementController extends Controller
         ->with('otp_user_id', $user->id);
     }
 
-    /**
-     * Verify the OTP that was sent after admin-created user registration.
-     */
     public function verifyUserEmail(Request $request)
     {
         $this->authorizePermissions($request, 'create_users');
@@ -240,7 +228,7 @@ class UserManagementController extends Controller
         $userId = (string) $validated['user_id'];
         $pendingUserId = (string) session('admin_create_user:pending_id');
 
-        // Guard: only allow verifying the user that was just created in this session
+        // only allow verifying the user that was just created in this session
         if ($pendingUserId === '' || ! hash_equals($pendingUserId, $userId)) {
             return response()->json(['message' => 'Unauthorized OTP verification attempt.'], 403);
         }
@@ -269,9 +257,6 @@ class UserManagementController extends Controller
         ]);
     }
 
-    /**
-     * Resend the email-verification OTP for a pending admin-created user.
-     */
     public function resendUserVerificationOtp(Request $request)
     {
         $this->authorizePermissions($request, 'create_users');
@@ -293,10 +278,6 @@ class UserManagementController extends Controller
 
         return response()->json(['message' => 'A new OTP has been sent to ' . $user->email . '.']);
     }
-
-    // -------------------------------------------------------------------------
-    // Existing Status / Restore Methods (unchanged)
-    // -------------------------------------------------------------------------
 
     public function updateUserStatus(Request $request, User $user)
     {
@@ -511,14 +492,7 @@ class UserManagementController extends Controller
         ]);
     }
 
-    // -------------------------------------------------------------------------
-    // Private Helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Invalidate any unused email_verification OTPs for the user, generate a
-     * fresh 6-digit code, persist it and send it via email.
-     */
+    // Helper Methods
     private function sendEmailVerificationOtp(User $user): void
     {
         // Invalidate old unused email_verification OTPs

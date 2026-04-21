@@ -291,7 +291,7 @@ class DashboardController extends Controller
     }
 
    
-    // USER (COMMUTER) DASHBOARD
+    // COMMUTER DASHBOARD
  
     public function commuterDashboard(Request $request): JsonResponse
     {

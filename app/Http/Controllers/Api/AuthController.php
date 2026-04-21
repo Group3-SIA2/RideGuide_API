@@ -21,12 +21,10 @@ use Throwable;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user.
-     *
-     * POST /api/register
-     * Body: name, email, password, password_confirmation, role (admin|driver|commuter)
-     */
+    /*
+        POST /api/register
+        Body: name, email, password, password_confirmation, role (admin|driver|commuter)
+    */
     public function register(Request $request): JsonResponse
     {
         $request->merge([
@@ -65,12 +63,10 @@ class AuthController extends Controller
 
     }
 
-    /**
-     * Login user with email & password, then send 2FA OTP via email.
-     *
-     * POST /api/login
-     * Body: email, password
-     */
+    /*
+        POST /api/login
+        Body: email, password
+    */
     public function login(Request $request): JsonResponse
     {
         $request->merge([
@@ -99,7 +95,7 @@ class AuthController extends Controller
         }
 
         if (! $user->isEmailVerified()) {
-            // Resend email verification OTP
+
             $this->generateAndSendOtp($user, 'email_verification');
 
             return response()->json([
@@ -108,7 +104,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // Check if user already has an active token (already logged in)
+        // Check if user already logged in
         if ($user->tokens()->count() > 0) {
             return response()->json([
                 'success' => false,
@@ -139,12 +135,10 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Social login/register using Firebase ID token (Google/Facebook).
-     *
-     * POST /api/auth/social/firebase
-     * Body: id_token, provider (google.com|facebook.com)
-     */
+    /*
+        POST /api/auth/social/firebase
+        Body: id_token, provider (google.com|facebook.com)
+    */
     public function socialLoginFirebase(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -329,12 +323,10 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Verify OTP for email verification or 2FA login.
-     *
-     * POST /api/verify-otp
-     * Body: email, otp, type (email_verification|login_2fa)
-     */
+    /*
+        POST /api/verify-otp
+        Body: email, otp, type (email_verification|login_2fa)
+    */
     public function verifyOtp(Request $request): JsonResponse
     {
         $request->merge([
@@ -440,12 +432,10 @@ class AuthController extends Controller
         ], 422);
     }
 
-    /**
-     * Logout the authenticated user (revoke current token).
-     *
-     * POST /api/logout
-     * Header: Authorization: Bearer {token}
-     */
+    /*
+        POST /api/logout
+        Header: Authorization: Bearer {token}
+    */
     public function logout(Request $request): JsonResponse
     {
         // Revoke the current access token
@@ -457,11 +447,9 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Request OTP for password reset.
-     *
-     * POST /api/forgot-password
-     * Body: email
+    /*
+        POST /api/forgot-password
+        Body: email
      */
     public function forgotPassword(Request $request): JsonResponse
     {
@@ -504,12 +492,10 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Reset password using OTP.
-     *
-     * POST /api/reset-password
-     * Body: email, otp, password, password_confirmation
-     */
+    /*
+        POST /api/reset-password
+        Body: email, otp, password, password_confirmation
+    */
     public function resetPassword(Request $request): JsonResponse
     {
         $request->merge([
@@ -576,11 +562,9 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Resend OTP for email verification.
-     *
-     * POST /api/resend-otp
-     * Body: email, type (email_verification|password_reset)
+    /*
+        POST /api/resend-otp
+        Body: email, type (email_verification|password_reset)
      */
     public function resendOtp(Request $request): JsonResponse
     {
@@ -636,9 +620,9 @@ class AuthController extends Controller
         ], 200);
     }
 
-    /**
-     * Generate a 6-digit OTP, save it, and send it via email.
-     */
+    /*
+        Generate a 6-digit OTP, save it, and send it via email.
+    */
     private function generateAndSendOtp(User $user, string $type): void
     {
         // Invalidate any existing unused OTPs of the same type
@@ -666,11 +650,7 @@ class AuthController extends Controller
         ));
     }
 
-    /**
-     * Verify Firebase ID token and return token claims.
-     *
-     * @return array<string, mixed>
-     */
+    // Verify Firebase ID token and return claims
     private function verifyFirebaseIdToken(string $idToken): array
     {
         if (! class_exists(Factory::class)) {
@@ -713,9 +693,6 @@ class AuthController extends Controller
         return $claims;
     }
 
-    /**
-     * @return array{first_name: string|null, last_name: string|null}
-     */
     private function splitDisplayName(string $displayName): array
     {
         $cleanName = trim($displayName);
@@ -763,4 +740,56 @@ class AuthController extends Controller
         return $normalized !== '' ? $normalized : null;
     }
 
+    private function writeAuthLog(
+        Request $request,
+        User $user,
+        string $transactionType,
+        string $status,
+        array $metadata = [],
+        ?string $reason = null
+    ): void {
+        try {
+            TransactionLogbook::write(
+                request: $request,
+                module: 'mobile_auth',
+                transactionType: $transactionType,
+                status: $status,
+                referenceType: 'user',
+                referenceId: (string) $user->id,
+                reason: $reason,
+                metadata: array_merge($this->clientMetadata($request), [
+                    'actor_name' => $this->resolveActorName($user),
+                ], $metadata),
+                actorUserId: (string) $user->id,
+                actorEmail: $user->email
+            );
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function clientMetadata(Request $request): array
+    {
+        return [
+            'client_platform' => $request->header('X-Client-Platform'),
+            'client_app' => $request->header('X-Client-App'),
+            'client_version' => $request->header('X-App-Version'),
+            'device_id' => $request->header('X-Device-Id'),
+        ];
+    }
+
+    private function resolveActorName(User $user): ?string
+    {
+        $name = is_string($user->name ?? null) ? trim((string) $user->name) : '';
+
+        if ($name !== '') {
+            return $name;
+        }
+
+        $firstName = is_string($user->first_name ?? null) ? trim((string) $user->first_name) : '';
+        $lastName = is_string($user->last_name ?? null) ? trim((string) $user->last_name) : '';
+        $fullName = trim($firstName . ' ' . $lastName);
+
+        return $fullName !== '' ? $fullName : null;
+    }
 }

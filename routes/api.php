@@ -24,9 +24,7 @@ use Illuminate\Support\Facades\Route;
 Route::controller(AuthController::class)->prefix('auth')->group(function (): void {
     Route::post('/register', 'register')->name('api.auth.register');
     Route::post('/login', 'login')->name('api.auth.login');
-    Route::post('/social/firebase', 'socialLoginFirebase')
-        ->middleware('throttle:10,1')
-        ->name('api.auth.social.firebase');
+    Route::post('/social/firebase', 'socialLoginFirebase')->middleware('throttle:10,1')->name('api.auth.social.firebase');
     Route::post('/verify-otp', 'verifyOtp')->name('api.auth.verify-otp');
     Route::post('/forgot-password', 'forgotPassword')->name('api.auth.forgot-password');
     Route::post('/reset-password', 'resetPassword')->name('api.auth.reset-password');
@@ -55,13 +53,9 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
 
     // Driver Routes
     Route::controller(DriverController::class)->prefix('drivers')->group(function (): void {
-        Route::post('/create-profile', 'createProfile')
-            ->middleware('throttle:api-upload-auth')
-            ->name('api.drivers.create-profile');
+        Route::post('/create-profile', 'createProfile')->middleware('throttle:api-upload-auth')->name('api.drivers.create-profile');
         Route::get('/read-profile/{id}', 'readProfile')->name('api.drivers.read-profile');
-        Route::put('/update-profile/{id}', 'updateProfile')
-            ->middleware('throttle:api-upload-auth')
-            ->name('api.drivers.update-profile');
+        Route::put('/update-profile/{id}', 'updateProfile')->middleware('throttle:api-upload-auth')->name('api.drivers.update-profile');
         Route::delete('/delete-profile/{id}', 'deleteProfile')->name('api.drivers.delete-profile');
         Route::put('/restore-profile/{id}', 'restoreProfile')->name('api.drivers.restore-profile');
     });
@@ -74,12 +68,8 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
 
     // Commuter Routes
     Route::controller(CommuterController::class)->prefix('commuter')->group(function (): void {
-        Route::post('/add-commuter', 'addCommuter')
-            ->middleware('throttle:api-upload-auth')
-            ->name('api.commuter.create-profile');
-        Route::put('/update-commuter/{id}', 'updateCommuterClassification')
-            ->middleware('throttle:api-upload-auth')
-            ->name('api.commuter.update-profile');
+        Route::post('/add-commuter', 'addCommuter')->middleware('throttle:api-upload-auth')->name('api.commuter.create-profile');
+        Route::put('/update-commuter/{id}', 'updateCommuterClassification')->middleware('throttle:api-upload-auth')->name('api.commuter.update-profile');
         Route::get('/read-commuter/{id}', 'getCommuter')->name('api.commuter.read-profile');
         Route::delete('/delete-commuter/{id}', 'deleteCommuter')->name('api.commuter.delete-profile');
         Route::put('/restore-commuter/{id}', 'restoreCommuter')->name('api.commuter.restore-profile');
@@ -98,16 +88,14 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
     });
 
     // Search Routes
-    Route::controller(SearchController::class)
-        ->prefix('search')
-        ->group(function (): void {
+    Route::controller(SearchController::class)->prefix('search')->group(function (): void {
             Route::get('/drivers', 'searchDrivers')->name('api.search.drivers');
             Route::get('/commuters', 'searchCommuters')->name('api.search.commuters');
         });
 
     // Organization Routes
-    Route::get('/organization-types', [OrganizationController::class, 'organizationTypes'])
-        ->name('api.organization-types.index');
+    Route::get('/organization-types', [OrganizationController::class, 'organizationTypes'])->name('api.organization-types.index');
+
     Route::controller(OrganizationController::class)->prefix('organizations')->group(function (): void {
         Route::get('/', 'index')->name('api.organizations.index');
         Route::get('/assigned-drivers', 'getAssignedDrivers')->name('api.organizations.assigned-drivers');
@@ -129,13 +117,9 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
 
     // Vehicle Routes
     Route::controller(VehicleController::class)->prefix('vehicles')->group(function (): void {
-        Route::post('/', 'addVehicle')
-            ->middleware('throttle:api-upload-auth')
-            ->name('api.vehicles.add');
+        Route::post('/', 'addVehicle')->middleware('throttle:api-upload-auth')->name('api.vehicles.add');
         Route::get('/my-vehicles', 'listVehicledPerDriver')->name('api.vehicles.list-per-driver');
-        Route::put('/update/{id}', 'updateVehicle')
-            ->middleware('throttle:api-upload-auth')
-            ->name('api.vehicles.update');
+        Route::put('/update/{id}', 'updateVehicle')->middleware('throttle:api-upload-auth')->name('api.vehicles.update');
         Route::delete('/delete/{id}', 'deleteVehicle')->name('api.vehicles.delete');
         Route::put('/restore/{id}', 'restoreVehicle')->name('api.vehicles.restore');
     });

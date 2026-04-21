@@ -11,14 +11,9 @@ use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
     /*
-    | Access-control
-    |
-    | Admin                     : Can list and view all driver/commuter/organization users (NOT other admins)
-    | Driver/Commuter/Organization : Can only view their own user record
+        Endpoint: /api/users
+        Query Params (admin only): status (active, inactive, suspended)
     */
-
-    // Get All Users
-
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
@@ -54,8 +49,10 @@ class UserController extends Controller
         ]);
     }
 
-    // Get Specific User
-
+    /*
+        Endpoint: /api/users/{id}
+        URI Params: id (user ID)
+    */
     public function show(string $id): JsonResponse
     {
         $user = auth()->user();
@@ -92,8 +89,6 @@ class UserController extends Controller
             'data'    => $this->formatUser($targetUser),
         ]);
     }
-
-    // Format user data for consistent response
 
     private function formatUser($user): array
     {

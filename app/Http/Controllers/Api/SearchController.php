@@ -13,18 +13,10 @@ use Illuminate\Validation\Rule;
 
 class SearchController extends Controller
 {
-    /**
-     * Search & filter drivers.
-     *
-     * GET /api/search/drivers
-     *
-     * Access:
-     *   - Admin     : full search with all filters
-     *   - Commuter  : search drivers (verified only, limited info)
-     *   - Driver    : CANNOT search other drivers
-     *
-     * Query params: search, verification_status (admin only), sort_by, sort_order
-     */
+    /*
+        Endpoint: /api/search/drivers
+        Query Params: search, verification_status, sort_by, sort_order
+    */
     public function searchDrivers(Request $request): JsonResponse
     {
         $user = auth()->user();
@@ -113,18 +105,10 @@ class SearchController extends Controller
         ]);
     }
 
-    /**
-     * Search & filter commuters.
-     *
-     * GET /api/search/commuters
-     *
-     * Access:
-     *   - Admin     : full search with all filters
-     *   - Driver    : search commuters (limited info)
-     *   - Commuter  : cannot search other commuters
-     *
-     * Query params: search, classification, sort_by, sort_order
-     */
+    /*
+        Endpoint: /api/search/commuters
+        Query Params: search, classification, sort_by, sort_order
+    */
     public function searchCommuters(Request $request): JsonResponse
     {
         $user = auth()->user();
@@ -196,10 +180,7 @@ class SearchController extends Controller
         ]);
     }
 
-    /**
-     * Format driver data based on the viewer's role.
-     * Admin sees everything, commuters see limited public info.
-     */
+    // Helper Method to format driver data based on viewer's role
     private function formatDriver(Driver $driver, string $viewerRole): array
     {
         $data = [
@@ -223,10 +204,6 @@ class SearchController extends Controller
         return $data;
     }
 
-    /**
-     * Format commuter data based on the viewer's role.
-     * Admin sees everything, drivers see limited info.
-     */
     private function formatCommuter(Commuter $commuter, string $viewerRole): array
     {
         $classificationName = $commuter->discount?->classificationType?->classification_name ?? 'Regular';

@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\DB;
 
 class FeedbackController extends Controller
 {
+
+    /* 
+        Endpoint: /api/feedback
+        Body Params: trip_id, rating, comment, images[], videos[]
+    */
     public function newFeedback(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -87,6 +92,11 @@ class FeedbackController extends Controller
         ], 201);
     }
 
+    /* 
+        Endpoint: /api/feedback/{id}
+        URL Params: id
+        Body Params: rating, comment, images[], videos[]
+    */
     public function updateFeedback(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
@@ -157,6 +167,10 @@ class FeedbackController extends Controller
         ]);
     }
 
+    /*
+        Endpoint: /api/feedback/trip/{tripId}
+        URL Params: tripId
+    */
     public function getAllFeedbackByTrip(string $tripId): JsonResponse
     {
         $feedback = Feedback::query()
@@ -189,6 +203,10 @@ class FeedbackController extends Controller
         ]);
     }
 
+    /* 
+        Endpoint: /api/feedback/{id}
+        URL Params: id
+    */
     public function deleteFeedback(Request $request, string $id): JsonResponse
     {
         $commuter = $request->user()?->commuter;
@@ -219,6 +237,10 @@ class FeedbackController extends Controller
         ]);
     }
 
+    /* 
+        Endpoint: /api/feedback/restore/{id}
+        URL Params: id
+    */
     public function restoreFeedback(string $id): JsonResponse
     {
         $commuter = $request->user()?->commuter;
@@ -245,11 +267,10 @@ class FeedbackController extends Controller
         ]);
     }
 
-    public function createFeedback(Request $request): JsonResponse
-    {
-        return $this->newFeedback($request);
-    }
-
+    /* 
+        Endpoint: /api/feedback/{id}
+        URL Params: id
+    */
     public function readFeedback(string $id): JsonResponse
     {
         $feedback = Feedback::query()->with(['commuter.user', 'images', 'videos'])->findOrFail($id);

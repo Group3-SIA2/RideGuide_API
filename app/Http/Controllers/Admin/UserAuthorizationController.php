@@ -18,9 +18,6 @@ class UserAuthorizationController extends Controller
         $this->middleware('auth');
     }
 
-    /**
-     * Show the authorization management page – list roles with their permissions.
-     */
     public function index(Request $request)
     {
         $this->authorizePermissions($request, 'manage_authorization');
@@ -38,9 +35,6 @@ class UserAuthorizationController extends Controller
         return view('admin.user-authorization.index', compact('roles', 'permissions', 'permissionGroups', 'editableRoleNames'));
     }
 
-    /**
-     * Show the form to create a new role with its permissions.
-     */
     public function createRole(Request $request)
     {
         $this->authorizePermissions($request, 'manage_authorization');
@@ -56,9 +50,6 @@ class UserAuthorizationController extends Controller
         return view('admin.user-authorization.create-role', compact('permissions', 'permissionGroups'));
     }
 
-    /**
-     * Store a newly created role with its permissions.
-     */
     public function storeRole(Request $request)
     {
         $this->authorizePermissions($request, 'manage_authorization');
@@ -109,9 +100,6 @@ class UserAuthorizationController extends Controller
             ->with('success', "Role \"{$role->name}\" created successfully.");
     }
 
-    /**
-     * Show the permission editor for a specific role (checkboxes).
-     */
     public function editRole(Request $request, Role $role)
     {
         $this->authorizePermissions($request, 'manage_authorization');
@@ -129,9 +117,6 @@ class UserAuthorizationController extends Controller
         return view('admin.user-authorization.edit-role', compact('role', 'permissions', 'permissionGroups', 'rolePermissionIds'));
     }
 
-    /**
-     * Update the permissions for a specific role.
-     */
     public function updateRole(Request $request, Role $role)
     {
         $this->authorizePermissions($request, 'manage_authorization');
@@ -198,9 +183,6 @@ class UserAuthorizationController extends Controller
         return false;
     }
 
-    /**
-     * Show per-user permission override page – manage individual user's role.
-     */
     public function editUser(Request $request, User $user)
     {
         $this->authorizePermissions($request, 'manage_authorization');
@@ -252,9 +234,6 @@ class UserAuthorizationController extends Controller
         ));
     }
 
-    /**
-     * Update a user's role assignment.
-     */
     public function updateUser(Request $request, User $user)
     {
         $this->authorizePermissions($request, 'manage_authorization');
@@ -362,13 +341,6 @@ class UserAuthorizationController extends Controller
         return false;
     }
 
-    /**
-     * Returns an Eloquent Collection of Role models the current user may assign.
-     *
-     * Super Admin → every role except super_admin itself (they can grant anything).
-     * Admin       → built-in non-admin roles + any custom (non-system) roles.
-     * Others      → nothing.
-     */
     private function assignableRolesFor(User $currentUser, ?User $targetUser = null): \Illuminate\Database\Eloquent\Collection
     {
         if ($currentUser->hasRole(Role::SUPER_ADMIN)) {
@@ -387,14 +359,6 @@ class UserAuthorizationController extends Controller
         }
 
         return Role::whereRaw('0 = 1')->get(); // empty collection
-    }
-
-    /**
-     * Kept for backward-compat with updateUser (needs name array for validation message).
-     */
-    private function assignableRoleNamesFor(User $currentUser, ?User $targetUser = null): array
-    {
-        return $this->assignableRolesFor($currentUser, $targetUser)->pluck('name')->all();
     }
 
     private function roleCombinationError(array $selectedRoleIds): ?string

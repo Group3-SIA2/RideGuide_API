@@ -38,16 +38,10 @@ class PhoneController extends Controller
 
     private const OTP_EXPIRY_MINUTES = 5; // mirrors iProgSMS default OTP lifetime
 
-    // -------------------------------------------------------------------------
-    // Public Endpoints
-    // -------------------------------------------------------------------------
-
-    /**
-     * Register a new user with a Philippine mobile number.
-     *
-     * POST /api/auth/phone/register
-     * Body: phone_number, password
-     */
+    /*
+        Endpoint: /api/auth/phone/register
+        Body: phone_number, password
+    */
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -93,13 +87,10 @@ class PhoneController extends Controller
         ], 201);
     }
 
-    /**
-     * Login with a Philippine mobile number + password.
-     * On valid credentials, sends a 2FA OTP via iProgSMS.
-     *
-     * POST /api/auth/phone/login
-     * Body: phone_number, password
-     */
+    /*
+        Endpoint: /api/auth/phone/login
+        Body: phone_number, password
+    */
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -170,13 +161,10 @@ class PhoneController extends Controller
         ], 200);
     }
 
-    /**
-     * Verify an OTP sent by iProgSMS.
-     * Issues a Sanctum token on success.
-     *
-     * POST /api/auth/phone/verify-otp
-     * Body: phone_number, otp, type (phone_verification | login_2fa)
-     */
+    /*
+        Endpoint: /api/auth/phone/verify-otp
+        Body: phone_number, otp, type (phone_verification or login_2fa)
+    */
     public function verifyOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -274,13 +262,10 @@ class PhoneController extends Controller
         ], 200);
     }
 
-    /**
-     * Request OTP for password reset.
-     * Subject to max 3 requests per day.
-     *
-     * POST /api/auth/phone/forgot-password
-     * Body: phone_number
-     */
+    /*
+        Endpoint: /api/auth/phone/forgot-password
+        Body: phone_number
+    */
     public function forgotPassword(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -326,12 +311,10 @@ class PhoneController extends Controller
         ], 200);
     }
 
-    /**
-     * Reset password using OTP.
-     *
-     * POST /api/auth/phone/reset-password
-     * Body: phone_number, otp, password, password_confirmation
-     */
+    /*
+        Endpoint: /api/auth/phone/reset-password
+        Body: phone_number, otp, password, password_confirmation
+    */
     public function resetPassword(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -408,13 +391,10 @@ class PhoneController extends Controller
         ], 200);
     }
 
-    /**
-     * Resend a phone verification OTP.
-     * Subject to 60-second cooldown and max 3 requests per day.
-     *
-     * POST /api/auth/phone/resend-otp
-     * Body: phone_number, type (phone_verification)
-     */
+    /*
+        Endpoint: /api/auth/phone/resend-otp
+        Body: phone_number, type (phone_verification only)
+    */
     public function resendOtp(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -467,11 +447,8 @@ class PhoneController extends Controller
         ], 200);
     }
 
-    // -------------------------------------------------------------------------
-    // Private Helpers
-    // -------------------------------------------------------------------------
-
     /**
+     * Helpers
      * Send an OTP via the iProgSMS API and record the dispatch locally.
      * Returns true on success, false if the API call fails.
      *
@@ -551,4 +528,57 @@ class PhoneController extends Controller
         return '0'.substr($e164, 3);
     }
 
+    private function writeAuthLog(
+        Request $request,
+        User $user,
+        string $transactionType,
+        string $status,
+        array $metadata = [],
+        ?string $reason = null
+    ): void {
+        try {
+            TransactionLogbook::write(
+                request: $request,
+                module: 'mobile_auth',
+                transactionType: $transactionType,
+                status: $status,
+                referenceType: 'user',
+                referenceId: (string) $user->id,
+                reason: $reason,
+                metadata: array_merge($this->clientMetadata($request), [
+                    'actor_name' => $this->resolveActorName($user),
+                ], $metadata),
+                actorUserId: (string) $user->id,
+                actorEmail: $user->email
+            );
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function clientMetadata(Request $request): array
+    {
+        return [
+            'client_platform' => $request->header('X-Client-Platform'),
+            'client_app' => $request->header('X-Client-App'),
+            'client_version' => $request->header('X-App-Version'),
+            'device_id' => $request->header('X-Device-Id'),
+        ];
+    }
+
+    private function resolveActorName(User $user): ?string
+    {
+        $name = is_string($user->name ?? null) ? trim((string) $user->name) : '';
+
+        if ($name !== '') {
+            return $name;
+        }
+
+        $firstName = is_string($user->first_name ?? null) ? trim((string) $user->first_name) : '';
+        $lastName = is_string($user->last_name ?? null) ? trim((string) $user->last_name) : '';
+        $fullName = trim($firstName . ' ' . $lastName);
+
+        return $fullName !== '' ? $fullName : null;
+    }
+}
 }

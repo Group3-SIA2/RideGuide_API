@@ -14,14 +14,7 @@ use Illuminate\Http\Request;
 class EmergencyContactController extends Controller
 {
     /* Endpoint: /api/emergency-contacts/
-       Method: POST
-       Body Params:
-         - contact_name (string, required): Name of the emergency contact
-         - contact_phone_number (string, required): Phone number of the emergency contact
-         - contact_relationship (string, optional): Relationship of the emergency contact to the user
-       Response:
-         - message (string)
-         - data (object) – details of the created emergency contact if successful
+       Body Params: contact_name, contact_phone_number, contact_relationship
     */
     public function addEmergencyContact(Request $request): JsonResponse
     {
@@ -34,12 +27,14 @@ class EmergencyContactController extends Controller
         // Can only have one emergency contact per driver and commuter role, so check if one already exists
         $checkCommuter = Commuter::where('user_id', auth()->id())->first();
         if ($checkCommuter && $checkCommuter->emergency_contact_id) {
-            return response()->json(['error' => 'You already have an emergency contact associated with your commuter profile. Please update or delete the existing contact before adding a new one.'], 400);
+            return response()->json(['error' => 'You already have an emergency contact associated with your commuter profile. 
+                                                        Please update or delete the existing contact before adding a new one.'], 400);
         }
 
         $checkDriver = Driver::where('user_id', auth()->id())->first();
         if ($checkDriver && $checkDriver->emergency_contact_id) {
-            return response()->json(['error' => 'You already have an emergency contact associated with your driver profile. Please update or delete the existing contact before adding a new one.'], 400);
+            return response()->json(['error' => 'You already have an emergency contact associated with your driver profile. 
+                                                        Please update or delete the existing contact before adding a new one.'], 400);
         }
 
         $emergencyContact = EmergencyContact::create([
@@ -68,18 +63,9 @@ class EmergencyContactController extends Controller
     }
 
     /* Endpoint: /api/emergency-contacts/{id}
-       Method: PUT
-       URL Params:
-         - id (string, required): ID of the emergency contact to update
-       Body Params:
-         - contact_name (string, optional): Name of the emergency contact
-         - contact_phone_number (string, optional): Phone number of the emergency contact
-         - contact_relationship (string, optional): Relationship of the emergency contact to the user
-       Response:
-         - message (string)
-         - data (object) – details of the updated emergency contact if successful
+       URL Params: id
+       Body Params: contact_name, contact_phone_number, contact_relationship
     */
-
     public function updateEmergencyContact(Request $request, $id): JsonResponse
     {
         $emergencyContact = EmergencyContact::where('id', $id)->where('user_id', auth()->id())->first();
@@ -102,6 +88,7 @@ class EmergencyContactController extends Controller
         ], 200);
     }
 
+    // Endpoint: /api/emergency-contacts/
     public function getEmergencyContacts(): JsonResponse
     {
         $emergencyContacts = EmergencyContact::where('user_id', auth()->id())->get();
@@ -111,6 +98,9 @@ class EmergencyContactController extends Controller
         ], 200);
     }
 
+    /* Endpoint: /api/emergency-contacts/{id}
+        URL Params: id
+    */
     public function softDeleteEmergencyContact($id): JsonResponse
     {
         $emergencyContact = EmergencyContact::where('id', $id)->where('user_id', auth()->id())->first();
