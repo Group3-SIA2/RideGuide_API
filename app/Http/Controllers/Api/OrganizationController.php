@@ -24,6 +24,24 @@ use Illuminate\Validation\ValidationException;
 class OrganizationController extends Controller
 {
     /**
+     * List non-deleted organization types for setup flows.
+     * GET /api/organization-types
+     * Access: Any authenticated user.
+     */
+    public function organizationTypes(): JsonResponse
+    {
+        $organizationTypes = OrganizationType::query()
+            ->select(['id', 'name', 'description'])
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $organizationTypes,
+        ], 200);
+    }
+
+    /**
      * List active organizations (paginated).
      * GET /api/organizations
      * Access: Any authenticated user.
