@@ -8,7 +8,6 @@ use App\Models\Otp;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\InputValidation;
-use App\Support\TransactionLogbook;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -49,16 +48,6 @@ class AuthController extends Controller
 
         // Generate and send email verification OTP
         $this->generateAndSendOtp($user, 'email_verification');
-
-        $this->writeAuthLog(
-            request: $request,
-            user: $user,
-            transactionType: 'register',
-            status: 'success',
-            metadata: [
-                'auth_channel' => 'email_password',
-            ]
-        );
 
         return response()->json([
             'success' => true,
@@ -322,18 +311,6 @@ class AuthController extends Controller
         $user->tokens()->delete();
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        $this->writeAuthLog(
-            request: $request,
-            user: $user,
-            transactionType: $isNewUser ? 'register' : 'login',
-            status: 'success',
-            metadata: [
-                'auth_channel' => 'social_firebase',
-                'provider' => $providerFromToken,
-                'is_new_user' => $isNewUser,
-            ]
-        );
-
         return response()->json([
             'success' => true,
             'message' => $isNewUser ? 'Social signup successful.' : 'Social login successful.',
@@ -414,17 +391,6 @@ class AuthController extends Controller
             // Auto-login: issue Sanctum token immediately after email verification
             $token = $user->createToken('auth-token')->plainTextToken;
 
-            $this->writeAuthLog(
-                request: $request,
-                user: $user,
-                transactionType: 'login',
-                status: 'success',
-                metadata: [
-                    'auth_channel' => 'email_password',
-                    'via' => 'email_verification_otp',
-                ]
-            );
-
             return response()->json([
                 'success' => true,
                 'message' => 'Email verified successfully. You are now logged in.',
@@ -449,17 +415,6 @@ class AuthController extends Controller
             $user->tokens()->delete();
 
             $token = $user->createToken('auth-token')->plainTextToken;
-
-            $this->writeAuthLog(
-                request: $request,
-                user: $user,
-                transactionType: 'login',
-                status: 'success',
-                metadata: [
-                    'auth_channel' => 'email_password',
-                    'via' => 'login_2fa_otp',
-                ]
-            );
 
             return response()->json([
                 'success' => true,
@@ -493,22 +448,8 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->user();
-
-        if ($user) {
-            $this->writeAuthLog(
-                request: $request,
-                user: $user,
-                transactionType: 'logout',
-                status: 'success',
-                metadata: [
-                    'auth_channel' => 'sanctum_token',
-                ]
-            );
-        }
-
         // Revoke the current access token
-        $user?->currentAccessToken()?->delete();
+        $request->user()?->currentAccessToken()?->delete();
 
         return response()->json([
             'success' => true,
@@ -822,56 +763,4 @@ class AuthController extends Controller
         return $normalized !== '' ? $normalized : null;
     }
 
-    private function writeAuthLog(
-        Request $request,
-        User $user,
-        string $transactionType,
-        string $status,
-        array $metadata = [],
-        ?string $reason = null
-    ): void {
-        try {
-            TransactionLogbook::write(
-                request: $request,
-                module: 'mobile_auth',
-                transactionType: $transactionType,
-                status: $status,
-                referenceType: 'user',
-                referenceId: (string) $user->id,
-                reason: $reason,
-                metadata: array_merge($this->clientMetadata($request), [
-                    'actor_name' => $this->resolveActorName($user),
-                ], $metadata),
-                actorUserId: (string) $user->id,
-                actorEmail: $user->email
-            );
-        } catch (Throwable $e) {
-            report($e);
-        }
-    }
-
-    private function clientMetadata(Request $request): array
-    {
-        return [
-            'client_platform' => $request->header('X-Client-Platform'),
-            'client_app' => $request->header('X-Client-App'),
-            'client_version' => $request->header('X-App-Version'),
-            'device_id' => $request->header('X-Device-Id'),
-        ];
-    }
-
-    private function resolveActorName(User $user): ?string
-    {
-        $name = is_string($user->name ?? null) ? trim((string) $user->name) : '';
-
-        if ($name !== '') {
-            return $name;
-        }
-
-        $firstName = is_string($user->first_name ?? null) ? trim((string) $user->first_name) : '';
-        $lastName = is_string($user->last_name ?? null) ? trim((string) $user->last_name) : '';
-        $fullName = trim($firstName . ' ' . $lastName);
-
-        return $fullName !== '' ? $fullName : null;
-    }
 }

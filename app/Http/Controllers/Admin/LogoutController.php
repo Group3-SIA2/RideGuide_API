@@ -30,7 +30,7 @@ class LogoutController extends Controller
     {
         $user = $request->user();
 
-        if ($user) {
+        if ($user && ($user->hasRole(Role::SUPER_ADMIN) || $user->hasRole(Role::ADMIN))) {
             TransactionLogbook::write(
                 request: $request,
                 module: 'auth',
@@ -39,9 +39,7 @@ class LogoutController extends Controller
                 referenceType: 'user',
                 referenceId: (string) $user->id,
                 after: [
-                    'role_scope' => $user->hasRole(Role::SUPER_ADMIN)
-                        ? Role::SUPER_ADMIN
-                        : ($user->hasRole(Role::ADMIN) ? Role::ADMIN : 'standard_user'),
+                    'role_scope' => $user->hasRole(Role::SUPER_ADMIN) ? Role::SUPER_ADMIN : Role::ADMIN,
                 ]
             );
         }

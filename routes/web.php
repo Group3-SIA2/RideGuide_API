@@ -15,7 +15,7 @@ use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\UserAuthorizationController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\Auth2faController;
-use App\Http\Controllers\Admin\TransactionLogController;
+use App\Http\Controllers\Admin\LogbookController;
 use App\Http\Controllers\Admin\FareController;
 
 /*
@@ -115,7 +115,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
         Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])->name('backups.restore');
 
-        Route::get('/transactions', [TransactionLogController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions', [LogbookController::class, 'index'])->name('transactions.index');
 
         Route::get('/user-authorization',                     [UserAuthorizationController::class, 'index'])->name('user-authorization.index');
         Route::get('/user-authorization/role/{role}/edit',    [UserAuthorizationController::class, 'editRole'])->name('user-authorization.edit-role');
@@ -200,7 +200,7 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
         Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])->name('backups.restore');
 
-        Route::get('/transactions', [TransactionLogController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions', [LogbookController::class, 'index'])->name('transactions.index');
         Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
         Route::get('/logout', [LogoutController::class, 'confirm'])->name('logout.confirm');
         Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');

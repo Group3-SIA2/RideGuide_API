@@ -13,7 +13,6 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\FareController;
 use App\Http\Controllers\Api\FeedbackController;
-use App\Http\Controllers\Api\LogbookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -53,7 +52,6 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
 
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
-    Route::get('/logbook/my-activity', [LogbookController::class, 'myActivity'])->name('api.logbook.my-activity');
 
     // Driver Routes
     Route::controller(DriverController::class)->prefix('drivers')->group(function (): void {
