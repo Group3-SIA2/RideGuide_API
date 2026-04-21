@@ -74,12 +74,6 @@ class DriverController extends Controller
         $driver = Driver::with(['user', 'organization', 'licenseId.image', 'usersEmergencyContact.emergencyContact'])
             ->find($id);
 
-        // Debugging: Check if the driver profile is being retrieved correctly
-        // $driverProfile = Driver::where('id', $id)->first();
-        // $driverProfile = Driver::where('id', $id)->first();
-
-        // dd($driver);
-
         if (! $driver) {
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
@@ -248,7 +242,6 @@ class DriverController extends Controller
             return response()->json(['error' => 'Driver profile not found'], 404);
         }
 
-        // admin only
         if (! auth()->user()->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -284,7 +277,6 @@ class DriverController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        // admin only
         if (! $user->hasRole('admin')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
