@@ -24,7 +24,7 @@ class TransactionLogbook
         $user = $request->user();
 
         $combinedMetadata = array_merge([
-            'ip' => self::maskIp($request->ip()),
+            'ip' => $request->ip(),
             'route' => optional($request->route())->getName(),
             'method' => $request->method(),
             'path' => $request->path(),
@@ -92,30 +92,6 @@ class TransactionLogbook
         }
 
         return false;
-    }
-
-    private static function maskIp(?string $ip): ?string
-    {
-        if (! $ip) {
-            return null;
-        }
-
-        if (str_contains($ip, '.')) {
-            $parts = explode('.', $ip);
-            if (count($parts) === 4) {
-                $parts[3] = 'x';
-                return implode('.', $parts);
-            }
-        }
-
-        if (str_contains($ip, ':')) {
-            $parts = explode(':', $ip);
-            $last = count($parts) - 1;
-            $parts[$last] = 'xxxx';
-            return implode(':', $parts);
-        }
-
-        return '[redacted_ip]';
     }
 
     private static function maskUserAgent(?string $ua): ?string

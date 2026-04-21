@@ -192,10 +192,17 @@
                                                     <tr>
                                                         <th style="width: 30%;" class="text-muted">{{ $key }}</th>
                                                         <td>
+                                                            @php
+                                                                $displayValue = $value;
+
+                                                                if ($key === 'ip' && is_string($value) && $value !== '') {
+                                                                    $displayValue = encrypt($value);
+                                                                }
+                                                            @endphp
                                                             @if(is_array($value) || is_object($value))
-                                                                <pre class="mb-0" style="white-space: pre-wrap;">{{ json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                                                <pre class="mb-0" style="white-space: pre-wrap;">{{ json_encode($displayValue, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
                                                             @else
-                                                                {{ is_bool($value) ? ($value ? 'true' : 'false') : ($value ?? '-') }}
+                                                                {{ is_bool($displayValue) ? ($displayValue ? 'true' : 'false') : ($displayValue ?? '-') }}
                                                             @endif
                                                         </td>
                                                     </tr>
