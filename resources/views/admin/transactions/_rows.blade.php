@@ -38,6 +38,7 @@
         $safeMetadata = $redactLogData($log->metadata ?? []);
         $actorName = data_get($safeMetadata, 'actor_name');
         $actionSummary = data_get($safeMetadata, 'action_summary');
+        $actionSummary = is_string($actionSummary) ? str_replace('/transactions', '/logbook', $actionSummary) : $actionSummary;
         $displayModule = $log->module === 'transactions' ? 'logbook' : $log->module;
     @endphp
     <tr>
@@ -224,6 +225,10 @@
 
                                                                 if ($key === 'method' && is_string($value) && $value !== '') {
                                                                     $displayValue = $method . ' / ' . $actionLabel;
+                                                                }
+
+                                                                if (is_string($displayValue)) {
+                                                                    $displayValue = str_replace('/transactions', '/logbook', $displayValue);
                                                                 }
 
                                                                 if (in_array($key, ['ip', 'user_agent'], true) && is_string($value) && $value !== '') {

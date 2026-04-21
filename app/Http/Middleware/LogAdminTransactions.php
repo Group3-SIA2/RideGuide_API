@@ -200,7 +200,7 @@ class LogAdminTransactions
 			'current_password',
 		]));
 
-		$path = '/' . ltrim((string) $request->path(), '/');
+		$path = $this->normalizeLogbookPath('/' . ltrim((string) $request->path(), '/'));
 		$method = strtoupper((string) $request->method());
 
 		return match ($method) {
@@ -220,7 +220,7 @@ class LogAdminTransactions
 
 	private function resolveActionSummary(Request $request): string
 	{
-		$path = '/' . ltrim((string) $request->path(), '/');
+		$path = $this->normalizeLogbookPath('/' . ltrim((string) $request->path(), '/'));
 		$method = strtoupper((string) $request->method());
 
 		return match ($method) {
@@ -256,6 +256,13 @@ class LogAdminTransactions
 		$email = trim((string) ($user->email ?? ''));
 
 		return $email !== '' ? $email : null;
+	}
+
+	private function normalizeLogbookPath(string $path): string
+	{
+		$normalized = str_replace('/transactions', '/logbook', $path);
+
+		return $normalized;
 	}
 
 	private function shouldSkipLogging(Request $request): bool
