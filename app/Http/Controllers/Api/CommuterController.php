@@ -17,24 +17,16 @@ use Illuminate\Validation\Rule;
 
 class CommuterController extends Controller
 {
-    /** Retention window (days) – soft-deleted profiles older than this should not be restorable. */
+
     private const RESTORE_WINDOW_DAYS = 30;
 
-    // Create Commuter Profile
-
-    /* Endpoint: /api/commuter/add-commuter
-       Method: POST
-       Body Params:
-         - classification_name (string, required): One of 'Regular', 'Student', 'Senior Citizen', 'PWD'
-         - ID_number (string, required if classification is not Regular): Alphanumeric ID number for discount verification
-         - image_front (file, required if classification is not Regular): Front image of the ID for verification
-         - image_back (file, required if classification is not Regular): Back image of the ID for verification
-       Response:
-         - success (boolean)
-         - message (string)
-         - data (object) – commuter profile details if successful
+    /* 
+        Endpoint: /api/commuter/add-commuter
+        Body: classification_name('Senior Citizen', 'PWD', 'Student', 'Regular')
+              ID_number
+              image_front
+              image_back
     */
-
     public function addCommuter(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -120,18 +112,10 @@ class CommuterController extends Controller
         ], 201);
     }
 
-    // Read Commuter Profile
-
     /* Endpoint: /api/commuter/{id}
        Method: GET
-       URL Params:
-         - id (string, required): Commuter profile ID
-       Response:
-         - success (boolean)
-         - message (string)
-         - data (object) – commuter profile details if successful
+         URL Params: id
     */
-
     public function getCommuter(string $id): JsonResponse
     {
         $user = auth()->user();
@@ -163,23 +147,12 @@ class CommuterController extends Controller
         ]);
     }
 
-    // Update Commuter Classification
-
     /* Endpoint: /api/commuter/update-commuter/{id}
        Method: PUT
-       URL Params:
-         - id (string, required): Commuter profile ID
-       Body Params:
-         - classification_name (string, optional): One of 'Regular', 'Student', 'Senior Citizen', 'PWD'
-         - ID_number (string, required if classification is not Regular): Alphanumeric ID number for discount verification
-         - image_front (file, required if classification is not Regular): Front image of the ID for verification
-         - image_back (file, required if classification is not Regular): Back image of the ID for verification
-       Response:
-         - success (boolean)
-         - message (string)
-         - data (object) – updated commuter profile details if successful
+       URL Params: id
+       Body Params: classification_name: ('Regular', 'Student', 'Senior Citizen', 'PWD'),
+                    ID_number, image_front, image_back
     */
-
     public function updateCommuterClassification(Request $request, string $id): JsonResponse
     {
         $user = auth()->user();
@@ -360,13 +333,8 @@ class CommuterController extends Controller
 
     /* Endpoint: /api/commuter/delete-commuter/{id}
        Method: DELETE
-       URL Params:
-         - id (string, required): Commuter profile ID
-       Response:
-         - success (boolean)
-         - message (string)
+       URL Params: id
     */
-
     public function deleteCommuter(string $id): JsonResponse
     {
         $user = auth()->user();
@@ -415,14 +383,8 @@ class CommuterController extends Controller
 
     /* Endpoint: /api/commuter/restore-commuter/{id}
        Method: PUT
-       URL Params:
-         - id (string, required): Commuter profile ID
-       Response:
-         - success (boolean)
-         - message (string)
-         - data (object) – restored commuter profile details if successful
+       URL Params: id
     */
-
     public function restoreCommuter(string $id): JsonResponse
     {
         $user = auth()->user();
@@ -483,8 +445,6 @@ class CommuterController extends Controller
             ),
         ]);
     }
-
-    // Format commuter data
 
     private function formatCommuter(Commuter $commuter): array
     {
