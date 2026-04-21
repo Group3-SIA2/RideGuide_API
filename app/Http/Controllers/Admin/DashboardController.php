@@ -14,17 +14,11 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     */
     public function __construct()
     {
         $this->middleware('auth');
     }
 
-    /**
-     * Display the admin dashboard.
-     */
     public function index(Request $request): View|JsonResponse|RedirectResponse
     {
         $user = $request->user();
