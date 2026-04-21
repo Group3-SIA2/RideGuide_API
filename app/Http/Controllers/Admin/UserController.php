@@ -16,7 +16,6 @@ class UserController extends Controller
         $this->middleware('auth');
     }
 
-    // OLD (kept as-is)
     public function index(Request $request)
     {
         $this->authorizePermissions($request, 'view_users');
@@ -33,8 +32,6 @@ class UserController extends Controller
 
         $query = User::with('roles')
             ->whereNotNull('first_name');
-
-            // dd($request->all());
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -73,7 +70,6 @@ class UserController extends Controller
         ));
     }
 
-    // NEW
     public function create(Request $request)
     {
         $this->authorizePermissions($request, 'create_users');
@@ -82,7 +78,6 @@ class UserController extends Controller
         return view('admin.users.create', compact('roles'));
     }
 
-    // NEW
     public function store(Request $request)
     {
         $this->authorizePermissions($request, 'create_users');
@@ -124,7 +119,6 @@ class UserController extends Controller
             ->with('success', 'User registered successfully.');
     }
 
-    // NEW
     public function edit(Request $request, User $user)
     {
         $this->authorizePermissions($request, 'edit_users');
@@ -133,7 +127,6 @@ class UserController extends Controller
         return view('admin.users.edit', compact('user', 'roles'));
     }
 
-    // NEW
     public function update(Request $request, User $user)
     {
         $this->authorizePermissions($request, 'edit_users');
@@ -179,7 +172,6 @@ class UserController extends Controller
             ->with('success', 'Profile updated successfully.');
     }
 
-    // NEW
     public function destroy(Request $request, User $user)
     {
         $this->authorizePermissions($request, 'delete_users');
