@@ -316,6 +316,20 @@ roles[]  organization
 
 If the user selected `organization` in Step 3, they can create their organization profile after setup.
 
+**GET** `https://rideguide.test/api/organization-types`
+
+Use this first to populate the organization type dropdown in Flutter.
+
+Expected success response:
+```json
+{
+  "success": true,
+  "data": [
+    { "id": "uuid", "name": "TODA", "description": "Tricycle Operators and Drivers Association" }
+  ]
+}
+```
+
 **POST** `https://rideguide.test/api/organizations/create-profile`
 
 Include Bearer token in Authorization.
@@ -380,6 +394,7 @@ Notes:
 POST /api/auth/register
   → POST /api/auth/verify-otp        (type: email_verification)  → Bearer Token
     → POST /api/setup/setup-users    (Protected — Bearer Token required)
+            → GET /api/organization-types      (If organization role is selected)
             → POST /api/organizations/create-profile (If organization role is selected)
 ```
 
@@ -388,6 +403,7 @@ POST /api/auth/register
 POST /api/auth/phone/register
   → POST /api/auth/phone/verify-otp  (type: phone_verification)  → Bearer Token
     → POST /api/setup/setup-users    (Protected — Bearer Token required)
+            → GET /api/organization-types      (If organization role is selected)
             → POST /api/organizations/create-profile (If organization role is selected)
 ```
 
