@@ -7,6 +7,25 @@
     $transactionsIndexRoute = $panelPrefix . '.transactions.index';
 @endphp
 
+@section('css')
+    <style>
+        body:not(.dark-mode) .rg-filter-bar button.rg-btn-search {
+            background: #0d1b36 !important;
+            border: 1px solid #0d1b36 !important;
+            color: #fff !important;
+            display: inline-flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        body.dark-mode .rg-filter-bar button.rg-btn-search {
+            background: #60a5fa !important;
+            border: 1px solid #60a5fa !important;
+            color: #0b1220 !important;
+        }
+    </style>
+@stop
+
 @section('content_header')
     <div class="rg-page-header">
         <div>
@@ -52,11 +71,11 @@
 
                 <select name="module" class="form-control form-control-sm mr-2" style="min-width: 160px;">
                     <option value="">All Modules</option>
-                    <option value="users" @selected(($filters['module'] ?? '') === 'users')>Users</option>
-                    <option value="organizations" @selected(($filters['module'] ?? '') === 'organizations')>Organizations</option>
-                    <option value="authorization" @selected(($filters['module'] ?? '') === 'authorization')>Authorization</option>
-                    <option value="status_dashboard" @selected(($filters['module'] ?? '') === 'status_dashboard')>Status Dashboard</option>
-                    <option value="backups" @selected(($filters['module'] ?? '') === 'backups')>Backups</option>
+                    @foreach(($modules ?? []) as $module)
+                        <option value="{{ $module }}" @selected(($filters['module'] ?? '') === $module)>
+                            {{ ucfirst(str_replace('_', ' ', $module)) }}
+                        </option>
+                    @endforeach
                 </select>
 
                 <select name="status" class="form-control form-control-sm mr-2" style="min-width: 140px;">
@@ -65,7 +84,27 @@
                     <option value="failed" @selected(($filters['status'] ?? '') === 'failed')>Failed</option>
                 </select>
 
-                <button type="submit" class="rg-btn-search">
+                <input
+                    type="date"
+                    name="created_from"
+                    id="created_from"
+                    class="form-control form-control-sm mr-2"
+                    style="min-width: 160px;"
+                    value="{{ $filters['created_from'] ?? '' }}"
+                    title="From date"
+                >
+
+                <input
+                    type="date"
+                    name="created_to"
+                    id="created_to"
+                    class="form-control form-control-sm mr-2"
+                    style="min-width: 160px;"
+                    value="{{ $filters['created_to'] ?? '' }}"
+                    title="To date"
+                >
+
+                <button type="submit" class="rg-btn-search btn">
                     <i class="fas fa-search"></i>
                     <span>Filter</span>
                 </button>
@@ -99,4 +138,33 @@
             </div>
         @endif
     </div>
+@stop
+
+@section('js')
+    <script>
+        (function () {
+            const fromInput = document.getElementById('created_from');
+            const toInput = document.getElementById('created_to');
+
+            if (!fromInput || !toInput) {
+                return;
+            }
+
+            const syncDateBounds = () => {
+                const fromValue = fromInput.value;
+                const toValue = toInput.value;
+
+                toInput.min = fromValue || '';
+
+                if (fromValue && toValue && toValue < fromValue) {
+                    toInput.value = fromValue;
+                }
+            };
+
+            fromInput.addEventListener('change', syncDateBounds);
+            toInput.addEventListener('change', syncDateBounds);
+
+            syncDateBounds();
+        })();
+    </script>
 @stop
