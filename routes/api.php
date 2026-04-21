@@ -108,6 +108,8 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         });
 
     // Organization Routes
+    Route::get('/organization-types', [OrganizationController::class, 'organizationTypes'])
+        ->name('api.organization-types.index');
     Route::controller(OrganizationController::class)->prefix('organizations')->group(function (): void {
         Route::get('/', 'index')->name('api.organizations.index');
         Route::get('/assigned-drivers', 'getAssignedDrivers')->name('api.organizations.assigned-drivers');
@@ -155,4 +157,3 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
         Route::put('/{id}/restore', 'restoreFeedback')->name('api.feedback.restore');
     });
 });
-

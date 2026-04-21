@@ -20,8 +20,9 @@ Current schema-aligned request fields:
 - owner_user_id (nullable, UUID)
 - status (active or inactive)
 
-Base URL:
+Base URLs:
 ```http
+https://rideguide.test/api
 https://rideguide.test/api/organizations
 ```
 
@@ -37,6 +38,7 @@ Authorization: Bearer {token}
 
 | Method | Endpoint | Description |
 |---|---|---|
+| GET | /api/organization-types | List non-deleted organization types for setup dropdowns |
 | GET | /api/organizations | List organizations (active by default; admin supports more filters) |
 | GET | /api/organizations/{id} | Show one organization |
 | POST | /api/organizations | Create organization |
@@ -47,6 +49,34 @@ Authorization: Bearer {token}
 | GET | /api/organizations/assigned-drivers | List drivers assigned to caller's managed organization |
 
 ---
+
+## 0) List Organization Types
+
+GET /api/organization-types
+
+Default behavior:
+- returns non-deleted organization types
+- sorted ascending by `name`
+- accessible to any authenticated user
+
+Success (200):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "019f2a3b-1c2d-7e4f-a5b6-c7d8e9f01234",
+      "name": "Bus Company",
+      "description": "Bus transport operator"
+    },
+    {
+      "id": "019f2a3b-1c2d-7e4f-a5b6-c7d8e9f05678",
+      "name": "TODA",
+      "description": "Tricycle Operators and Drivers Association"
+    }
+  ]
+}
+```
 
 ## 1) List Organizations
 
