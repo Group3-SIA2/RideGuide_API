@@ -23,11 +23,7 @@ use Illuminate\Validation\ValidationException;
 
 class OrganizationController extends Controller
 {
-    /**
-     * List non-deleted organization types for setup flows.
-     * GET /api/organization-types
-     * Access: Any authenticated user.
-     */
+    // Endpoint: /api/organization-types
     public function organizationTypes(): JsonResponse
     {
         $organizationTypes = OrganizationType::query()
@@ -41,11 +37,7 @@ class OrganizationController extends Controller
         ], 200);
     }
 
-    /**
-     * List active organizations (paginated).
-     * GET /api/organizations
-     * Access: Any authenticated user.
-     */
+    // Endpoint: /api/organizations
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
@@ -144,11 +136,7 @@ class OrganizationController extends Controller
         ], 200);
     }
 
-    /**
-     * Show a single organization.
-     * GET /api/organizations/{id}
-     * Access: Any authenticated user; non-admins only see active organizations.
-     */
+    // Endpoint: /api/organizations/{id}
     public function show(string $id): JsonResponse
     {
         $user = auth()->user();
@@ -177,11 +165,7 @@ class OrganizationController extends Controller
         ], 200);
     }
 
-    /**
-     * Create a new organization.
-     * POST /api/organizations
-     * Access: admin/super_admin (any org), organization role (one org per user).
-     */
+    // Endpoint: /api/organizations
     public function store(StoreOrganizationRequest $request): JsonResponse
     {
         $this->authorize('create', Organization::class);
@@ -266,10 +250,10 @@ class OrganizationController extends Controller
         ], 201);
     }
 
-    /**
-     * Create an organization profile for the authenticated user while supporting multi-role assignments.
-     * POST /api/organizations/create-profile
-     * Access: admin/super_admin/organization. Automatically attaches/keeps the organization role.
+    /*
+        Endpoint: /api/organizations/{id}
+        URL Params: id
+        Body Params: name, organization_type_id, organization_type, description, hq_address, hq_street, hq_barangay, hq_subdivision, hq_floor_unit_room, hq_lat, hq_lng, owner_user_id, status
      */
     public function createProfile(Request $request): JsonResponse
     {
@@ -388,12 +372,10 @@ class OrganizationController extends Controller
         ], 201);
     }
 
-    /**
-     * Update an organization (partial update supported).
-     * PUT /api/organizations/{id}
-     * Access: admin/super_admin (any), organization role (own org only).
-     *         Organization-role users cannot change status.
-     */
+    /* Endpoint: /api/organizations/{id}
+        URL Params: id
+        Body Params: name, organization_type_id, organization_type, description, hq_address, hq_street, hq_barangay, hq_subdivision, hq_floor_unit_room, hq_lat, hq_lng, owner_user_id, status
+    */
     public function update(Request $request, string $id): JsonResponse
     {
         $organization = Organization::find($id);
@@ -520,11 +502,10 @@ class OrganizationController extends Controller
         ], 200);
     }
 
-    /**
-     * Soft-delete an organization.
-     * DELETE /api/organizations/{id}
-     * Access: admin/super_admin (any), organization role (own org only).
-     */
+    /*
+        Endpoint: /api/organizations/{id}
+        URL Params: id
+    */
     public function destroy(string $id): JsonResponse
     {
         $organization = Organization::find($id);
@@ -546,11 +527,10 @@ class OrganizationController extends Controller
         ], 200);
     }
 
-    /**
-     * Restore a soft-deleted organization.
-     * PUT /api/organizations/{id}/restore
-     * Access: admin/super_admin only.
-     */
+    /*
+        Endpoint: /api/organizations/restore/{id}
+        URL Params: id
+    */
     public function restore(string $id): JsonResponse
     {
         $organization = Organization::withTrashed()->find($id);
@@ -763,11 +743,11 @@ class OrganizationController extends Controller
         return $user->hasRole(Role::ADMIN) || $user->hasRole(Role::SUPER_ADMIN);
     }
 
-    /**
-     * Get drivers assigned to the logged-in user's managed organization.
-     * GET /api/organizations/assigned-drivers
-     * Access: organization role owner OR active organization manager.
-     */
+    /*
+        Endpoint: /api/organizations/assigned-drivers
+        URL Params: None
+        Query Params: per_page (optional, default=20, max=100)
+    */
     public function getAssignedDrivers(Request $request): JsonResponse
     {
         $user = $request->user();
