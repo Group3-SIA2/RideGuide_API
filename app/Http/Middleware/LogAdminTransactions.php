@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Role;
 use App\Support\TransactionLogbook;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -15,32 +14,15 @@ class LogAdminTransactions
 {
 	public function handle(Request $request, Closure $next): Response
 	{
+		if ($this->shouldSkipLogging($request)) {
+			return $next($request);
+		}
+
 		$user = $request->user();
-
-		if (! $user || ! $this->isAuditableActor($user)) {
-			return $next($request);
-		}
-
-		$actorUserId = (string) $user->id;
-		$actorEmail = $user->email;
-
-		if (! in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
-			return $next($request);
-		}
+		$actorUserId = $user?->id ? (string) $user->id : null;
+		$actorEmail = is_string($user?->email) ? $user->email : null;
 
 		$routeName = (string) optional($request->route())->getName();
-
-		if (! Str::startsWith($routeName, ['admin.', 'super-admin.', 'org-manager.'])) {
-			return $next($request);
-		}
-
-		if (Str::contains($routeName, '.transactions.')) {
-			return $next($request);
-		}
-
-		if (Str::endsWith($routeName, '.logout')) {
-			return $next($request);
-		}
 
 		$module = $this->resolveModule($routeName, $request);
 		$transactionType = $this->resolveTransactionType($routeName, $request);
@@ -77,7 +59,7 @@ class LogAdminTransactions
 				actorEmail: $actorEmail,
 				metadata: [
 					'route_name' => $routeName,
-					'panel' => Str::before($routeName, '.'),
+					'panel' => $routeName !== '' ? Str::before($routeName, '.') : null,
 					'http_method' => $request->method(),
 					'response_status' => $response->getStatusCode(),
 				]
@@ -99,7 +81,7 @@ class LogAdminTransactions
 				actorEmail: $actorEmail,
 				metadata: [
 					'route_name' => $routeName,
-					'panel' => Str::before($routeName, '.'),
+					'panel' => $routeName !== '' ? Str::before($routeName, '.') : null,
 					'http_method' => $request->method(),
 					'exception' => class_basename($e),
 				]
@@ -119,7 +101,7 @@ class LogAdminTransactions
 		?array $before,
 		array $after,
 		?string $reason,
-		string $actorUserId,
+		?string $actorUserId,
 		?string $actorEmail,
 		array $metadata
 	): void {
@@ -145,24 +127,28 @@ class LogAdminTransactions
 
 	private function resolveModule(string $routeName, Request $request): string
 	{
-		$parts = explode('.', $routeName);
+		if ($routeName !== '') {
+			$parts = explode('.', $routeName);
 
-		if (count($parts) >= 2 && $parts[1] !== '') {
-			return $parts[1];
+			if (count($parts) >= 2 && $parts[1] !== '') {
+				return $parts[1];
+			}
 		}
 
-		$segment = (string) ($request->segment(2) ?? 'general');
+		$segment = (string) ($request->segment(1) ?? 'general');
 
 		return Str::snake($segment);
 	}
 
 	private function resolveTransactionType(string $routeName, Request $request): string
 	{
-		$parts = explode('.', $routeName);
-		$tail = count($parts) > 2 ? implode('_', array_slice($parts, 2)) : '';
+		if ($routeName !== '') {
+			$parts = explode('.', $routeName);
+			$tail = count($parts) > 2 ? implode('_', array_slice($parts, 2)) : '';
 
-		if ($tail !== '') {
-			return $tail;
+			if ($tail !== '') {
+				return $tail;
+			}
 		}
 
 		return Str::lower($request->method());
@@ -198,13 +184,13 @@ class LogAdminTransactions
 		return null;
 	}
 
-	private function isAuditableActor(object $user): bool
+	private function shouldSkipLogging(Request $request): bool
 	{
-		if (! method_exists($user, 'hasRole')) {
-			return false;
+		if (Str::startsWith((string) $request->path(), ['_debugbar', 'telescope'])) {
+			return true;
 		}
 
-		return $user->hasRole(Role::SUPER_ADMIN) || $user->hasRole(Role::ADMIN);
+		return false;
 	}
 
 	private function sanitizeForLog(mixed $value, ?string $key = null): mixed

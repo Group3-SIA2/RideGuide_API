@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Transaction Logbook - RideGuide Admin')
+@section('title', 'Logbook - RideGuide Admin')
 
 @php
     $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
@@ -10,7 +10,7 @@
 @section('content_header')
     <div class="rg-page-header">
         <div>
-            <h4 class="rg-page-title">Transaction Logbook</h4>
+            <h4 class="rg-page-title">Logbook</h4>
             <p class="rg-page-subtitle">Track admin-side transaction changes across modules.</p>
         </div>
         <div class="d-flex align-items-center gap-2">

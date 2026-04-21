@@ -513,7 +513,7 @@ return [
             'can'    => 'menu_super_admin_backups',
         ],
         [
-            'text'   => 'Transaction Logbook',
+            'text'   => 'Logbook',
             'route'  => 'super-admin.transactions.index',
             'icon'   => 'fas fa-fw fa-book',
             'active' => ['super-admin/transactions*'],
@@ -561,7 +561,7 @@ return [
             'can'    => 'menu_admin_backups',
         ],
         [
-            'text'   => 'Transaction Logbook',
+            'text'   => 'Logbook',
             'route'  => 'admin.transactions.index',
             'icon'   => 'fas fa-fw fa-book',
             'active' => ['admin/transactions*'],
