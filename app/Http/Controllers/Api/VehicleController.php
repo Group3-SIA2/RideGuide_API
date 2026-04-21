@@ -14,6 +14,10 @@ use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
+    /* 
+        Endpoint: /api/vehicles
+        Body Params: vehicle_type, description, image_front, image_back, image_left, image_right, plate_number
+    */
     public function addVehicle(Request $request): JsonResponse
     {
         if (! $request->isMethod('POST')) {
@@ -74,6 +78,10 @@ class VehicleController extends Controller
         return response()->json(['message' => 'Vehicle added successfully', 'vehicle' => $vehicleDetails], 201);
     }
 
+    /*
+        Endpoint: /api/vehicles
+        Query Params (admin only): status (active, inactive, suspended)
+    */
     public function listVehicledPerDriver(Request $request)
     {
         if (! $request->user() || ! $request->user()->hasRole('driver')) {
@@ -95,6 +103,11 @@ class VehicleController extends Controller
         return response()->json(['vehicles' => $vehicles], 200);
     }
 
+    /* 
+        Endpoint: /api/vehicles/{id}
+        URL Params: id
+        Body Params: vehicle_type, description, image_front, image_back, image_left, image_right, plate_number
+    */
     public function updateVehicle(Request $request, $id): JsonResponse
     {
         if (! $request->isMethod('put')) {
@@ -168,6 +181,10 @@ class VehicleController extends Controller
         return response()->json(['message' => 'Vehicle updated successfully', 'vehicle' => $vehicleDetails], 200);
     }
 
+    /* 
+        Endpoint: /api/vehicles/{id}
+        URL Params: id
+    */
     public function deleteVehicle(Request $request, $id): JsonResponse
     {
         if (! $request->isMethod('delete')) {
@@ -195,6 +212,10 @@ class VehicleController extends Controller
         return response()->json(['message' => 'Vehicle deleted successfully'], 200);
     }
 
+    /* 
+        Endpoint: /api/vehicles/{id}
+        URL Params: id
+    */
     public function restoreVehicle(Request $request, string $id): JsonResponse
     {
         if (! $request->isMethod('put')) {
@@ -230,6 +251,7 @@ class VehicleController extends Controller
         ]);
     }
 
+    // Helper function
     private function appendVehicleImageUrls(?vehicle $vehicle): void
     {
         if (! $vehicle) {
