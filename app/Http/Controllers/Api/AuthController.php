@@ -8,7 +8,6 @@ use App\Models\Otp;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\InputValidation;
-use App\Support\TransactionLogbook;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -47,16 +46,6 @@ class AuthController extends Controller
 
         // Generate and send email verification OTP
         $this->generateAndSendOtp($user, 'email_verification');
-
-        $this->writeAuthLog(
-            request: $request,
-            user: $user,
-            transactionType: 'register',
-            status: 'success',
-            metadata: [
-                'auth_channel' => 'email_password',
-            ]
-        );
 
         return response()->json([
             'success' => true,
@@ -316,18 +305,6 @@ class AuthController extends Controller
         $user->tokens()->delete();
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        $this->writeAuthLog(
-            request: $request,
-            user: $user,
-            transactionType: $isNewUser ? 'register' : 'login',
-            status: 'success',
-            metadata: [
-                'auth_channel' => 'social_firebase',
-                'provider' => $providerFromToken,
-                'is_new_user' => $isNewUser,
-            ]
-        );
-
         return response()->json([
             'success' => true,
             'message' => $isNewUser ? 'Social signup successful.' : 'Social login successful.',
@@ -406,17 +383,6 @@ class AuthController extends Controller
             // Auto-login: issue Sanctum token immediately after email verification
             $token = $user->createToken('auth-token')->plainTextToken;
 
-            $this->writeAuthLog(
-                request: $request,
-                user: $user,
-                transactionType: 'login',
-                status: 'success',
-                metadata: [
-                    'auth_channel' => 'email_password',
-                    'via' => 'email_verification_otp',
-                ]
-            );
-
             return response()->json([
                 'success' => true,
                 'message' => 'Email verified successfully. You are now logged in.',
@@ -441,17 +407,6 @@ class AuthController extends Controller
             $user->tokens()->delete();
 
             $token = $user->createToken('auth-token')->plainTextToken;
-
-            $this->writeAuthLog(
-                request: $request,
-                user: $user,
-                transactionType: 'login',
-                status: 'success',
-                metadata: [
-                    'auth_channel' => 'email_password',
-                    'via' => 'login_2fa_otp',
-                ]
-            );
 
             return response()->json([
                 'success' => true,
@@ -483,22 +438,8 @@ class AuthController extends Controller
     */
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->user();
-
-        if ($user) {
-            $this->writeAuthLog(
-                request: $request,
-                user: $user,
-                transactionType: 'logout',
-                status: 'success',
-                metadata: [
-                    'auth_channel' => 'sanctum_token',
-                ]
-            );
-        }
-
         // Revoke the current access token
-        $user?->currentAccessToken()?->delete();
+        $request->user()?->currentAccessToken()?->delete();
 
         return response()->json([
             'success' => true,

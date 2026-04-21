@@ -446,6 +446,10 @@ class UserAuthorizationController extends Controller
         try {
             $actor = $request->user();
 
+            if (! $actor || ! ($actor->hasRole(Role::ADMIN) || $actor->hasRole(Role::SUPER_ADMIN))) {
+                return;
+            }
+
             TransactionLogbook::write(
                 request: $request,
                 module: 'authorization',

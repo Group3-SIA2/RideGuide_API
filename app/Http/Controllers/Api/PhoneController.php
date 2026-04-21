@@ -6,12 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Otp;
 use App\Models\User;
 use App\Support\InputValidation;
-use App\Support\TransactionLogbook;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
-use Throwable;
 
 /**
  * Phone Number Authentication via iProgSMS
@@ -76,16 +74,6 @@ class PhoneController extends Controller
                 'message' => 'We could not send the verification OTP. Please try again.',
             ], 503);
         }
-
-        $this->writeAuthLog(
-            request: $request,
-            user: $user,
-            transactionType: 'register',
-            status: 'success',
-            metadata: [
-                'auth_channel' => 'phone_password',
-            ]
-        );
 
         return response()->json([
             'success' => true,
@@ -240,17 +228,6 @@ class PhoneController extends Controller
             $user->tokens()->delete();
             $token = $user->createToken('auth-token')->plainTextToken;
 
-            $this->writeAuthLog(
-                request: $request,
-                user: $user,
-                transactionType: 'login',
-                status: 'success',
-                metadata: [
-                    'auth_channel' => 'phone_password',
-                    'via' => 'phone_verification_otp',
-                ]
-            );
-
             return response()->json([
                 'success' => true,
                 'message' => 'Phone number verified successfully. You are now logged in.',
@@ -269,17 +246,6 @@ class PhoneController extends Controller
         // login_2fa — issue Sanctum token
         $user->tokens()->delete();
         $token = $user->createToken('auth-token')->plainTextToken;
-
-        $this->writeAuthLog(
-            request: $request,
-            user: $user,
-            transactionType: 'login',
-            status: 'success',
-            metadata: [
-                'auth_channel' => 'phone_password',
-                'via' => 'login_2fa_otp',
-            ]
-        );
 
         return response()->json([
             'success' => true,
@@ -614,4 +580,5 @@ class PhoneController extends Controller
 
         return $fullName !== '' ? $fullName : null;
     }
+}
 }

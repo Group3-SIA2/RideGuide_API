@@ -20,10 +20,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SanitizeApiInput::class,
         ]);
 
-        $middleware->api(append: [
-            \App\Http\Middleware\LogAdminTransactions::class,
-        ]);
-
         $middleware->alias([
             'permission' => \App\Http\Controllers\Auth\CheckPermission::class,
             'active.user' => \App\Http\Middleware\EnsureUserIsActive::class,

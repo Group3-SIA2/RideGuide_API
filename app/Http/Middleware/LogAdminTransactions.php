@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Role;
 use App\Support\TransactionLogbook;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,15 @@ class LogAdminTransactions
 		}
 
 		$user = $request->user();
+
+		if (! $user || ! method_exists($user, 'hasRole')) {
+			return $next($request);
+		}
+
+		if (! ($user->hasRole(Role::ADMIN) || $user->hasRole(Role::SUPER_ADMIN))) {
+			return $next($request);
+		}
+
 		$actorUserId = $user?->id ? (string) $user->id : null;
 		$actorEmail = is_string($user?->email) ? $user->email : null;
 
@@ -190,7 +200,7 @@ class LogAdminTransactions
 			'current_password',
 		]));
 
-		$path = '/' . ltrim((string) $request->path(), '/');
+		$path = $this->normalizeLogbookPath('/' . ltrim((string) $request->path(), '/'));
 		$method = strtoupper((string) $request->method());
 
 		return match ($method) {
@@ -210,7 +220,7 @@ class LogAdminTransactions
 
 	private function resolveActionSummary(Request $request): string
 	{
-		$path = '/' . ltrim((string) $request->path(), '/');
+		$path = $this->normalizeLogbookPath('/' . ltrim((string) $request->path(), '/'));
 		$method = strtoupper((string) $request->method());
 
 		return match ($method) {
@@ -248,9 +258,20 @@ class LogAdminTransactions
 		return $email !== '' ? $email : null;
 	}
 
+	private function normalizeLogbookPath(string $path): string
+	{
+		$normalized = str_replace('/transactions', '/logbook', $path);
+
+		return $normalized;
+	}
+
 	private function shouldSkipLogging(Request $request): bool
 	{
 		$routeName = (string) optional($request->route())->getName();
+
+		if (! Str::startsWith($routeName, ['admin.', 'super-admin.'])) {
+			return true;
+		}
 
 		if (Str::startsWith($routeName, ['api.auth.', 'api.auth.phone.'])) {
 			return true;

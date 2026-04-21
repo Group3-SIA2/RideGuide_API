@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AdminTransactionLog;
 use Illuminate\Http\Request;
 
-class TransactionLogController extends Controller
+class LogbookController extends Controller
 {
     public function __construct()
     {
