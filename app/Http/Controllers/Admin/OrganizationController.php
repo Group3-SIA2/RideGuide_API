@@ -788,9 +788,6 @@ class OrganizationController extends Controller
             ->with('success', 'Organization updated successfully.');
     }
 
-    /**
-     * Update only the HQ address of an existing organization (modal form).
-     */
     public function updateAddress(Request $request, string $id)
     {
         $this->authorizePermissions($request, 'edit_organizations');

@@ -15,17 +15,11 @@ class LogoutController extends Controller
         $this->middleware('auth');
     }
 
-    /**
-     * Show the logout confirmation page.
-     */
     public function confirm()
     {
         return view('admin.logout');
     }
 
-    /**
-     * Log the admin out and redirect to login.
-     */
     public function logout(Request $request)
     {
         $user = $request->user();
