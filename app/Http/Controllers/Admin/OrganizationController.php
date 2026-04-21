@@ -16,8 +16,10 @@ use App\Models\OrganizationTerminal;
 use App\Models\Role;
 use App\Models\Terminal;
 use App\Models\User;
+use App\Support\TransactionLogbook;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class OrganizationController extends Controller
 {
@@ -404,6 +406,9 @@ class OrganizationController extends Controller
         $this->authorize('assignToOwnedOrganization', [$driver, $targetOrganization]);
 
         $oldOrganizationId = $driver->organization_id;
+        $oldOrganizationName = $oldOrganizationId
+            ? Organization::query()->whereKey($oldOrganizationId)->value('name')
+            : null;
         $driver->update(['organization_id' => $targetOrganization->id]);
 
         $this->logDriverAssignmentAction(
@@ -412,6 +417,22 @@ class OrganizationController extends Controller
             $targetOrganization->id,
             $request->user()->id,
             $oldOrganizationId ? DriverOrganizationAssignmentLog::ACTION_REASSIGN : DriverOrganizationAssignmentLog::ACTION_ASSIGN
+        );
+
+        $this->writeDriverAssignmentLog(
+            request: $request,
+            driver: $driver,
+            transactionType: $oldOrganizationId ? 'reassign_driver' : 'assign_driver',
+            before: [
+                'organization_id' => $oldOrganizationId,
+                'organization_name' => $oldOrganizationName,
+            ],
+            after: [
+                'organization_id' => $targetOrganization->id,
+                'organization_name' => $targetOrganization->name,
+                'terminal_id' => null,
+                'terminal_name' => null,
+            ]
         );
 
         $query = [];
@@ -436,6 +457,7 @@ class OrganizationController extends Controller
         ]);
 
         $terminalId = $validated['terminal_id'];
+        $newTerminal = Terminal::query()->findOrFail($terminalId);
         $terminalLinked = OrganizationTerminal::query()
             ->where('organization_id', $targetOrganization->id)
             ->where('terminal_id', $terminalId)
@@ -447,6 +469,16 @@ class OrganizationController extends Controller
         }
 
         $oldOrganizationId = $driver->organization_id;
+        $oldOrganizationName = $oldOrganizationId
+            ? Organization::query()->whereKey($oldOrganizationId)->value('name')
+            : null;
+        $oldTerminalId = DriverAssignTerminal::query()
+            ->where('driver_id', $driver->id)
+            ->whereNull('deleted_at')
+            ->value('terminal_id');
+        $oldTerminalName = $oldTerminalId
+            ? Terminal::query()->whereKey($oldTerminalId)->value('terminal_name')
+            : null;
         $driver->update(['organization_id' => $targetOrganization->id]);
 
         DriverAssignTerminal::query()
@@ -478,6 +510,24 @@ class OrganizationController extends Controller
             $oldOrganizationId ? DriverOrganizationAssignmentLog::ACTION_REASSIGN : DriverOrganizationAssignmentLog::ACTION_ASSIGN
         );
 
+        $this->writeDriverAssignmentLog(
+            request: $request,
+            driver: $driver,
+            transactionType: 'assign_driver_area',
+            before: [
+                'organization_id' => $oldOrganizationId,
+                'organization_name' => $oldOrganizationName,
+                'terminal_id' => $oldTerminalId,
+                'terminal_name' => $oldTerminalName,
+            ],
+            after: [
+                'organization_id' => $targetOrganization->id,
+                'organization_name' => $targetOrganization->name,
+                'terminal_id' => $terminalId,
+                'terminal_name' => $newTerminal->terminal_name,
+            ]
+        );
+
         $query = [];
         if ($request->filled('organization_id')) {
             $query['organization_id'] = $request->input('organization_id');
@@ -507,6 +557,14 @@ class OrganizationController extends Controller
         }
 
         $oldOrganizationId = $driver->organization_id;
+        $oldOrganizationName = Organization::query()->whereKey($oldOrganizationId)->value('name');
+        $oldTerminalId = DriverAssignTerminal::query()
+            ->where('driver_id', $driver->id)
+            ->whereNull('deleted_at')
+            ->value('terminal_id');
+        $oldTerminalName = $oldTerminalId
+            ? Terminal::query()->whereKey($oldTerminalId)->value('terminal_name')
+            : null;
         $driver->update(['organization_id' => null]);
 
         $this->logDriverAssignmentAction(
@@ -515,6 +573,24 @@ class OrganizationController extends Controller
             null,
             $request->user()->id,
             DriverOrganizationAssignmentLog::ACTION_UNASSIGN
+        );
+
+        $this->writeDriverAssignmentLog(
+            request: $request,
+            driver: $driver,
+            transactionType: 'unassign_driver',
+            before: [
+                'organization_id' => $oldOrganizationId,
+                'organization_name' => $oldOrganizationName,
+                'terminal_id' => $oldTerminalId,
+                'terminal_name' => $oldTerminalName,
+            ],
+            after: [
+                'organization_id' => null,
+                'organization_name' => null,
+                'terminal_id' => null,
+                'terminal_name' => null,
+            ]
         );
 
         return redirect()->route($this->panelRouteName($request, 'organizations.assignments.index'), $query)
@@ -930,5 +1006,55 @@ class OrganizationController extends Controller
         }
 
         return 'admin.' . $suffix;
+    }
+
+    private function writeDriverAssignmentLog(
+        Request $request,
+        Driver $driver,
+        string $transactionType,
+        array $before,
+        array $after
+    ): void {
+        try {
+            $actor = $request->user();
+
+            TransactionLogbook::write(
+                request: $request,
+                module: 'driver_assignments',
+                transactionType: $transactionType,
+                status: 'success',
+                referenceType: 'driver',
+                referenceId: (string) $driver->id,
+                before: $before,
+                after: $after,
+                metadata: [
+                    'route_name' => optional($request->route())->getName(),
+                    'actor_name' => $this->resolveActorName($actor),
+                ],
+                actorUserId: $actor?->id ? (string) $actor->id : null,
+                actorEmail: $actor?->email
+            );
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function resolveActorName(mixed $user): ?string
+    {
+        if (! is_object($user)) {
+            return null;
+        }
+
+        $name = trim((string) ($user->name ?? ''));
+
+        if ($name !== '') {
+            return $name;
+        }
+
+        $firstName = trim((string) ($user->first_name ?? ''));
+        $lastName = trim((string) ($user->last_name ?? ''));
+        $fullName = trim($firstName . ' ' . $lastName);
+
+        return $fullName !== '' ? $fullName : null;
     }
 }

@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\TransactionLogbook;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 class UserAuthorizationController extends Controller
 {
@@ -89,6 +91,20 @@ class UserAuthorizationController extends Controller
 
         $role->permissions()->sync($validated['permissions'] ?? []);
 
+        $this->writeRoleAuditLog(
+            request: $request,
+            transactionType: 'create_role',
+            referenceType: 'role',
+            referenceId: (string) $role->id,
+            before: null,
+            after: [
+                'role_name' => $role->name,
+                'description' => $role->description,
+                'permission_ids' => $validated['permissions'] ?? [],
+                'permission_count' => count($validated['permissions'] ?? []),
+            ]
+        );
+
         return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
             ->with('success', "Role \"{$role->name}\" created successfully.");
     }
@@ -136,7 +152,26 @@ class UserAuthorizationController extends Controller
             'permissions.*' => ['uuid', 'exists:permissions,id'],
         ]);
 
+        $beforePermissionIds = $role->permissions()->pluck('permissions.id')->values()->all();
+
         $role->permissions()->sync($validated['permissions'] ?? []);
+
+        $this->writeRoleAuditLog(
+            request: $request,
+            transactionType: 'update_role_permissions',
+            referenceType: 'role',
+            referenceId: (string) $role->id,
+            before: [
+                'role_name' => $role->name,
+                'permission_ids' => $beforePermissionIds,
+                'permission_count' => count($beforePermissionIds),
+            ],
+            after: [
+                'role_name' => $role->name,
+                'permission_ids' => $validated['permissions'] ?? [],
+                'permission_count' => count($validated['permissions'] ?? []),
+            ]
+        );
 
         return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
             ->with('success', "Permissions for \"{$role->name}\" updated successfully.");
@@ -237,6 +272,8 @@ class UserAuthorizationController extends Controller
             'roles'   => ['nullable', 'array'],
             'roles.*' => ['uuid', Rule::in($assignableRoleIds)],
         ]);
+        $beforeRoleIds = $user->roles()->pluck('roles.id')->values()->all();
+        $beforeRoleNames = Role::whereIn('id', $beforeRoleIds)->pluck('name')->values()->all();
         $selectedRoleIds = $validated['roles'] ?? [];
 
         $isAdminEditingSelf = $currentUser->hasRole(Role::ADMIN)
@@ -272,6 +309,27 @@ class UserAuthorizationController extends Controller
         }
 
         $user->roles()->sync($selectedRoleIds);
+
+        $afterRoleNames = Role::whereIn('id', $selectedRoleIds)->pluck('name')->values()->all();
+
+        $this->writeRoleAuditLog(
+            request: $request,
+            transactionType: 'update_user_roles',
+            referenceType: 'user',
+            referenceId: (string) $user->id,
+            before: [
+                'target_user_id' => (string) $user->id,
+                'target_user_email' => $user->email,
+                'role_ids' => $beforeRoleIds,
+                'role_names' => $beforeRoleNames,
+            ],
+            after: [
+                'target_user_id' => (string) $user->id,
+                'target_user_email' => $user->email,
+                'role_ids' => $selectedRoleIds,
+                'role_names' => $afterRoleNames,
+            ]
+        );
 
         return redirect()->route($this->panelRouteName($request, 'user-authorization.index'))
             ->with('success', "Roles for \"{$user->first_name} {$user->last_name}\" updated successfully.");
@@ -411,5 +469,74 @@ class UserAuthorizationController extends Controller
         }
 
         return 'admin.' . $suffix;
+    }
+
+    private function writeRoleAuditLog(
+        Request $request,
+        string $transactionType,
+        string $referenceType,
+        string $referenceId,
+        ?array $before,
+        array $after
+    ): void {
+        try {
+            $actor = $request->user();
+
+            TransactionLogbook::write(
+                request: $request,
+                module: 'authorization',
+                transactionType: $transactionType,
+                status: 'success',
+                referenceType: $referenceType,
+                referenceId: $referenceId,
+                before: $before,
+                after: $after,
+                metadata: [
+                    'route_name' => optional($request->route())->getName(),
+                    'actor_name' => $this->resolveActorName($actor),
+                    'actor_role_scope' => $this->resolveActorRoleScope($actor),
+                ],
+                actorUserId: $actor?->id ? (string) $actor->id : null,
+                actorEmail: $actor?->email
+            );
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    private function resolveActorName(mixed $user): ?string
+    {
+        if (! is_object($user)) {
+            return null;
+        }
+
+        $name = trim((string) ($user->name ?? ''));
+
+        if ($name !== '') {
+            return $name;
+        }
+
+        $firstName = trim((string) ($user->first_name ?? ''));
+        $lastName = trim((string) ($user->last_name ?? ''));
+        $fullName = trim($firstName . ' ' . $lastName);
+
+        return $fullName !== '' ? $fullName : null;
+    }
+
+    private function resolveActorRoleScope(mixed $user): ?string
+    {
+        if (! is_object($user) || ! method_exists($user, 'hasRole')) {
+            return null;
+        }
+
+        if ($user->hasRole(Role::SUPER_ADMIN)) {
+            return Role::SUPER_ADMIN;
+        }
+
+        if ($user->hasRole(Role::ADMIN)) {
+            return Role::ADMIN;
+        }
+
+        return null;
     }
 }

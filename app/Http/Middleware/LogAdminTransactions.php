@@ -260,6 +260,17 @@ class LogAdminTransactions
 			return true;
 		}
 
+		if (Str::endsWith($routeName, [
+			'organizations.assignments.assign',
+			'organizations.assignments.update',
+			'organizations.assignments.unassign',
+			'user-authorization.store-role',
+			'user-authorization.update-role',
+			'user-authorization.update-user',
+		])) {
+			return true;
+		}
+
 		if (Str::startsWith((string) $request->path(), ['_debugbar', 'telescope'])) {
 			return true;
 		}
