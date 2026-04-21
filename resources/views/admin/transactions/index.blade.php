@@ -11,7 +11,7 @@
     <div class="rg-page-header">
         <div>
             <h4 class="rg-page-title">Logbook</h4>
-            <p class="rg-page-subtitle">Track admin-side transaction changes across modules.</p>
+            <p class="rg-page-subtitle">Track system activity across modules.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <span class="rg-badge">{{ $logs->total() }} record{{ $logs->total() !== 1 ? 's' : '' }}</span>
@@ -38,7 +38,7 @@
         <div class="rg-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
             <div class="d-flex align-items-center">
                 <span class="rg-card-dot"></span>
-                <h6 class="rg-card-title mb-0">Transactions</h6>
+                <h6 class="rg-card-title mb-0">Activities</h6>
             </div>
 
             <form class="rg-filter-bar mt-3 mt-md-0" method="GET" action="{{ route($transactionsIndexRoute) }}">
@@ -80,7 +80,7 @@
                             <th>Date</th>
                             <th>Actor</th>
                             <th>Module</th>
-                            <th>Transaction</th>
+                            <th>Activity</th>
                             <th>Reference</th>
                             <th>Status</th>
                             <th>Details</th>

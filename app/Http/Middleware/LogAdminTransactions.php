@@ -28,16 +28,8 @@ class LogAdminTransactions
 		$transactionType = $this->resolveTransactionType($routeName, $request);
 		[$referenceType, $referenceId] = $this->resolveReference($request);
 		$before = $this->resolveBeforeData($request);
-
-		$after = [
-			'input' => $this->sanitizeForLog($request->except([
-				'_token',
-				'_method',
-				'password',
-				'password_confirmation',
-				'current_password',
-			])),
-		];
+		$after = $this->resolveAfterData($request);
+		$actionSummary = $this->resolveActionSummary($request);
 
 		try {
 			$response = $next($request);
@@ -58,6 +50,8 @@ class LogAdminTransactions
 				actorUserId: $actorUserId,
 				actorEmail: $actorEmail,
 				metadata: [
+					'actor_name' => $this->resolveActorName($user),
+					'action_summary' => $actionSummary,
 					'route_name' => $routeName,
 					'panel' => $routeName !== '' ? Str::before($routeName, '.') : null,
 					'http_method' => $request->method(),
@@ -80,6 +74,8 @@ class LogAdminTransactions
 				actorUserId: $actorUserId,
 				actorEmail: $actorEmail,
 				metadata: [
+					'actor_name' => $this->resolveActorName($user),
+					'action_summary' => 'Attempted ' . strtolower((string) $request->method()) . ' on /' . ltrim((string) $request->path(), '/'),
 					'route_name' => $routeName,
 					'panel' => $routeName !== '' ? Str::before($routeName, '.') : null,
 					'http_method' => $request->method(),
@@ -131,7 +127,7 @@ class LogAdminTransactions
 			$parts = explode('.', $routeName);
 
 			if (count($parts) >= 2 && $parts[1] !== '') {
-				return $parts[1];
+				return $parts[1] === 'transactions' ? 'logbook' : $parts[1];
 			}
 		}
 
@@ -184,8 +180,86 @@ class LogAdminTransactions
 		return null;
 	}
 
+	private function resolveAfterData(Request $request): array
+	{
+		$sanitizedInput = $this->sanitizeForLog($request->except([
+			'_token',
+			'_method',
+			'password',
+			'password_confirmation',
+			'current_password',
+		]));
+
+		$path = '/' . ltrim((string) $request->path(), '/');
+		$method = strtoupper((string) $request->method());
+
+		return match ($method) {
+			'GET' => [
+				'accessed_page' => $path,
+				'query' => $sanitizedInput,
+			],
+			'DELETE' => [
+				'deleted' => true,
+				'request' => $sanitizedInput,
+			],
+			default => [
+				'input' => $sanitizedInput,
+			],
+		};
+	}
+
+	private function resolveActionSummary(Request $request): string
+	{
+		$path = '/' . ltrim((string) $request->path(), '/');
+		$method = strtoupper((string) $request->method());
+
+		return match ($method) {
+			'GET' => 'GET / accessed ' . $path,
+			'POST' => 'POST / submitted input to ' . $path,
+			'PUT' => 'PUT / updated data in ' . $path,
+			'PATCH' => 'PATCH / updated data in ' . $path,
+			'DELETE' => 'DELETE / deleted data from ' . $path,
+			default => $method . ' / interacted with ' . $path,
+		};
+	}
+
+	private function resolveActorName(mixed $user): ?string
+	{
+		if (! is_object($user)) {
+			return null;
+		}
+
+		$name = trim((string) ($user->name ?? ''));
+
+		if ($name !== '') {
+			return $name;
+		}
+
+		$firstName = trim((string) ($user->first_name ?? ''));
+		$lastName = trim((string) ($user->last_name ?? ''));
+		$fullName = trim($firstName . ' ' . $lastName);
+
+		if ($fullName !== '') {
+			return $fullName;
+		}
+
+		$email = trim((string) ($user->email ?? ''));
+
+		return $email !== '' ? $email : null;
+	}
+
 	private function shouldSkipLogging(Request $request): bool
 	{
+		$routeName = (string) optional($request->route())->getName();
+
+		if (Str::startsWith($routeName, ['api.auth.', 'api.auth.phone.'])) {
+			return true;
+		}
+
+		if (in_array($routeName, ['admin.2fa.verify', 'admin.logout', 'super-admin.logout', 'org-manager.logout'], true)) {
+			return true;
+		}
+
 		if (Str::startsWith((string) $request->path(), ['_debugbar', 'telescope'])) {
 			return true;
 		}

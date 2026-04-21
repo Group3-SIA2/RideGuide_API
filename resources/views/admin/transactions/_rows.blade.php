@@ -36,6 +36,9 @@
         $safeBefore = $redactLogData($log->before_data ?? []);
         $safeAfter = $redactLogData($log->after_data ?? []);
         $safeMetadata = $redactLogData($log->metadata ?? []);
+        $actorName = data_get($safeMetadata, 'actor_name');
+        $actionSummary = data_get($safeMetadata, 'action_summary');
+        $displayModule = $log->module === 'transactions' ? 'logbook' : $log->module;
     @endphp
     <tr>
         <td>
@@ -46,17 +49,23 @@
 
         <td>
             <div class="d-flex flex-column">
-                <strong>{{ $log->actor_email ?? 'System' }}</strong>
+                <strong>{{ $actorName ?? ($log->actor_email ?? 'System') }}</strong>
+                @if($actorName && $log->actor_email)
+                    <small class="text-muted">{{ $log->actor_email }}</small>
+                @endif
                 <small class="text-muted">{{ $log->actor_user_id ? 'User ID: ' . $log->actor_user_id : 'No actor user id' }}</small>
             </div>
         </td>
 
         <td>
-            <span class="rg-role-badge">{{ ucfirst(str_replace('_', ' ', $log->module)) }}</span>
+            <span class="rg-role-badge">{{ ucfirst(str_replace('_', ' ', $displayModule)) }}</span>
         </td>
 
         <td>
             <span class="font-weight-semibold">{{ str_replace('_', ' ', $log->transaction_type) }}</span>
+            @if($actionSummary)
+                <small class="d-block text-muted">{{ $actionSummary }}</small>
+            @endif
         </td>
 
         <td>
@@ -88,7 +97,7 @@
                 <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="log-detail-label-{{ $log->id }}">Transaction Details</h5>
+                            <h5 class="modal-title" id="log-detail-label-{{ $log->id }}">Activity Details</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
@@ -246,6 +255,6 @@
     </tr>
 @empty
     <tr>
-        <td colspan="7" class="rg-empty">No transactions found.</td>
+        <td colspan="7" class="rg-empty">No activities found.</td>
     </tr>
 @endforelse
