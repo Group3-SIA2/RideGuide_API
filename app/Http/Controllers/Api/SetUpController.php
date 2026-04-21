@@ -11,6 +11,10 @@ use Illuminate\Http\Request;
 
 class SetUpController extends Controller
 {
+    /*
+        Endpoint: /api/setup/users
+        Body Params: first_name, last_name, middle_name (optional), roles (array of role names)
+    */
     public function setUpUsers(Request $request): JsonResponse
     {
         $user = auth()->user();
