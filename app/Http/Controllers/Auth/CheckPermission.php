@@ -23,7 +23,7 @@ class CheckPermission
         }
 
         // Super admins bypass all permission checks
-        if ($user->hasRole(\App\Models\Role::SUPER_ADMIN)) {
+        if ($user->isSuperAdmin()) {
             return $next($request);
         }
 
