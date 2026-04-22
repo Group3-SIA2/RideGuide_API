@@ -19,29 +19,37 @@ class RoleSeeder extends Seeder
             [
                 'name'        => Role::SUPER_ADMIN,
                 'description' => 'Super administrator with unrestricted access.',
+                'is_reserved' => true,
             ],
             [
                 'name'        => Role::ADMIN,
                 'description' => 'System administrator with full access.',
+                'is_reserved' => true,
             ],
             [
                 'name'        => Role::DRIVER,
                 'description' => 'Driver who provides ride services.',
+                'is_reserved' => true,
             ],
             [
                 'name'        => Role::COMMUTER,
                 'description' => 'Commuter who books rides.',
+                'is_reserved' => true,
             ],
             [
                 'name'        => Role::ORGANIZATION,
                 'description' => 'Transport organization manager (e.g. TODA, MODA).',
+                'is_reserved' => true,
             ],
         ];
 
         foreach ($roles as $role) {
-            Role::firstOrCreate(
+            Role::updateOrCreate(
                 ['name' => $role['name']],
-                ['description' => $role['description']],
+                [
+                    'description' => $role['description'],
+                    'is_reserved' => $role['is_reserved'],
+                ],
             );
         }
     }

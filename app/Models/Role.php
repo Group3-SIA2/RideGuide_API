@@ -18,6 +18,14 @@ class Role extends Model
     const COMMUTER     = 'commuter';
     const ORGANIZATION = 'organization';
 
+    public const RESERVED_NAMES = [
+        self::SUPER_ADMIN,
+        self::ADMIN,
+        self::DRIVER,
+        self::COMMUTER,
+        self::ORGANIZATION,
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -26,7 +34,18 @@ class Role extends Model
     protected $fillable = [
         'name',
         'description',
+        'is_reserved',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_reserved' => 'boolean',
+        ];
+    }
 
     /**
      * Get the users that belong to this role.
@@ -65,5 +84,15 @@ class Role extends Model
     {
         $role = self::where('name', $name)->first();
         return $role ? $role->id : null;
+    }
+
+    public static function isReservedName(string $name): bool
+    {
+        return in_array($name, self::RESERVED_NAMES, true);
+    }
+
+    public function isReserved(): bool
+    {
+        return (bool) ($this->is_reserved ?? false) || self::isReservedName((string) $this->name);
     }
 }

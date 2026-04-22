@@ -96,13 +96,35 @@ class User extends Authenticatable
         return $this->roles()->where('name', $roleName)->exists();
     }
 
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole(Role::SUPER_ADMIN);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(Role::ADMIN);
+    }
+
+    public function isPlainAdmin(): bool
+    {
+        return $this->isAdmin() && !$this->isSuperAdmin();
+    }
+
+    public function isOrganizationScoped(): bool
+    {
+        return ($this->hasRole(Role::ORGANIZATION) || $this->hasAnyActiveOrganizationManagement())
+            && !$this->isAdmin()
+            && !$this->isSuperAdmin();
+    }
+
     /**
      * Check if the user has a specific permission through any of their roles.
      */
     public function hasPermission(string $permissionName): bool
     {
         // Super admins always have all permissions
-        if ($this->hasRole(Role::SUPER_ADMIN)) {
+        if ($this->isSuperAdmin()) {
             return true;
         }
 
