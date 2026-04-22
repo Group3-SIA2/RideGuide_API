@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Role;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
 class LoginController extends Controller
@@ -25,16 +24,11 @@ class LoginController extends Controller
     {
         $user = auth()->user();
 
-        if ($user && $user->hasRole(Role::SUPER_ADMIN)) {
+        if ($user && $user->isSuperAdmin()) {
             return route('super-admin.dashboard');
         }
 
-        if (
-            $user
-            && ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-            && !$user->hasRole(Role::ADMIN)
-            && !$user->hasRole(Role::SUPER_ADMIN)
-        ) {
+        if ($user && $user->isOrganizationScoped()) {
             return route('org-manager.dashboard');
         }
 

@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Role;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,24 +22,16 @@ class EnsurePanelRole
 
         $targetRoute = 'admin.dashboard';
 
-        if ($user->hasRole(Role::SUPER_ADMIN)) {
+        if ($user->isSuperAdmin()) {
             $targetRoute = 'super-admin.dashboard';
-        } elseif (
-            ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-            && !$user->hasRole(Role::ADMIN)
-            && !$user->hasRole(Role::SUPER_ADMIN)
-        ) {
+        } elseif ($user->isOrganizationScoped()) {
             $targetRoute = 'org-manager.dashboard';
         }
 
         $isAllowed = match ($panel) {
-            'super-admin' => $user->hasRole(Role::SUPER_ADMIN),
-            'org-manager' => (
-                ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-                && !$user->hasRole(Role::ADMIN)
-                && !$user->hasRole(Role::SUPER_ADMIN)
-            ),
-            'admin' => $user->hasRole(Role::ADMIN) && !$user->hasRole(Role::SUPER_ADMIN),
+            'super-admin' => $user->isSuperAdmin(),
+            'org-manager' => $user->isOrganizationScoped(),
+            'admin' => !$user->isSuperAdmin() && !$user->isOrganizationScoped() && $user->hasPermission('view_admin_dashboard'),
             default => false,
         };
 
