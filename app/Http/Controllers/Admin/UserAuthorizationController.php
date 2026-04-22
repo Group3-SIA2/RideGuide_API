@@ -173,11 +173,7 @@ class UserAuthorizationController extends Controller
         }
 
         if ($currentUser->hasRole(Role::ADMIN)) {
-            return in_array($targetRole->name, [
-                Role::DRIVER,
-                Role::COMMUTER,
-                Role::ORGANIZATION,
-            ], true);
+            return $targetRole->name !== Role::ADMIN;
         }
 
         return false;
@@ -333,9 +329,7 @@ class UserAuthorizationController extends Controller
                 return false;
             }
 
-            return $targetUser->roles()
-                ->whereIn('name', [Role::COMMUTER, Role::DRIVER, Role::ORGANIZATION])
-                ->exists();
+            return ! $targetUser->hasRole(Role::SUPER_ADMIN);
         }
 
         return false;
@@ -370,11 +364,7 @@ class UserAuthorizationController extends Controller
         }
 
         if (in_array(Role::ADMIN, $selectedRoleNames, true)) {
-            $adminConflicts = array_values(array_intersect($selectedRoleNames, [
-                Role::DRIVER,
-                Role::COMMUTER,
-                Role::ORGANIZATION,
-            ]));
+            $adminConflicts = array_values(array_diff($selectedRoleNames, [Role::ADMIN]));
 
             if (!empty($adminConflicts)) {
                 $label = collect($adminConflicts)
@@ -394,11 +384,13 @@ class UserAuthorizationController extends Controller
 
         // Admin-profile users should only stay within admin track.
         if ($targetUser->hasRole(Role::ADMIN)) {
-            $disabled = array_merge($disabled, [
-                Role::DRIVER,
-                Role::COMMUTER,
-                Role::ORGANIZATION,
-            ]);
+            $disabled = array_merge(
+                $disabled,
+                Role::query()
+                    ->whereNotIn('name', [Role::ADMIN, Role::SUPER_ADMIN])
+                    ->pluck('name')
+                    ->all()
+            );
         }
 
         // Organization-profile users can combine with driver/commuter but not admin tracks.
@@ -414,11 +406,13 @@ class UserAuthorizationController extends Controller
             && !$currentUser->hasRole(Role::SUPER_ADMIN)
             && $currentUser->is($targetUser)
         ) {
-            $disabled = array_merge($disabled, [
-                Role::DRIVER,
-                Role::COMMUTER,
-                Role::ORGANIZATION,
-            ]);
+            $disabled = array_merge(
+                $disabled,
+                Role::query()
+                    ->whereNotIn('name', [Role::ADMIN, Role::SUPER_ADMIN])
+                    ->pluck('name')
+                    ->all()
+            );
         }
 
         return array_values(array_unique($disabled));

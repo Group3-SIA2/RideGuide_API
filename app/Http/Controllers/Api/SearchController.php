@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Commuter;
 use App\Models\Driver;
 use App\Models\LicenseId;
+use App\Models\Role;
 use App\Support\InputValidation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,10 +26,11 @@ class SearchController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $roleName = $user->role?->name;
+        $isCommuter = $user->hasRole(Role::COMMUTER);
+        $canSearchDrivers = $user->hasAnyPermission(['view_drivers', 'manage_drivers']);
 
-        // Only admin and commuter can search drivers
-        if (! in_array($roleName, ['admin', 'commuter'])) {
+        // Allow commuter profile users and users granted explicit driver view permissions.
+        if (! $isCommuter && ! $canSearchDrivers) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Drivers cannot search other drivers.',
@@ -49,7 +51,7 @@ class SearchController extends Controller
         $query = Driver::with('user', 'licenseId');
 
         // Commuters can only see verified drivers
-        if ($roleName === 'commuter') {
+        if ($isCommuter) {
             $query->whereHas('licenseId', function ($builder) {
                 $builder->where('verification_status', LicenseId::VERIFICATION_STATUS_VERIFIED);
             });
@@ -71,7 +73,7 @@ class SearchController extends Controller
 
         // Filter by verification status (admin only)
         $verificationStatus = $validated['verification_status'] ?? null;
-        if ($roleName === 'admin' && $verificationStatus !== null) {
+        if ($canSearchDrivers && $verificationStatus !== null) {
             $query->whereHas('licenseId', function ($builder) use ($verificationStatus) {
                 $builder->where('verification_status', $verificationStatus);
             });
@@ -100,7 +102,7 @@ class SearchController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $drivers->map(fn ($driver) => $this->formatDriver($driver, $roleName)),
+            'data' => $drivers->map(fn ($driver) => $this->formatDriver($driver, $isCommuter ? Role::COMMUTER : 'admin')),
             'total' => $drivers->count(),
         ]);
     }
@@ -117,10 +119,11 @@ class SearchController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $roleName = $user->role?->name;
+        $isDriver = $user->hasRole(Role::DRIVER);
+        $canSearchCommuters = $user->hasAnyPermission(['view_commuters', 'manage_commuters']);
 
-        // Only admin and driver can search commuters
-        if (! in_array($roleName, ['admin', 'driver'])) {
+        // Allow driver profile users and users granted explicit commuter view permissions.
+        if (! $isDriver && ! $canSearchCommuters) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized. Only admins and drivers can search commuters.',
@@ -175,7 +178,7 @@ class SearchController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $commuters->map(fn ($commuter) => $this->formatCommuter($commuter, $roleName)),
+            'data' => $commuters->map(fn ($commuter) => $this->formatCommuter($commuter, $isDriver ? Role::DRIVER : 'admin')),
             'total' => $commuters->count(),
         ]);
     }

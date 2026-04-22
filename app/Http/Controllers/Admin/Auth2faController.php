@@ -102,7 +102,7 @@ class Auth2faController extends Controller
         Auth::login($user, (bool) session('2fa:remember', false));
         $request->session()->regenerate();
 
-        if ($user->hasRole(Role::SUPER_ADMIN) || $user->hasRole(Role::ADMIN)) {
+        if ($user->isSuperAdmin() || $user->isAdmin()) {
             TransactionLogbook::write(
                 request: $request,
                 module: 'auth',
@@ -111,22 +111,18 @@ class Auth2faController extends Controller
                 referenceType: 'user',
                 referenceId: (string) $user->id,
                 after: [
-                    'role_scope' => $user->hasRole(Role::SUPER_ADMIN) ? Role::SUPER_ADMIN : Role::ADMIN,
+                    'role_scope' => $user->isSuperAdmin() ? Role::SUPER_ADMIN : Role::ADMIN,
                 ]
             );
         }
 
         session()->forget(['2fa:user_id', '2fa:remember']);
 
-        if ($user->hasRole(Role::SUPER_ADMIN)) {
+        if ($user->isSuperAdmin()) {
             return redirect()->route('super-admin.dashboard');
         }
 
-        if (
-            ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-            && !$user->hasRole(Role::ADMIN)
-            && !$user->hasRole(Role::SUPER_ADMIN)
-        ) {
+        if ($user->isOrganizationScoped()) {
             return redirect()->route('org-manager.dashboard');
         }
 

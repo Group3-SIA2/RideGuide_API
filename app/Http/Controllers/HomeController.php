@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Role;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -26,16 +25,11 @@ class HomeController extends Controller
     {
         $user = auth()->user();
 
-        if ($user && $user->hasRole(Role::SUPER_ADMIN)) {
+        if ($user && $user->isSuperAdmin()) {
             return redirect()->route('super-admin.dashboard');
         }
 
-        if (
-            $user
-            && ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-            && !$user->hasRole(Role::ADMIN)
-            && !$user->hasRole(Role::SUPER_ADMIN)
-        ) {
+        if ($user && $user->isOrganizationScoped()) {
             return redirect()->route('org-manager.dashboard');
         }
 

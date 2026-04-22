@@ -31,15 +31,11 @@ Route::get('/', function () {
 
     $user = auth()->user();
 
-    if ($user->hasRole(Role::SUPER_ADMIN)) {
+    if ($user->isSuperAdmin()) {
         return redirect()->route('super-admin.dashboard');
     }
 
-    if (
-        ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-        && !$user->hasRole(Role::ADMIN)
-        && !$user->hasRole(Role::SUPER_ADMIN)
-    ) {
+    if ($user->isOrganizationScoped()) {
         return redirect()->route('org-manager.dashboard');
     }
 

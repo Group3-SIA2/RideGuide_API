@@ -150,10 +150,9 @@
                                         $userQuery->where(function ($query) use ($authUser) {
                                             $query->where('id', $authUser->id)
                                                 ->orWhereHas('roles', function ($q) {
-                                                    $q->whereIn('name', [
-                                                        \App\Models\Role::COMMUTER,
-                                                        \App\Models\Role::DRIVER,
-                                                        \App\Models\Role::ORGANIZATION,
+                                                    $q->whereNotIn('name', [
+                                                        \App\Models\Role::SUPER_ADMIN,
+                                                        \App\Models\Role::ADMIN,
                                                     ]);
                                                 });
                                         });

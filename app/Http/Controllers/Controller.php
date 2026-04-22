@@ -25,7 +25,7 @@ class Controller extends BaseController
             abort(403, 'Unauthorized.');
         }
 
-        if ($user->hasRole(\App\Models\Role::SUPER_ADMIN)) {
+        if ($user->isSuperAdmin()) {
             return;
         }
 

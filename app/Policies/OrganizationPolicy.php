@@ -25,7 +25,9 @@ class OrganizationPolicy
      */
     public function create(User $user): bool
     {
-        return $this->isAdmin($user) || $user->hasRole('organization');
+        return $this->isAdmin($user)
+            || $user->hasPermission('create_organizations')
+            || $user->hasRole(Role::ORGANIZATION);
     }
 
     /**
@@ -33,11 +35,11 @@ class OrganizationPolicy
      */
     public function update(User $user, Organization $organization): bool
     {
-        if ($this->isAdmin($user)) {
+        if ($this->isAdmin($user) || $user->hasPermission('edit_organizations')) {
             return true;
         }
 
-        return ($user->hasRole('organization') && $organization->owner_user_id === $user->id)
+        return ($user->hasRole(Role::ORGANIZATION) && $organization->owner_user_id === $user->id)
             || $user->isOrganizationManagerFor($organization->id);
     }
 
@@ -46,11 +48,11 @@ class OrganizationPolicy
      */
     public function delete(User $user, Organization $organization): bool
     {
-        if ($this->isAdmin($user)) {
+        if ($this->isAdmin($user) || $user->hasPermission('delete_organizations')) {
             return true;
         }
 
-        return ($user->hasRole('organization') && $organization->owner_user_id === $user->id)
+        return ($user->hasRole(Role::ORGANIZATION) && $organization->owner_user_id === $user->id)
             || $user->isOrganizationManagerFor($organization->id);
     }
 
@@ -59,12 +61,12 @@ class OrganizationPolicy
      */
     public function restore(User $user, Organization $organization): bool
     {
-        return $this->isAdmin($user);
+        return $this->isAdmin($user) || $user->hasPermission('delete_organizations');
     }
 
     public function assignOwner(User $user, ?User $ownerUser): bool
     {
-        if (!$this->isAdmin($user)) {
+        if (!$this->isAdmin($user) && !$user->hasPermission('edit_organizations')) {
             return false;
         }
 
@@ -82,7 +84,12 @@ class OrganizationPolicy
 
         $ownerHasAllowedRole = $ownerUser->roles()
             ->whereIn('name', [Role::ADMIN, Role::SUPER_ADMIN, Role::ORGANIZATION])
-            ->exists();
+            ->exists()
+            || $ownerUser->hasAnyPermission([
+                'view_organizations',
+                'create_organizations',
+                'edit_organizations',
+            ]);
 
         if (!$ownerHasAllowedRole) {
             return false;
@@ -93,6 +100,6 @@ class OrganizationPolicy
 
     private function isAdmin(User $user): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('super_admin');
+        return $user->isAdmin() || $user->isSuperAdmin();
     }
 }

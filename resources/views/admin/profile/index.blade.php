@@ -14,6 +14,13 @@
 
 @section('content')
 
+    @php
+        $roleLabels = $user->roles
+            ->pluck('name')
+            ->map(fn ($name) => ucwords(str_replace('_', ' ', (string) $name)))
+            ->values();
+    @endphp
+
     <div class="row">
 
         {{-- Profile Card --}}
@@ -25,7 +32,15 @@
                     </div>
                     <h5 class="rg-profile-name mt-3">{{ $user->first_name }} {{ $user->last_name }}</h5>
                     <p class="rg-td-muted mb-1" style="font-size:0.82rem;">{{ $user->email }}</p>
-                    <span class="rg-role-badge">{{ ucfirst($user->role?->name ?? 'N/A') }}</span>
+                    @if($roleLabels->isNotEmpty())
+                        <div class="d-flex flex-wrap justify-content-center mt-2" style="gap: 6px;">
+                            @foreach($roleLabels as $roleLabel)
+                                <span class="rg-role-badge">{{ $roleLabel }}</span>
+                            @endforeach
+                        </div>
+                    @else
+                        <span class="rg-role-badge">N/A</span>
+                    @endif
                 </div>
             </div>
         </div>
@@ -60,7 +75,17 @@
                             </tr>
                             <tr>
                                 <td class="rg-td-muted">Role</td>
-                                <td><span class="rg-role-badge">{{ ucfirst($user->role?->name ?? 'N/A') }}</span></td>
+                                <td>
+                                    @if($roleLabels->isNotEmpty())
+                                        <div class="d-flex flex-wrap" style="gap: 6px;">
+                                            @foreach($roleLabels as $roleLabel)
+                                                <span class="rg-role-badge">{{ $roleLabel }}</span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="rg-role-badge">N/A</span>
+                                    @endif
+                                </td>
                             </tr>
                             <tr>
                                 <td class="rg-td-muted">Email Verified</td>
