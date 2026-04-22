@@ -146,7 +146,7 @@ class OrganizationController extends Controller
             $query->withTrashed();
         }
 
-        if (! $user->hasRole('admin') && ! $user->hasRole('super_admin')) {
+        if (! $this->isAdminUser($user)) {
             $query->where('status', 'active');
         }
 
@@ -173,7 +173,7 @@ class OrganizationController extends Controller
         $user = auth()->user();
 
         // Organization-role users are limited to one organization.
-        if ($user->hasRole('organization')) {
+        if ($user->hasRole(Role::ORGANIZATION)) {
             if (Organization::where('owner_user_id', $user->id)->exists()) {
                 return response()->json([
                     'success' => false,
@@ -214,7 +214,7 @@ class OrganizationController extends Controller
         );
 
         // Automatically assign ownership when an organization-role user creates.
-        if ($user->hasRole('organization')) {
+        if ($user->hasRole(Role::ORGANIZATION)) {
             $data['owner_user_id'] = $user->id;
         }
 
@@ -261,7 +261,8 @@ class OrganizationController extends Controller
 
         $hasEligibleRole = $user->hasRole(Role::ORGANIZATION)
             || $user->hasRole(Role::ADMIN)
-            || $user->hasRole(Role::SUPER_ADMIN);
+            || $user->hasRole(Role::SUPER_ADMIN)
+            || $user->hasPermission('create_organizations');
 
         if (! $hasEligibleRole) {
             return response()->json([
@@ -465,7 +466,7 @@ class OrganizationController extends Controller
         );
 
         // Organization-role users and organization managers cannot toggle owner or status.
-        if ($user->hasRole('organization') || $user->isOrganizationManagerFor($organization->id)) {
+        if ($user->hasRole(Role::ORGANIZATION) || $user->isOrganizationManagerFor($organization->id)) {
             unset($validated['status']);
             unset($validated['owner_user_id']);
         }
@@ -740,7 +741,14 @@ class OrganizationController extends Controller
             return false;
         }
 
-        return $user->hasRole(Role::ADMIN) || $user->hasRole(Role::SUPER_ADMIN);
+        return $user->isAdmin()
+            || $user->isSuperAdmin()
+            || $user->hasAnyPermission([
+                'view_organizations',
+                'create_organizations',
+                'edit_organizations',
+                'delete_organizations',
+            ]);
     }
 
     /*
