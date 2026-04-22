@@ -34,7 +34,12 @@ class OrganizationOwnerEligible implements ValidationRule
 
         $hasAllowedRole = $ownerUser->roles()
             ->whereIn('name', [Role::ADMIN, Role::SUPER_ADMIN, Role::ORGANIZATION])
-            ->exists();
+            ->exists()
+            || $ownerUser->hasAnyPermission([
+                'view_organizations',
+                'view_organization_dashboard',
+                'assign_drivers_to_organization',
+            ]);
 
         if (!$hasAllowedRole) {
             $fail('The selected owner must have an admin, super_admin, or organization role.');
