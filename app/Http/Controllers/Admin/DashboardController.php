@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Commuter;
 use App\Models\Driver;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,11 +22,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if (
-            ($user->hasRole(Role::ORGANIZATION) || $user->hasAnyActiveOrganizationManagement())
-            && !$user->hasRole(Role::ADMIN)
-            && !$user->hasRole(Role::SUPER_ADMIN)
-        ) {
+        if ($user->isOrganizationScoped()) {
             return redirect()->route('org-manager.dashboard');
         }
 
