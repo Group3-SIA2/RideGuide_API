@@ -1,20 +1,35 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AvailableCommutersController;
 use App\Http\Controllers\Api\CommuterController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\EmergencyContactController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\PhoneController;
+use App\Http\Controllers\Api\RideRequestController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SetUpController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\FareController;
 use App\Http\Controllers\Api\FeedbackController;
+use App\Http\Controllers\Api\LocationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Public Endpoints (Location Data - No Authentication Required)
+|--------------------------------------------------------------------------
+*/
+Route::controller(LocationController::class)->prefix('locations')->group(function (): void {
+    Route::get('/terminals', 'getTerminals')->name('api.locations.terminals');
+    Route::get('/routes', 'getRoutes')->name('api.locations.routes');
+    Route::get('/barangays', 'getBarangays')->name('api.locations.barangays');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -39,6 +54,36 @@ Route::controller(PhoneController::class)->prefix('auth/phone')->group(function 
     Route::post('/resend-otp', 'resendOtp')->name('api.auth.phone.resend-otp');
     Route::post('/forgot-password', 'forgotPassword')->name('api.auth.phone.forgot-password');
     Route::post('/reset-password', 'resetPassword')->name('api.auth.phone.reset-password');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Driver-Only Endpoints (Auth + Driver Role Required)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'active.user', 'role:driver'])->group(function (): void {
+    Route::controller(AvailableCommutersController::class)->prefix('available-commuters')->group(function (): void {
+        Route::get('/', 'getAvailableCommuters')->name('api.available-commuters.get');
+        Route::post('/respond', 'respondToCommuter')->name('api.available-commuters.respond');
+    });
+
+    Route::controller(DriverLocationController::class)->prefix('drivers/location')->group(function (): void {
+        Route::post('/', 'updateLocation')->name('api.driver-location.update');
+        Route::get('/', 'getLocation')->name('api.driver-location.get');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Commuter Endpoints (Auth Required)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
+    Route::controller(RideRequestController::class)->prefix('commuter/ride-requests')->group(function (): void {
+        Route::post('/', 'createRideRequest')->name('api.commuter.ride-requests.create');
+        Route::get('/', 'listRideRequests')->name('api.commuter.ride-requests.list');
+        Route::put('/{id}', 'updateRideRequestResponse')->name('api.commuter.ride-requests.update');
+    });
 });
 
 /*

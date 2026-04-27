@@ -578,7 +578,7 @@ class PhoneController extends Controller
         $lastName = is_string($user->last_name ?? null) ? trim((string) $user->last_name) : '';
         $fullName = trim($firstName . ' ' . $lastName);
 
-        return $fullName !== '' ? $fullName : null;
+         return $fullName !== '' ? $fullName : null;
     }
 }
-}
+
