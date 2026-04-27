@@ -35,6 +35,7 @@ return new class extends Migration
             $table->index(['driver_id', 'status'], 'idx_driver_status');
             $table->index('commuter_ride_request_id', 'idx_commuter_request');
             $table->index('responded_at', 'idx_responded_at');
+            $table->index(['status', 'deleted_at'], 'idx_status_deleted_at');
         });
     }
 
