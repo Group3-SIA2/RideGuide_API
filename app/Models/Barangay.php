@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Barangay extends Model
+{
+    use HasUuids;
+
+    protected $table = 'barangays';
+
+    protected $fillable = [
+        'name',
+        'code',
+        'center_latitude',
+        'center_longitude',
+        'north_latitude',
+        'south_latitude',
+        'east_longitude',
+        'west_longitude',
+    ];
+
+    protected $casts = [
+        'center_latitude' => 'float',
+        'center_longitude' => 'float',
+        'north_latitude' => 'float',
+        'south_latitude' => 'float',
+        'east_longitude' => 'float',
+        'west_longitude' => 'float',
+    ];
+
+    /**
+     * Driver locations within this barangay
+     */
+    public function driverLocations(): HasMany
+    {
+        return $this->hasMany(DriverLocation::class, 'barangay_id');
+    }
+}
