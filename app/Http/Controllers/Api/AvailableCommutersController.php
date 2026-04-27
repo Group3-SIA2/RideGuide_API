@@ -39,7 +39,6 @@ class AvailableCommutersController extends Controller
 
         // Get active, non-expired commuter requests
         $query = CommuterRideRequest::where('status', 'active')
-            ->where('expires_at', '>', now())
             ->notExpired();
 
         // Optional filters
