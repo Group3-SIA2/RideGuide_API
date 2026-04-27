@@ -25,7 +25,7 @@ return new class extends Migration
             // Spatial index would require explicit syntax - adding regular indexes for now
             $table->index(['latitude', 'longitude']);
 
-            $table->foreign('driver_id')->references('id')->on('driver')->cascadeOnDelete();
+            $table->foreign('driver_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 
