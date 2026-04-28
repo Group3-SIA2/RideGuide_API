@@ -31,16 +31,28 @@ class DriverLocationController extends Controller
         ]);
 
         // Upsert: Update if exists, create if doesn't
-        $driverLocation = DriverLocation::updateOrCreate(
-            ['driver_id' => $user->id],
-            [
+        $location = DriverLocation::where('driver_id', $user->id)->first();
+        
+        if ($location) {
+            $location->update([
                 'latitude' => $validated['latitude'],
                 'longitude' => $validated['longitude'],
                 'heading' => $validated['heading'] ?? null,
                 'accuracy' => $validated['accuracy'] ?? null,
                 'updated_at' => now(),
-            ]
-        );
+            ]);
+        } else {
+            $location = DriverLocation::create([
+                'driver_id' => $user->id,
+                'latitude' => $validated['latitude'],
+                'longitude' => $validated['longitude'],
+                'heading' => $validated['heading'] ?? null,
+                'accuracy' => $validated['accuracy'] ?? null,
+                'updated_at' => now(),
+            ]);
+        }
+        
+        $driverLocation = $location;
 
         return response()->json([
             'id' => $driverLocation->id,

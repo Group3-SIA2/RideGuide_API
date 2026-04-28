@@ -1,0 +1,3 @@
+
+  [44;1m INFO [49;22m Unknown option "--verbose".
+

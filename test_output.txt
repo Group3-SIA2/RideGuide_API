@@ -1,0 +1,836 @@
+
+   FAIL  Tests\Feature\Api\AvailableCommutersControllerTest
+  Γ¿» driver sees active commuter requests                                                                         0.95s  
+  Γ¿» driver request excludes expired requests                                                                     0.18s  
+  Γ£ô get available commuters requires latitude longitude                                                          0.07s  
+  Γ£ô get available commuters requires driver role                                                                 0.07s  
+  Γ¿» get available commuters excludes non active statuses                                                         0.18s  
+  Γ£ô driver accepts commuter request                                                                              0.16s  
+  Γ£ô driver rejects commuter request                                                                              0.12s  
+  Γ£ô respond to commuter requires driver role                                                                     0.11s  
+  Γ£ô respond validates commuter ride request id exists                                                            0.06s  
+
+   FAIL  Tests\Feature\Api\DriverLocationControllerTest
+  Γ¿» driver updates location creates new                                                                          0.14s  
+  Γ¿» driver updates location upserts existing                                                                     0.08s  
+  Γ¿» driver location stores heading and accuracy                                                                  0.11s  
+  Γ£ô driver location requires latitude longitude validation                                                       0.08s  
+  Γ£ô driver location requires driver role                                                                         0.12s  
+  Γ¿» driver gets current location                                                                                 0.16s  
+  Γ£ô driver get location returns 404 if no location set                                                           0.13s  
+  Γ£ô driver get location requires driver role                                                                     0.08s  
+
+   FAIL  Tests\Feature\Api\LocationControllerTest
+  Γ¿» get terminals returns all terminals with correct structure                                                   0.16s  
+  Γ¿» get terminals supports barangay id filter                                                                    0.05s  
+  Γ£ô get terminals respects limit parameter                                                                       0.22s  
+  Γ¿» get terminals returns empty array if no terminals                                                            0.03s  
+  Γ£ô get routes returns routes with structure                                                                     0.02s  
+  Γ£ô get routes returns empty array if no routes                                                                  0.03s  
+  Γ¿» get barangays returns all barangays with structure                                                           0.03s  
+  Γ¿» get barangays contains gsc barangays                                                                         0.04s  
+
+   FAIL  Tests\Feature\Api\RideRequestControllerTest
+  Γ£ô commuter creates ride request                                                                                0.92s  
+  Γ£ô commuter enforces one active request per commuter                                                            0.09s  
+  Γ£ô create ride request requires destination or route or terminal                                                0.06s  
+  Γ£ô create ride request requires authentication                                                                  0.03s  
+  Γ£ô commuter lists their active requests                                                                         0.26s  
+  Γ£ô list ride requests excludes expired requests                                                                 0.23s  
+  Γ£ô list ride requests includes driver responses                                                                 0.20s  
+  Γ£ô commuter accepts driver response                                                                             0.15s  
+  Γ¿» commuter rejects driver response                                                                             0.14s  
+  Γ£ô update ride request verifies ownership                                                                       0.12s  
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\AvailableCommutersControllerTest > driver sees active commuterΓÇª   BadMethodCallException   
+  Method Illuminate\Http\JsonResponse::assertIsArray does not exist.
+
+  at vendor\laravel\framework\src\Illuminate\Macroable\Traits\Macroable.php:115
+    111Γûò      */
+    112Γûò     public function __call($method, $parameters)
+    113Γûò     {
+    114Γûò         if (! static::hasMacro($method)) {
+  Γ₧£ 115Γûò             throw new BadMethodCallException(sprintf(
+    116Γûò                 'Method %s::%s does not exist.', static::class, $method
+    117Γûò             ));
+    118Γûò         }
+    119Γûò
+
+  1   vendor\laravel\framework\src\Illuminate\Macroable\Traits\Macroable.php:115
+  2   tests\Feature\Api\AvailableCommutersControllerTest.php:42
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\AvailableCommutersControllerTest > driver request excludes expired requests                
+  Failed to assert that the response count matched the expected 1
+Failed asserting that actual size 32 matches expected size 1.
+
+  at tests\Feature\Api\AvailableCommutersControllerTest.php:90
+     86Γûò         // Assert 200 OK
+     87Γûò         $response->assertStatus(200);
+     88Γûò 
+     89Γûò         // Assert only 1 request (active one)
+  Γ₧£  90Γûò         $response->assertJsonCount(1);
+     91Γûò 
+     92Γûò         // Assert active request is returned
+     93Γûò         $response->assertJsonPath('0.id', $activeRequest->id);
+     94Γûò     }
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\AvailableCommutersControllerTest > get available commuters excludes non active statuses    
+  Expected response status code [200] but received 422.
+Failed asserting that 422 is identical to 200.
+
+The following errors occurred during the last request:
+
+{
+    "message": "The latitude field is required. (and 1 more error)",
+    "errors": {
+        "latitude": [
+            "The latitude field is required."
+        ],
+        "longitude": [
+            "The longitude field is required."
+        ]
+    }
+}
+
+  at tests\Feature\Api\AvailableCommutersControllerTest.php:147
+    143Γûò                 'longitude' => 125.1774,
+    144Γûò             ]);
+    145Γûò 
+    146Γûò         // Assert 200 OK
+  Γ₧£ 147Γûò         $response->assertStatus(200);
+    148Γûò 
+    149Γûò         // Assert only 1 (active one)
+    150Γûò         $response->assertJsonCount(1);
+    151Γûò
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\DriverLocationControllerTest > driver updates location creates new                         
+  Expected 200 or 201, got 500: {
+    "message": "SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (Connection: sqlite, Database: C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\database\\database.sqlite, SQL: insert into \"driver_locations\" (\"driver_id\", \"latitude\", \"longitude\", \"heading\", \"accuracy\", \"updated_at\", \"id\") values (019dd1b0-69ec-70f3-be50-58d81e726920, 6.1184, 125.1774, ?, ?, 2026-04-28 09:24:52, 019dd1b0-6a1e-71df-b11b-93a525273097))",
+    "exception": "Illuminate\\Database\\QueryException",
+    "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Connection.php",
+    "line": 838,
+    "trace": [
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Connection.php",
+            "line": 794,
+            "function": "runQueryCallback",
+            "class": "Illuminate\\Database\\Connection",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Connection.php",
+            "line": 573,
+            "function": "run",
+            "class": "Illuminate\\Database\\Connection",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Connection.php",
+            "line": 537,
+            "function": "statement",
+            "class": "Illuminate\\Database\\Connection",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Query\\Builder.php",
+            "line": 4005,
+            "function": "insert",
+            "class": "Illuminate\\Database\\Connection",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Builder.php",
+            "line": 2235,
+            "function": "insert",
+            "class": "Illuminate\\Database\\Query\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Model.php",
+            "line": 1412,
+            "function": "__call",
+            "class": "Illuminate\\Database\\Eloquent\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Model.php",
+            "line": 1240,
+            "function": "performInsert",
+            "class": "Illuminate\\Database\\Eloquent\\Model",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Builder.php",
+            "line": 1219,
+            "function": "save",
+            "class": "Illuminate\\Database\\Eloquent\\Model",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Support\\helpers.php",
+            "line": 388,
+            "function": "{closure:Illuminate\\Database\\Eloquent\\Builder::create():1218}",
+            "class": "Illuminate\\Database\\Eloquent\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Builder.php",
+            "line": 1218,
+            "function": "tap"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Builder.php",
+            "line": 725,
+            "function": "create",
+            "class": "Illuminate\\Database\\Eloquent\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Builder.php",
+            "line": 1959,
+            "function": "{closure:Illuminate\\Database\\Eloquent\\Builder::createOrFirst():725}",
+            "class": "Illuminate\\Database\\Eloquent\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Builder.php",
+            "line": 725,
+            "function": "withSavepointIfNeeded",
+            "class": "Illuminate\\Database\\Eloquent\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Builder.php",
+            "line": 712,
+            "function": "createOrFirst",
+            "class": "Illuminate\\Database\\Eloquent\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Builder.php",
+            "line": 740,
+            "function": "firstOrCreate",
+            "class": "Illuminate\\Database\\Eloquent\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Support\\Traits\\ForwardsCalls.php",
+            "line": 23,
+            "function": "updateOrCreate",
+            "class": "Illuminate\\Database\\Eloquent\\Builder",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Model.php",
+            "line": 2540,
+            "function": "forwardCallTo",
+            "class": "Illuminate\\Database\\Eloquent\\Model",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Model.php",
+            "line": 2556,
+            "function": "__call",
+            "class": "Illuminate\\Database\\Eloquent\\Model",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\app\\Http\\Controllers\\Api\\DriverLocationController.php",
+            "line": 34,
+            "function": "__callStatic",
+            "class": "Illuminate\\Database\\Eloquent\\Model",
+            "type": "::"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Controller.php",
+            "line": 54,
+            "function": "updateLocation",
+            "class": "App\\Http\\Controllers\\Api\\DriverLocationController",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\ControllerDispatcher.php",
+            "line": 43,
+            "function": "callAction",
+            "class": "Illuminate\\Routing\\Controller",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php",
+            "line": 265,
+            "function": "dispatch",
+            "class": "Illuminate\\Routing\\ControllerDispatcher",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php",
+            "line": 211,
+            "function": "runController",
+            "class": "Illuminate\\Routing\\Route",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 822,
+            "function": "run",
+            "class": "Illuminate\\Routing\\Route",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 180,
+            "function": "{closure:Illuminate\\Routing\\Router::runRouteWithinStack():821}",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\app\\Http\\Middleware\\CheckRole.php",
+            "line": 35,
+            "function": "{closure:Illuminate\\Pipeline\\Pipeline::prepareDestination():178}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "App\\Http\\Middleware\\CheckRole",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\app\\Http\\Middleware\\EnsureUserIsActive.php",
+            "line": 39,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "App\\Http\\Middleware\\EnsureUserIsActive",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Middleware\\SubstituteBindings.php",
+            "line": 50,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Routing\\Middleware\\SubstituteBindings",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Auth\\Middleware\\Authenticate.php",
+            "line": 63,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Auth\\Middleware\\Authenticate",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\app\\Http\\Middleware\\SanitizeApiInput.php",
+            "line": 22,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "App\\Http\\Middleware\\SanitizeApiInput",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 137,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 821,
+            "function": "then",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 800,
+            "function": "runRouteWithinStack",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 764,
+            "function": "runRoute",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php",
+            "line": 753,
+            "function": "dispatchToRoute",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php",
+            "line": 200,
+            "function": "dispatch",
+            "class": "Illuminate\\Routing\\Router",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 180,
+            "function": "{closure:Illuminate\\Foundation\\Http\\Kernel::dispatchToRouter():197}",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php",
+            "line": 21,
+            "function": "{closure:Illuminate\\Pipeline\\Pipeline::prepareDestination():178}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull.php",
+            "line": 31,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest.php",
+            "line": 21,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\TrimStrings.php",
+            "line": 51,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\TrimStrings",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\ValidatePostSize.php",
+            "line": 27,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\ValidatePostSize",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance.php",
+            "line": 109,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\HandleCors.php",
+            "line": 74,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\HandleCors",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\TrustProxies.php",
+            "line": 58,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\TrustProxies",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Middleware\\InvokeDeferredCallbacks.php",
+            "line": 22,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Middleware\\InvokeDeferredCallbacks",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Http\\Middleware\\ValidatePathEncoding.php",
+            "line": 26,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 219,
+            "function": "handle",
+            "class": "Illuminate\\Http\\Middleware\\ValidatePathEncoding",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Pipeline\\Pipeline.php",
+            "line": 137,
+            "function": "{closure:{closure:Illuminate\\Pipeline\\Pipeline::carry():194}:195}",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php",
+            "line": 175,
+            "function": "then",
+            "class": "Illuminate\\Pipeline\\Pipeline",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Http\\Kernel.php",
+            "line": 144,
+            "function": "sendRequestThroughRouter",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Testing\\Concerns\\MakesHttpRequests.php",
+            "line": 607,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Testing\\Concerns\\MakesHttpRequests.php",
+            "line": 573,
+            "function": "call",
+            "class": "Illuminate\\Foundation\\Testing\\TestCase",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Testing\\Concerns\\MakesHttpRequests.php",
+            "line": 411,
+            "function": "json",
+            "class": "Illuminate\\Foundation\\Testing\\TestCase",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\tests\\Feature\\Api\\DriverLocationControllerTest.php",
+            "line": 23,
+            "function": "postJson",
+            "class": "Illuminate\\Foundation\\Testing\\TestCase",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\phpunit\\phpunit\\src\\Framework\\TestCase.php",
+            "line": 1667,
+            "function": "test_driver_updates_location_creates_new",
+            "class": "Tests\\Feature\\Api\\DriverLocationControllerTest",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\phpunit\\phpunit\\src\\Framework\\TestCase.php",
+            "line": 519,
+            "function": "runTest",
+            "class": "PHPUnit\\Framework\\TestCase",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\phpunit\\phpunit\\src\\Framework\\TestRunner\\TestRunner.php",
+            "line": 87,
+            "function": "runBare",
+            "class": "PHPUnit\\Framework\\TestCase",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\phpunit\\phpunit\\src\\Framework\\TestCase.php",
+            "line": 365,
+            "function": "run",
+            "class": "PHPUnit\\Framework\\TestRunner",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\phpunit\\phpunit\\src\\Framework\\TestSuite.php",
+            "line": 369,
+            "function": "run",
+            "class": "PHPUnit\\Framework\\TestCase",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\phpunit\\phpunit\\src\\Framework\\TestSuite.php",
+            "line": 369,
+            "function": "run",
+            "class": "PHPUnit\\Framework\\TestSuite",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\phpunit\\phpunit\\src\\TextUI\\TestRunner.php",
+            "line": 64,
+            "function": "run",
+            "class": "PHPUnit\\Framework\\TestSuite",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\phpunit\\phpunit\\src\\TextUI\\Application.php",
+            "line": 211,
+            "function": "run",
+            "class": "PHPUnit\\TextUI\\TestRunner",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\pestphp\\pest\\src\\Kernel.php",
+            "line": 103,
+            "function": "run",
+            "class": "PHPUnit\\TextUI\\Application",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\pestphp\\pest\\bin\\pest",
+            "line": 184,
+            "function": "handle",
+            "class": "Pest\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\pestphp\\pest\\bin\\pest",
+            "line": 192,
+            "function": "{closure:C:\\Users\\marjo\\Herd\\rideguide\\.worktrees\\feature\\openstreetmap-integration\\vendor\\pestphp\\pest\\bin\\pest:18}"
+        }
+    ]
+}
+Failed asserting that false is true.
+
+  at tests\Feature\Api\DriverLocationControllerTest.php:29
+     25Γûò                 'longitude' => 125.1774,
+     26Γûò             ]);
+     27Γûò 
+     28Γûò         // Assert 200 or 201
+  Γ₧£  29Γûò         $this->assertTrue(
+     30Γûò             $response->status() === 200 || $response->status() === 201,
+     31Γûò             "Expected 200 or 201, got {$response->status()}: " . $response->getContent()
+     32Γûò         );
+     33Γûò
+
+  1   tests\Feature\Api\DriverLocationControllerTest.php:29
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\DriverLocationControllerTest > driver updates location upserts existing   QueryException   
+  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (Connection: sqlite, Database: C:\Users\marjo\Herd\rideguide\.worktrees\feature\openstreetmap-integration\database\database.sqlite, SQL: insert into "driver_locations" ("driver_id", "latitude", "longitude", "heading", "accuracy", "updated_at", "id") values (019dd1b0-6a5f-71d9-8d82-b45981eedc6b, 6.1, 125.1, 189, 20.85, 2026-04-28 09:24:53, 019dd1b0-6a91-7066-a0b0-6530988501dd))
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+    580Γûò             $this->bindValues($statement, $this->prepareBindings($bindings));
+    581Γûò 
+    582Γûò             $this->recordsHaveBeenModified();
+    583Γûò 
+  Γ₧£ 584Γûò             return $statement->execute();
+    585Γûò         });
+    586Γûò     }
+    587Γûò 
+    588Γûò     /**
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:827
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\DriverLocationControllerTest > driver location stores heading and accuracy                 
+  Expected 200 or 201, got 500
+Failed asserting that false is true.
+
+  at tests\Feature\Api\DriverLocationControllerTest.php:116
+    112Γûò                 'accuracy' => 5.5,
+    113Γûò             ]);
+    114Γûò 
+    115Γûò         // Assert 200 or 201
+  Γ₧£ 116Γûò         $this->assertTrue(
+    117Γûò             $response->status() === 200 || $response->status() === 201,
+    118Γûò             "Expected 200 or 201, got {$response->status()}"
+    119Γûò         );
+    120Γûò
+
+  1   tests\Feature\Api\DriverLocationControllerTest.php:116
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\DriverLocationControllerTest > driver gets current location               QueryException   
+  SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (Connection: sqlite, Database: C:\Users\marjo\Herd\rideguide\.worktrees\feature\openstreetmap-integration\database\database.sqlite, SQL: insert into "driver_locations" ("driver_id", "latitude", "longitude", "heading", "accuracy", "updated_at", "id") values (019dd1b0-6bec-7127-96b1-e5a321eff46a, 6.1184, 125.1774, 45, 5.5, 2026-04-28 09:24:53, 019dd1b0-6c71-736f-85c2-b21f387f5446))
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+    580Γûò             $this->bindValues($statement, $this->prepareBindings($bindings));
+    581Γûò 
+    582Γûò             $this->recordsHaveBeenModified();
+    583Γûò 
+  Γ₧£ 584Γûò             return $statement->execute();
+    585Γûò         });
+    586Γûò     }
+    587Γûò 
+    588Γûò     /**
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:827
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\LocationControllerTest > get terminals returns all terminals wiΓÇª  BadMethodCallException   
+  Method Illuminate\Http\JsonResponse::assertIsArray does not exist.
+
+  at vendor\laravel\framework\src\Illuminate\Macroable\Traits\Macroable.php:115
+    111Γûò      */
+    112Γûò     public function __call($method, $parameters)
+    113Γûò     {
+    114Γûò         if (! static::hasMacro($method)) {
+  Γ₧£ 115Γûò             throw new BadMethodCallException(sprintf(
+    116Γûò                 'Method %s::%s does not exist.', static::class, $method
+    117Γûò             ));
+    118Γûò         }
+    119Γûò
+
+  1   vendor\laravel\framework\src\Illuminate\Macroable\Traits\Macroable.php:115
+  2   tests\Feature\Api\LocationControllerTest.php:36
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\LocationControllerTest > get terminals supports barΓÇª  UniqueConstraintViolationException   
+  SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: barangays.code (Connection: sqlite, Database: C:\Users\marjo\Herd\rideguide\.worktrees\feature\openstreetmap-integration\database\database.sqlite, SQL: insert into "barangays" ("name", "code", "center_latitude", "center_longitude", "north_latitude", "south_latitude", "east_longitude", "west_longitude", "id", "updated_at", "created_at") values (Downtown, SAR, 6.1184, 125.1774, 6.3, 5.9, 125.4, 125, 019dd1b0-6e11-710e-bfd0-2f7e36c4e063, 2026-04-28 09:24:53, 2026-04-28 09:24:53))
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+    580Γûò             $this->bindValues($statement, $this->prepareBindings($bindings));
+    581Γûò 
+    582Γûò             $this->recordsHaveBeenModified();
+    583Γûò 
+  Γ₧£ 584Γûò             return $statement->execute();
+    585Γûò         });
+    586Γûò     }
+    587Γûò 
+    588Γûò     /**
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:827
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\LocationControllerTest > get terminals returns empty array if no terminals                 
+  Failed to assert that the response count matched the expected 0
+Failed asserting that actual size 100 matches expected size 0.
+
+  at tests\Feature\Api\LocationControllerTest.php:103
+     99Γûò         // Assert 200 OK
+    100Γûò         $response->assertStatus(200);
+    101Γûò 
+    102Γûò         // Assert empty array
+  Γ₧£ 103Γûò         $response->assertJsonCount(0);
+    104Γûò     }
+    105Γûò 
+    106Γûò     /**
+    107Γûò      * GET /api/locations/routes
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\LocationControllerTest > get barangays returns allΓÇª   UniqueConstraintViolationException   
+  SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: barangays.code (Connection: sqlite, Database: C:\Users\marjo\Herd\rideguide\.worktrees\feature\openstreetmap-integration\database\database.sqlite, SQL: insert into "barangays" ("name", "code", "center_latitude", "center_longitude", "north_latitude", "south_latitude", "east_longitude", "west_longitude", "id", "updated_at", "created_at") values (Dadiangas, DAD, 6.1184, 125.1774, 6.3, 5.9, 125.4, 125, 019dd1b0-6f53-71a0-abed-0020533770ad, 2026-04-28 09:24:54, 2026-04-28 09:24:54))
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+    580Γûò             $this->bindValues($statement, $this->prepareBindings($bindings));
+    581Γûò 
+    582Γûò             $this->recordsHaveBeenModified();
+    583Γûò 
+  Γ₧£ 584Γûò             return $statement->execute();
+    585Γûò         });
+    586Γûò     }
+    587Γûò 
+    588Γûò     /**
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:827
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\LocationControllerTest > get barangays contains gscΓÇª  UniqueConstraintViolationException   
+  SQLSTATE[23000]: Integrity constraint violation: 19 UNIQUE constraint failed: barangays.code (Connection: sqlite, Database: C:\Users\marjo\Herd\rideguide\.worktrees\feature\openstreetmap-integration\database\database.sqlite, SQL: insert into "barangays" ("name", "code", "center_latitude", "center_longitude", "north_latitude", "south_latitude", "east_longitude", "west_longitude", "id", "updated_at", "created_at") values (Downtown, MAB, 6.1184, 125.1774, 6.3, 5.9, 125.4, 125, 019dd1b0-6f78-71d4-83eb-2bfeb4460843, 2026-04-28 09:24:54, 2026-04-28 09:24:54))
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+    580Γûò             $this->bindValues($statement, $this->prepareBindings($bindings));
+    581Γûò 
+    582Γûò             $this->recordsHaveBeenModified();
+    583Γûò 
+  Γ₧£ 584Γûò             return $statement->execute();
+    585Γûò         });
+    586Γûò     }
+    587Γûò 
+    588Γûò     /**
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:584
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:827
+
+  ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ  
+   FAILED  Tests\Feature\Api\RideRequestControllerTest > commuter rejects driver response                               
+  Expected response status code [200] but received 500.
+Failed asserting that 500 is identical to 200.
+
+  at tests\Feature\Api\RideRequestControllerTest.php:319
+    315Γûò                 'status' => 'rejected',
+    316Γûò             ]);
+    317Γûò 
+    318Γûò         // Assert 200 OK
+  Γ₧£ 319Γûò         $response->assertStatus(200);
+    320Γûò 
+    321Γûò         // Assert commuter request status updated to rejected
+    322Γûò         $this->assertDatabaseHas('commuter_ride_requests', [
+    323Γûò             'id' => $commuterRequest->id,
+
+
+  Tests:    13 failed, 22 passed (81 assertions)
+  Duration: 5.91s
+

@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DriverLocation extends Model
 {
     use HasUuids;
+    use HasFactory;
 
     protected $table = 'driver_locations';
 
@@ -18,6 +20,7 @@ class DriverLocation extends Model
         'longitude',
         'heading',
         'accuracy',
+        'updated_at',
     ];
 
     public $timestamps = false;
