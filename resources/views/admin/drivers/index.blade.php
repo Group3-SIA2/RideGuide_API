@@ -52,6 +52,7 @@
                                     <th>Email</th>
                                     <th>Organization</th>
                                     <th>License No.</th>
+                                    <th>Vehicles</th>
                                     <th>Verification</th>
                                     <th>Joined</th>
                                 </tr>
@@ -101,6 +102,23 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="driverVehiclesModal" tabindex="-1" role="dialog" aria-labelledby="driverVehiclesModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="driverVehiclesModalTitle">Vehicle Photos</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="driverVehiclesEmptyState" class="text-muted">Select a driver to view vehicle photos.</div>
+                    <div id="driverVehiclesContent" class="d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 @stop
 
 @section('js')
@@ -119,6 +137,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var frontImg = document.getElementById('driverLicenseFront');
     var backImg = document.getElementById('driverLicenseBack');
     var emptyState = document.getElementById('driverLicenseEmptyState');
+    var vehiclesModalTitle = document.getElementById('driverVehiclesModalTitle');
+    var vehiclesEmptyState = document.getElementById('driverVehiclesEmptyState');
+    var vehiclesContent = document.getElementById('driverVehiclesContent');
     var timer;
 
     function bindLicensePreview() {
@@ -180,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 bindPagin();
             }
             bindLicensePreview();
+            bindVehicleButtons();
         })
         .catch(function() { tbody.style.opacity = '1'; });
     }
@@ -190,6 +212,96 @@ document.addEventListener('DOMContentLoaded', function () {
             a.addEventListener('click', function(e) {
                 e.preventDefault();
                 load(new URL(this.href).searchParams.get('page') || 1);
+            });
+        });
+    }
+
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function (s) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[s];
+        });
+    }
+
+    function renderVehiclePhotos(vehicle) {
+        if (!vehicle.photos || !vehicle.photos.length) {
+            return '<p class="text-muted mb-0">No vehicle images uploaded.</p>';
+        }
+
+        var html = '<div class="row">';
+        vehicle.photos.forEach(function(photo) {
+            html += '' +
+                '<div class="col-md-6 mb-3">' +
+                    '<div class="rg-image-preview">' +
+                        '<img src="' + escapeHtml(photo.url) + '" class="img-fluid rounded shadow-sm" alt="' + escapeHtml(photo.label) + ' view">' +
+                        '<small class="text-muted d-block mt-2">' + escapeHtml(photo.label) + ' View</small>' +
+                    '</div>' +
+                '</div>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function bindVehicleButtons() {
+        document.querySelectorAll('.rg-view-vehicles').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var driverId = this.dataset.driverId;
+                var driverName = this.dataset.driverName || 'Driver';
+
+                if (!driverId) {
+                    return;
+                }
+
+                vehiclesModalTitle.textContent = 'Vehicle Photos — ' + driverName;
+                vehiclesEmptyState.classList.remove('d-none');
+                vehiclesEmptyState.textContent = 'Loading vehicle photos...';
+                vehiclesContent.classList.add('d-none');
+                vehiclesContent.innerHTML = '';
+
+                fetch('{{ route($driversIndexRoute) }}?driver_id=' + encodeURIComponent(driverId), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    var vehicles = d.vehicles || [];
+                    var driver = d.driver || {};
+
+                    if (!vehicles.length) {
+                        vehiclesEmptyState.textContent = 'No vehicles found for ' + (driver.name || driverName) + '.';
+                        return;
+                    }
+
+                    var html = '';
+                    vehicles.forEach(function(vehicle) {
+                        html += '<div class="card mb-3">' +
+                            '<div class="card-body">' +
+                                '<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">' +
+                                    '<div>' +
+                                        '<h6 class="mb-1">Plate No.: ' + escapeHtml(vehicle.plate_number || '—') + '</h6>' +
+                                        '<p class="mb-0 text-muted">Type: ' + escapeHtml(vehicle.vehicle_type || '—') + '</p>' +
+                                    '</div>' +
+                                    '<div class="d-flex flex-wrap gap-2">' +
+                                        '<span class="rg-status-badge ' + (vehicle.status === 'active' ? 'rg-status-active' : 'rg-status-pending') + '">' + escapeHtml((vehicle.status || 'inactive').replace(/_/g, ' ')) + '</span>' +
+                                        '<span class="rg-status-badge ' + (vehicle.verification_status === 'verified' ? 'rg-status-active' : (vehicle.verification_status === 'rejected' ? 'rg-status-danger' : 'rg-status-pending')) + '">' + escapeHtml((vehicle.verification_status || 'pending').replace(/_/g, ' ')) + '</span>' +
+                                    '</div>' +
+                                '</div>' +
+                                renderVehiclePhotos(vehicle) +
+                            '</div>' +
+                        '</div>';
+                    });
+
+                    vehiclesContent.innerHTML = html;
+                    vehiclesEmptyState.classList.add('d-none');
+                    vehiclesContent.classList.remove('d-none');
+                })
+                .catch(function() {
+                    vehiclesEmptyState.textContent = 'Unable to load vehicle photos.';
+                });
             });
         });
     }
@@ -210,6 +322,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     bindPagin();
     bindLicensePreview();
+    bindVehicleButtons();
 });
 </script>
 @stop

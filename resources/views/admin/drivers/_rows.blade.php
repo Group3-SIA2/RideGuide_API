@@ -27,7 +27,6 @@
             $hasLicenseImages = $licenseFront || $licenseBack;
             $driverName = trim(($driver->user->first_name ?? '') . ' ' . ($driver->user->last_name ?? '')) ?: 'Driver License';
         @endphp
-        {{ $licenseNumber ?? '—' }}
         @if($hasLicenseImages)
             <button type="button"
                     class="btn btn-link btn-sm px-0 rg-view-license"
@@ -42,6 +41,16 @@
         @endif
     </td>
     <td>
+        <button type="button"
+                class="btn btn-link btn-sm px-0 rg-view-vehicles"
+                data-toggle="modal"
+                data-target="#driverVehiclesModal"
+                data-driver-id="{{ $driver->id }}"
+                data-driver-name="{{ trim(($driver->user->first_name ?? '') . ' ' . ($driver->user->last_name ?? '')) ?: 'Driver' }}">
+            <i class="fas fa-truck mr-1"></i> View Vehicles
+        </button>
+    </td>
+    <td>
         @php $status = $license ? $license->verification_status : 'unverified'; @endphp
         <span class="rg-status-badge {{ $status === 'verified' ? 'rg-status-active' : ($status === 'rejected' ? 'rg-status-danger' : 'rg-status-pending') }}">
             {{ ucfirst($status) }}
@@ -51,6 +60,6 @@
 </tr>
 @empty
 <tr>
-    <td colspan="8" class="rg-empty">No drivers found.</td>
+    <td colspan="9" class="rg-empty">No drivers found.</td>
 </tr>
 @endforelse
