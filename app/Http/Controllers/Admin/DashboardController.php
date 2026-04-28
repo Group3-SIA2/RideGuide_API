@@ -54,11 +54,13 @@ class DashboardController extends Controller
             $recentQuery->whereHas('roles', fn ($q) => $q->where('name', $role));
         }
 
+        $selectedRole = $request->input('role');
+
         $recentUsers = $recentQuery->latest()->take(10)->get();
 
         if ($request->ajax()) {
             return response()->json([
-                'rows'  => view('admin.dashboard._recent_rows', compact('recentUsers'))->render(),
+                'rows'  => view('admin.dashboard._recent_rows', compact('recentUsers', 'selectedRole'))->render(),
                 'total' => $recentUsers->count(),
             ]);
         }
@@ -76,6 +78,7 @@ class DashboardController extends Controller
             'roleCounts',
             'totalDriverProfiles',
             'recentUsers',
+            'selectedRole',
             'terminals',
             'totalTerminals',
         ));
