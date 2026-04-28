@@ -31,6 +31,10 @@ Route::controller(LocationController::class)->prefix('locations')->group(functio
     Route::get('/barangays', 'getBarangays')->name('api.locations.barangays');
 });
 
+Route::controller(LocationController::class)->prefix('map')->group(function (): void {
+    Route::get('/available-filters', 'getAvailableFilters')->middleware('auth:sanctum')->name('api.map.available-filters');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Public Authentication Routes (No token required)
