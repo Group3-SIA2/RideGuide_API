@@ -11,6 +11,13 @@
     $userStatusDiscountsUpdateRoute = $panelPrefix . '.user-status.discounts.update';
     $userStatusRestoreSearchRoute = $panelPrefix . '.user-status.restore.search';
     $userStatusRestoreRecordRoute = $panelPrefix . '.user-status.restore.record';
+
+    $driverSearchValue = $driverFilters['search'] ?? '';
+    $driverStatusValue = $driverFilters['status'] ?? \App\Models\LicenseId::VERIFICATION_STATUS_UNVERIFIED;
+    $vehicleSearchValue = $vehicleFilters['search'] ?? '';
+    $vehicleStatusValue = $vehicleFilters['status'] ?? \App\Models\vehicle::VERIFICATION_PENDING;
+    $discountSearchValue = $discountFilters['search'] ?? '';
+    $discountStatusValue = $discountFilters['status'] ?? \App\Models\Discount::VERIFICATION_PENDING;
 @endphp
 
 @section('content_header')
@@ -213,11 +220,24 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="rg-card h-100">
-                <div class="rg-card-header">
-                    <div class="d-flex align-items-center">
+                <div class="rg-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div class="d-flex align-items-center mb-2 mb-md-0">
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Driver Verification</h6>
                     </div>
+                    <form method="GET" action="{{ route($userStatusIndexRoute, request()->except(['driver_search', 'driver_status'])) }}" class="rg-filter-bar mt-2 mt-md-0">
+                        <input type="text" name="driver_search" class="rg-search-input" placeholder="Search driver or license…" value="{{ $driverSearchValue }}">
+                        <select name="driver_status" class="rg-filter-select">
+                            @foreach($driverVerificationFilterOptions as $value => $label)
+                                <option value="{{ $value }}" @selected($driverStatusValue === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="rg-btn-search">
+                            <i class="fas fa-search"></i>
+                            <span>Search</span>
+                        </button>
+                        <a href="{{ route($userStatusIndexRoute, request()->except(['driver_search', 'driver_status'])) }}" class="rg-btn-clear">Clear</a>
+                    </form>
                 </div>
                 <div class="rg-card-body p-0">
                     <div class="table-responsive">
@@ -355,11 +375,24 @@
         </div>
         <div class="col-12 mt-4">
             <div class="rg-card h-100">
-                <div class="rg-card-header">
-                    <div class="d-flex align-items-center">
+                <div class="rg-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div class="d-flex align-items-center mb-2 mb-md-0">
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Vehicle Verification</h6>
                     </div>
+                    <form method="GET" action="{{ route($userStatusIndexRoute, request()->except(['vehicle_search', 'vehicle_status'])) }}" class="rg-filter-bar mt-2 mt-md-0">
+                        <input type="text" name="vehicle_search" class="rg-search-input" placeholder="Search plate, driver, type…" value="{{ $vehicleSearchValue }}">
+                        <select name="vehicle_status" class="rg-filter-select">
+                            @foreach($vehicleVerificationFilterOptions as $value => $label)
+                                <option value="{{ $value }}" @selected($vehicleStatusValue === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="rg-btn-search">
+                            <i class="fas fa-search"></i>
+                            <span>Search</span>
+                        </button>
+                        <a href="{{ route($userStatusIndexRoute, request()->except(['vehicle_search', 'vehicle_status'])) }}" class="rg-btn-clear">Clear</a>
+                    </form>
                 </div>
                 <div class="rg-card-body p-0">
                     <div class="table-responsive">
@@ -518,11 +551,24 @@
     </div>
 
     <div class="rg-card mt-4">
-        <div class="rg-card-header">
-            <div class="d-flex align-items-center">
+        <div class="rg-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div class="d-flex align-items-center mb-2 mb-md-0">
                 <span class="rg-card-dot"></span>
                 <h6 class="rg-card-title mb-0">Discount Verification</h6>
             </div>
+            <form method="GET" action="{{ route($userStatusIndexRoute, request()->except(['discount_search', 'discount_status'])) }}" class="rg-filter-bar mt-2 mt-md-0">
+                <input type="text" name="discount_search" class="rg-search-input" placeholder="Search ID, commuter, classification…" value="{{ $discountSearchValue }}">
+                <select name="discount_status" class="rg-filter-select">
+                    @foreach($discountVerificationFilterOptions as $value => $label)
+                        <option value="{{ $value }}" @selected($discountStatusValue === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="rg-btn-search">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </button>
+                <a href="{{ route($userStatusIndexRoute, request()->except(['discount_search', 'discount_status'])) }}" class="rg-btn-clear">Clear</a>
+            </form>
         </div>
         <div class="rg-card-body p-0">
             <div class="table-responsive">
