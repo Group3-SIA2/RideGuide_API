@@ -22,6 +22,11 @@ class DriverLocationController extends Controller
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
+        // Safety check: Ensure user exists in database (should always be true for authenticated user)
+        if (!$user->exists) {
+            return response()->json(['error' => 'User not found.'], 404);
+        }
+
         // Validate input
         $validated = $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
