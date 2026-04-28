@@ -18,13 +18,14 @@
 
     @php
         $dashboardRoute = request()->routeIs('super-admin.*') ? 'super-admin.dashboard' : 'admin.dashboard';
+        $usersIndexRoute = request()->routeIs('super-admin.*') ? 'super-admin.users.index' : 'admin.users.index';
     @endphp
 
     {{-- Stats Row --}}
     <div class="row align-items-stretch">
         {{-- Total Users --}}
         <div class="col-12 col-sm-6 col-xl-3 mb-3">
-            <div class="rg-stat-card rg-stat-card-equal h-100">
+            <a href="{{ route($usersIndexRoute) }}" class="rg-stat-card rg-stat-card-equal h-100 text-decoration-none text-reset d-block">
                 <div class="rg-stat-icon">
                     <i class="fas fa-users"></i>
                 </div>
@@ -38,7 +39,7 @@
                         <span class="rg-status-badge rg-status-error">Suspended: {{ number_format($totalSuspendedUsers) }}</span>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
         {{-- Total Terminals --}}
         <div class="col-12 col-sm-6 col-xl-3 mb-3">
@@ -62,7 +63,12 @@
         </div>
         @foreach($allRoles as $role)
             <div class="col-12 col-sm-6 col-xl-3 mb-3">
-                <div class="rg-stat-card rg-stat-card-equal h-100">
+                    <a
+                        href="{{ route($dashboardRoute, ['role' => $role->name]) }}"
+                        class="rg-stat-card rg-stat-card-equal h-100 text-decoration-none text-reset d-block rg-role-card"
+                        data-role="{{ $role->name }}"
+                        data-role-label="{{ ucfirst(str_replace('_', ' ', $role->name)) }}"
+                    >
                     <div class="rg-stat-icon">
                         <i class="fas fa-user-tag"></i>
                     </div>
@@ -71,9 +77,39 @@
                         <h3 class="rg-stat-value">{{ number_format($roleCounts[$role->name] ?? 0) }}</h3>
                         <span class="rg-stat-sub">{{ $role->description ?? 'Users with this role' }}</span>
                     </div>
-                </div>
+                </a>
             </div>
         @endforeach
+    </div>
+
+    <div class="modal fade" id="rg-role-modal" tabindex="-1" role="dialog" aria-labelledby="rg-role-modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rg-role-modal-title">Role Users</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="table-responsive">
+                        <table class="rg-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rg-role-modal-body">
+                                <tr>
+                                    <td colspan="2" class="rg-empty">Click a role card to load users.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Leaflet Map for General Santos City --}}
@@ -98,6 +134,9 @@
                     <div class="d-flex align-items-center gap-2">
                         <span class="rg-card-dot"></span>
                         <h6 class="rg-card-title mb-0">Recent Users</h6>
+                        @if(!empty($selectedRole))
+                            <span class="rg-status-badge rg-status-active">Role: {{ ucfirst(str_replace('_', ' ', $selectedRole)) }}</span>
+                        @endif
                     </div>
                     <form id="rg-filter-form" method="GET" action="{{ route($dashboardRoute) }}" class="rg-filter-bar mt-2">
                         <input id="rg-search" type="text" name="search" class="rg-search-input" placeholder="Search name or email…" value="{{ request('search') }}">
@@ -118,44 +157,17 @@
                         <table class="rg-table">
                             <thead>
                                 <tr>
-                                    <th>#</th>
                                     <th>Name</th>
                                     <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Joined</th>
-                                    <th>Status</th>
+                                    @if(empty($selectedRole))
+                                        <th>Role</th>
+                                        <th>Joined</th>
+                                        <th>Status</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody id="rg-table-body">
-                                @forelse($recentUsers as $index => $user)
-                                <tr>
-                                    <td class="rg-td-index">{{ $index + 1 }}</td>
-                                    <td>
-                                        <div class="rg-user-cell">
-                                            <div class="rg-avatar">
-                                                {{ strtoupper(substr($user->first_name, 0, 1)) }}{{ strtoupper(substr($user->last_name, 0, 1)) }}
-                                            </div>
-                                            <div>
-                                                <p class="rg-user-name mb-0">{{ $user->first_name }} {{ $user->last_name }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="rg-td-muted">{{ $user->email }}</td>
-                                    <td>
-                                        <span class="rg-role-badge">{{ ucfirst(str_replace('_', ' ', $user->roles->first()?->name ?? 'N/A')) }}</span>
-                                    </td>
-                                    <td class="rg-td-muted">{{ $user->created_at->format('M d, Y') }}</td>
-                                    <td>
-                                        <span class="rg-status-badge {{ ($user->status ?? 'active') === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
-                                            {{ ucfirst($user->status ?? 'active') }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="6" class="rg-empty">No users found.</td>
-                                </tr>
-                                @endforelse
+                                @include('admin.dashboard._recent_rows', ['recentUsers' => $recentUsers, 'selectedRole' => $selectedRole ?? null])
                             </tbody>
                         </table>
                     </div>
@@ -191,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(function(r) { return r.json(); })
         .then(function(d) {
-            tbody.innerHTML     = d.rows;
+            tbody.innerHTML = d.rows;
             tbody.style.opacity = '1';
         })
         .catch(function() { tbody.style.opacity = '1'; });
@@ -211,6 +223,62 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         load();
     });
+
+        var roleCards = document.querySelectorAll('.rg-role-card');
+        var roleModalBody = document.getElementById('rg-role-modal-body');
+        var roleModalTitle = document.getElementById('rg-role-modal-title');
+
+        roleCards.forEach(function(card) {
+            card.addEventListener('click', function(e) {
+                e.preventDefault();
+                var role = card.getAttribute('data-role');
+                var roleLabel = card.getAttribute('data-role-label') || role;
+                loadRoleUsers(role, roleLabel, card.getAttribute('href'));
+            });
+        });
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>\"']/g, function (s) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[s];
+            });
+        }
+
+        function loadRoleUsers(role, roleLabel, fallbackHref) {
+            if (!roleModalBody || !roleModalTitle) {
+                window.location.href = fallbackHref;
+                return;
+            }
+
+            roleModalTitle.textContent = roleLabel + ' Users';
+            roleModalBody.innerHTML = '<tr><td colspan="2" class="rg-empty">Loading users...</td></tr>';
+
+            if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+                window.jQuery('#rg-role-modal').modal('show');
+            } else {
+                window.location.href = fallbackHref;
+                return;
+            }
+
+            var p = new URLSearchParams();
+            p.set('role', role);
+
+            fetch(window.location.pathname + '?' + p.toString(), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                roleModalBody.innerHTML = d.rows;
+            })
+            .catch(function() {
+                roleModalBody.innerHTML = '<tr><td colspan="2" class="rg-empty">Unable to load users for ' + escapeHtml(roleLabel) + '.</td></tr>';
+            });
+        }
 
     var gensanMap = L.map('gensan-map', {
         center: [6.1164, 125.1716], // General Santos City coordinates
