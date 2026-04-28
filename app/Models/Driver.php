@@ -36,6 +36,11 @@ class Driver extends Model
         return $this->belongsTo(\App\Models\Organization::class, 'organization_id');
     }
 
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(vehicle::class, 'driver_id');
+    }
+
     public function usersEmergencyContact()
     {
         return $this->hasOne(\App\Models\UsersEmergencyContact::class, 'user_id', 'user_id');
