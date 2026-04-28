@@ -66,6 +66,13 @@ class PermissionSeeder extends Seeder
 
             // Transaction Logbook
             ['name' => 'view_transactions', 'display_name' => 'View Transactions', 'group' => 'audit', 'description' => 'Can view transaction logbook.'],
+
+            // Map Visibility Permissions
+            ['name' => 'view_map_locations',              'display_name' => 'View Locations on Map',        'group' => 'map', 'description' => 'Can view location/terminal/barangay layer on map.'],
+            ['name' => 'view_map_routes',                 'display_name' => 'View Routes on Map',           'group' => 'map', 'description' => 'Can view routes and stops layer on map.'],
+            ['name' => 'view_map_drivers',                'display_name' => 'View Drivers on Map',          'group' => 'map', 'description' => 'Can view driver locations on map.'],
+            ['name' => 'view_map_available_commuters',    'display_name' => 'View Available Commuters',     'group' => 'map', 'description' => 'Can view available commuter requests on map.'],
+            ['name' => 'view_map_route_planning',         'display_name' => 'View Route Planning',          'group' => 'map', 'description' => 'Can view route planning layer on map.'],
         ];
 
         foreach ($permissions as $perm) {
