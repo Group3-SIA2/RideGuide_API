@@ -89,10 +89,38 @@ class UserManagementController extends Controller
             ->paginate(10, ['*'], 'users_page')
             ->withQueryString();
 
-        $drivers = Driver::with(['user', 'licenseId.image'])
+        $driverSearch = (string) $request->input('driver_search', '');
+        $driverStatus = (string) $request->input('driver_status', LicenseId::VERIFICATION_STATUS_UNVERIFIED);
+
+        $driverQuery = Driver::with(['user', 'licenseId.image']);
+
+        if ($driverSearch !== '') {
+            $driverQuery->where(function ($query) use ($driverSearch) {
+                $query->whereHas('licenseId', function ($licenseQuery) use ($driverSearch) {
+                    $licenseQuery->where('license_id', 'like', "%{$driverSearch}%");
+                })->orWhereHas('user', function ($userQuery) use ($driverSearch) {
+                    $userQuery->where('first_name', 'like', "%{$driverSearch}%")
+                        ->orWhere('last_name', 'like', "%{$driverSearch}%")
+                        ->orWhere('email', 'like', "%{$driverSearch}%");
+                });
+            });
+        }
+
+        $driverQuery->whereHas('licenseId', function ($licenseQuery) use ($driverStatus) {
+            $licenseQuery->where('verification_status', $driverStatus);
+        });
+
+        $drivers = $driverQuery
             ->latest()
-            ->paginate(10, ['*'], 'drivers_page')
-            ->withQueryString();
+            ->paginate(5, ['*'], 'drivers_page')
+            ->appends([
+                'driver_search' => $driverSearch,
+                'driver_status' => $driverStatus,
+                'vehicle_search' => (string) $request->input('vehicle_search', ''),
+                'vehicle_status' => (string) $request->input('vehicle_status', Vehicle::VERIFICATION_PENDING),
+                'discount_search' => (string) $request->input('discount_search', ''),
+                'discount_status' => (string) $request->input('discount_status', Discount::VERIFICATION_PENDING),
+            ]);
 
         $drivers->getCollection()->transform(function (Driver $driver) {
             $image = $driver->licenseId?->image;
@@ -103,10 +131,38 @@ class UserManagementController extends Controller
             return $driver;
         });
 
-        $vehicles = Vehicle::with(['driver.user', 'vehicleType.vehicleImage', 'plateNumber'])
+        $vehicleSearch = (string) $request->input('vehicle_search', '');
+        $vehicleStatus = (string) $request->input('vehicle_status', Vehicle::VERIFICATION_PENDING);
+
+        $vehicleQuery = Vehicle::with(['driver.user', 'vehicleType.vehicleImage', 'plateNumber']);
+
+        if ($vehicleSearch !== '') {
+            $vehicleQuery->where(function ($query) use ($vehicleSearch) {
+                $query->whereHas('plateNumber', function ($plateQuery) use ($vehicleSearch) {
+                    $plateQuery->where('plate_number', 'like', "%{$vehicleSearch}%");
+                })->orWhereHas('driver.user', function ($userQuery) use ($vehicleSearch) {
+                    $userQuery->where('first_name', 'like', "%{$vehicleSearch}%")
+                        ->orWhere('last_name', 'like', "%{$vehicleSearch}%")
+                        ->orWhere('email', 'like', "%{$vehicleSearch}%");
+                })->orWhereHas('vehicleType', function ($typeQuery) use ($vehicleSearch) {
+                    $typeQuery->where('vehicle_type', 'like', "%{$vehicleSearch}%");
+                });
+            });
+        }
+
+        $vehicleQuery->where('verification_status', $vehicleStatus);
+
+        $vehicles = $vehicleQuery
             ->latest()
-            ->paginate(10, ['*'], 'vehicles_page')
-            ->withQueryString();
+            ->paginate(5, ['*'], 'vehicles_page')
+            ->appends([
+                'driver_search' => $driverSearch,
+                'driver_status' => $driverStatus,
+                'vehicle_search' => $vehicleSearch,
+                'vehicle_status' => $vehicleStatus,
+                'discount_search' => (string) $request->input('discount_search', ''),
+                'discount_status' => (string) $request->input('discount_status', Discount::VERIFICATION_PENDING),
+            ]);
 
         $vehicles->getCollection()->transform(function (Vehicle $vehicle) {
             $image = $vehicle->vehicleType?->vehicleImage;
@@ -123,10 +179,38 @@ class UserManagementController extends Controller
             return $vehicle;
         });
 
-        $discounts = Discount::with(['commuter.user', 'classificationType', 'idImage'])
+        $discountSearch = (string) $request->input('discount_search', '');
+        $discountStatus = (string) $request->input('discount_status', Discount::VERIFICATION_PENDING);
+
+        $discountQuery = Discount::with(['commuter.user', 'classificationType', 'idImage']);
+
+        if ($discountSearch !== '') {
+            $discountQuery->where(function ($query) use ($discountSearch) {
+                $query->where('ID_number', 'like', "%{$discountSearch}%")
+                    ->orWhereHas('commuter.user', function ($userQuery) use ($discountSearch) {
+                        $userQuery->where('first_name', 'like', "%{$discountSearch}%")
+                            ->orWhere('last_name', 'like', "%{$discountSearch}%")
+                            ->orWhere('email', 'like', "%{$discountSearch}%");
+                    })
+                    ->orWhereHas('classificationType', function ($classificationQuery) use ($discountSearch) {
+                        $classificationQuery->where('classification_name', 'like', "%{$discountSearch}%");
+                    });
+            });
+        }
+
+        $discountQuery->where('verification_status', $discountStatus);
+
+        $discounts = $discountQuery
             ->latest()
-            ->paginate(10, ['*'], 'discounts_page')
-            ->withQueryString();
+            ->paginate(5, ['*'], 'discounts_page')
+            ->appends([
+                'driver_search' => $driverSearch,
+                'driver_status' => $driverStatus,
+                'vehicle_search' => $vehicleSearch,
+                'vehicle_status' => $vehicleStatus,
+                'discount_search' => $discountSearch,
+                'discount_status' => $discountStatus,
+            ]);
 
         $discounts->getCollection()->transform(function (Discount $discount) {
             $image = $discount->idImage;
@@ -144,6 +228,18 @@ class UserManagementController extends Controller
             'discounts' => $discounts,
             'stats' => $stats,
             'filters' => ['search' => $search],
+            'driverFilters' => [
+                'search' => $driverSearch,
+                'status' => $driverStatus,
+            ],
+            'vehicleFilters' => [
+                'search' => $vehicleSearch,
+                'status' => $vehicleStatus,
+            ],
+            'discountFilters' => [
+                'search' => $discountSearch,
+                'status' => $discountStatus,
+            ],
             'userStatusOptions' => [
                 User::STATUS_ACTIVE => 'Active',
                 User::STATUS_INACTIVE => 'Inactive',
@@ -151,6 +247,11 @@ class UserManagementController extends Controller
             ],
             'driverVerificationOptions' => [
                 LicenseId::VERIFICATION_STATUS_UNVERIFIED => 'Unverified',
+                LicenseId::VERIFICATION_STATUS_VERIFIED => 'Verified',
+                LicenseId::VERIFICATION_STATUS_REJECTED => 'Rejected',
+            ],
+            'driverVerificationFilterOptions' => [
+                LicenseId::VERIFICATION_STATUS_UNVERIFIED => 'Pending',
                 LicenseId::VERIFICATION_STATUS_VERIFIED => 'Verified',
                 LicenseId::VERIFICATION_STATUS_REJECTED => 'Rejected',
             ],
@@ -163,7 +264,18 @@ class UserManagementController extends Controller
                 Vehicle::VERIFICATION_VERIFIED => 'Verified',
                 Vehicle::VERIFICATION_REJECTED => 'Rejected',
             ],
+            'vehicleVerificationFilterOptions' => [
+                Vehicle::VERIFICATION_PENDING => 'Pending',
+                Vehicle::VERIFICATION_VERIFIED => 'Verified',
+                Vehicle::VERIFICATION_REJECTED => 'Rejected',
+            ],
             'discountVerificationOptions' => [
+                Discount::VERIFICATION_PENDING => 'Pending',
+                Discount::VERIFICATION_VERIFIED => 'Verified',
+                Discount::VERIFICATION_REJECTED => 'Rejected',
+                Discount::VERIFICATION_EXPIRED => 'Expired',
+            ],
+            'discountVerificationFilterOptions' => [
                 Discount::VERIFICATION_PENDING => 'Pending',
                 Discount::VERIFICATION_VERIFIED => 'Verified',
                 Discount::VERIFICATION_REJECTED => 'Rejected',
