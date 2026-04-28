@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignUuid('route_id')->nullable()->constrained('routes')->onDelete('cascade');
             $table->foreignUuid('terminal_id')->nullable()->constrained('terminals')->onDelete('cascade');
             $table->string('destination')->notNull();
-            $table->enum('status', ['active', 'accepted', 'completed', 'cancelled'])->default('active');
+            $table->enum('status', ['active', 'accepted', 'rejected', 'completed', 'cancelled'])->default('active');
             $table->timestamp('expires_at')->notNull();
             $table->timestamps();
             $table->softDeletes();

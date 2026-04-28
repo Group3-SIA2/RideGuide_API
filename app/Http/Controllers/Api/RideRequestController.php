@@ -27,7 +27,7 @@ class RideRequestController extends Controller
         $validated = $request->validate([
             'route_id' => 'nullable|uuid|exists:routes,id',
             'terminal_id' => 'nullable|uuid|exists:terminals,id',
-            'destination' => 'required|string|max:255',
+            'destination' => 'required_without_all:route_id,terminal_id|string|max:255',
         ]);
 
         // Check: Commuter can only have 1 active request at a time

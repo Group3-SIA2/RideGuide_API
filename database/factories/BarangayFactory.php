@@ -21,7 +21,7 @@ class BarangayFactory extends Factory
 
         return [
             'name' => $name,
-            'code' => strtoupper(substr($name, 0, 3)),
+            'code' => strtoupper(substr($name, 0, 3)) . strtoupper(substr(md5(microtime()), 0, 3)),
             'center_latitude' => 6.1184,
             'center_longitude' => 125.1774,
             'north_latitude' => 6.3,

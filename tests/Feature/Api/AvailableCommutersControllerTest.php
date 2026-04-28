@@ -7,10 +7,12 @@ use App\Models\RideRequest;
 use App\Models\Terminal;
 use App\Models\User;
 use Database\Factories\UserFactory;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AvailableCommutersControllerTest extends TestCase
 {
+    use RefreshDatabase;
     /**
      * GET /api/available-commuters
      */
@@ -40,7 +42,7 @@ class AvailableCommutersControllerTest extends TestCase
 
         // Assert response is an array with at least 1 element
         $responseData = $response->json();
-        $this->assertIsArray($responseData);
+        $this->assertTrue(is_array($responseData));
         $this->assertNotEmpty($responseData);
 
         // Assert correct structure
@@ -114,12 +116,9 @@ class AvailableCommutersControllerTest extends TestCase
         $commuter = User::factory()->create();
         $commuter->roles()->attach($this->getCommuterRoleId());
 
-        // Make request as commuter
-        $response = $this->actingAs($commuter)
-            ->getJson('/api/available-commuters', [
-                'latitude' => 6.1184,
-                'longitude' => 125.1774,
-            ]);
+         // Make request as commuter
+         $response = $this->actingAs($commuter)
+             ->getJson('/api/available-commuters?latitude=6.1184&longitude=125.1774');
 
         // Assert 403 Forbidden
         $response->assertStatus(403);
@@ -137,12 +136,9 @@ class AvailableCommutersControllerTest extends TestCase
         // Create active request for comparison
         $activeRequest = CommuterRideRequest::factory()->active()->create();
 
-        // Make request from driver
-        $response = $this->actingAs($driver)
-            ->getJson('/api/available-commuters', [
-                'latitude' => 6.1184,
-                'longitude' => 125.1774,
-            ]);
+         // Make request from driver
+         $response = $this->actingAs($driver)
+             ->getJson('/api/available-commuters?latitude=6.1184&longitude=125.1774');
 
         // Assert 200 OK
         $response->assertStatus(200);

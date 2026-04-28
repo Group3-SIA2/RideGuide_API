@@ -15,16 +15,16 @@ class AvailableCommutersController extends Controller
      * Return commuters with active ride requests visible to current driver
      * Authorization: Driver-only
      */
-     public function getAvailableCommuters(Request $request): JsonResponse
-     {
-         // Verify required params
-        $validated = $request->validate([
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-            'route_id' => 'nullable|uuid|exists:routes,id',
-            'terminal_id' => 'nullable|uuid|exists:terminals,id',
-            'radius_meters' => 'nullable|integer|min:100|max:50000',
-        ]);
+      public function getAvailableCommuters(Request $request): JsonResponse
+      {
+          // Verify required params
+         $validated = $request->validate([
+             'latitude' => 'required|numeric|between:5.5,6.5',
+             'longitude' => 'required|numeric|between:124.7,125.7',
+             'route_id' => 'nullable|uuid|exists:routes,id',
+             'terminal_id' => 'nullable|uuid|exists:terminals,id',
+             'radius_meters' => 'nullable|integer|min:100|max:50000',
+         ]);
 
          $user = auth()->user();
          $driverLatitude = $validated['latitude'];

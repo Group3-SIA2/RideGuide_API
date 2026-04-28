@@ -6,10 +6,12 @@ use App\Models\CommuterRideRequest;
 use App\Models\RideRequest;
 use App\Models\Terminal;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class RideRequestControllerTest extends TestCase
 {
+    use RefreshDatabase;
     /**
      * POST /api/commuter/ride-requests
      */

@@ -4,10 +4,12 @@ namespace Tests\Feature\Api;
 
 use App\Models\Barangay;
 use App\Models\Terminal;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class LocationControllerTest extends TestCase
 {
+    use RefreshDatabase;
     /**
      * GET /api/locations/terminals
      */
@@ -33,7 +35,7 @@ class LocationControllerTest extends TestCase
         $response->assertStatus(200);
 
         // Assert response is JSON array
-        $response->assertIsArray();
+        $response->assertJsonIsArray();
 
         // Assert terminals are in response
         $response->assertJsonCount(2);
@@ -147,7 +149,7 @@ class LocationControllerTest extends TestCase
         $response->assertStatus(200);
 
         // Assert response is JSON array
-        $response->assertIsArray();
+        $response->assertJsonIsArray();
 
         // Assert 5 barangays returned
         $response->assertJsonCount(5);
@@ -183,13 +185,13 @@ class LocationControllerTest extends TestCase
 
         // Assert 'Downtown' is in response
         $this->assertTrue(
-            $response->json()->pluck('name')->contains('Downtown'),
+            collect($response->json())->pluck('name')->contains('Downtown'),
             'Downtown barangay not found in response'
         );
 
         // Assert 'Alabel' is in response
         $this->assertTrue(
-            $response->json()->pluck('name')->contains('Alabel'),
+            collect($response->json())->pluck('name')->contains('Alabel'),
             'Alabel barangay not found in response'
         );
     }
