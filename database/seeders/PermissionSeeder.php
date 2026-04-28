@@ -88,18 +88,57 @@ class PermissionSeeder extends Seeder
 
         $seededPermissionNames = collect($permissions)->pluck('name')->all();
 
-        // Admin gets all seeded permissions (create_users is now included).
+        // SuperAdmin: Bypasses all checks (no permissions needed)
+        $superAdminRole = Role::where('name', Role::SUPER_ADMIN)->first();
+        if ($superAdminRole) {
+            // SuperAdmin gets NO specific permissions - they bypass via middleware
+            $superAdminRole->permissions()->sync([]);
+        }
+
+        // Admin: Update to include map permissions (can be revoked by SuperAdmin)
         $adminRole = Role::where('name', Role::ADMIN)->first();
         if ($adminRole) {
-            $adminPermissions = Permission::whereIn('name', $seededPermissionNames)
-                ->pluck('id')
-                ->toArray();
+            $adminPermissions = Permission::whereIn('name', array_merge(
+                $seededPermissionNames,
+                [
+                    'view_map_locations',
+                    'view_map_routes',
+                    'view_map_drivers',
+                    'view_map_available_commuters',
+                    'view_map_route_planning',
+                ]
+            ))->pluck('id')->toArray();
             $adminRole->permissions()->sync($adminPermissions);
         }
 
+        // Driver: Sees locations, routes, available commuters, route planning
+        $driverRole = Role::where('name', Role::DRIVER)->first();
+        if ($driverRole) {
+            $driverPermissions = Permission::whereIn('name', [
+                'view_map_locations',
+                'view_map_routes',
+                'view_map_available_commuters',
+                'view_map_route_planning',
+            ])->pluck('id')->toArray();
+            $driverRole->permissions()->sync($driverPermissions);
+        }
+
+        // Commuter: Sees locations, routes, drivers, route planning
+        $commuterRole = Role::where('name', Role::COMMUTER)->first();
+        if ($commuterRole) {
+            $commuterPermissions = Permission::whereIn('name', [
+                'view_map_locations',
+                'view_map_routes',
+                'view_map_drivers',
+                'view_map_route_planning',
+            ])->pluck('id')->toArray();
+            $commuterRole->permissions()->sync($commuterPermissions);
+        }
+
+        // Organization: Gets all map permissions
         $organizationRole = Role::where('name', Role::ORGANIZATION)->first();
         if ($organizationRole) {
-            $organizationPermissions = Permission::whereIn('name', [
+            $basePermissions = Permission::whereIn('name', [
                 'view_organizations',
                 'view_drivers',
                 'view_organization_assignments',
@@ -115,7 +154,15 @@ class PermissionSeeder extends Seeder
                 'manage_fare_rates',
             ])->pluck('id')->toArray();
 
-            $organizationRole->permissions()->sync($organizationPermissions);
+            $mapPermissions = Permission::whereIn('name', [
+                'view_map_locations',
+                'view_map_routes',
+                'view_map_drivers',
+                'view_map_available_commuters',
+                'view_map_route_planning',
+            ])->pluck('id')->toArray();
+
+            $organizationRole->permissions()->sync(array_merge($basePermissions, $mapPermissions));
         }
     }
 }
