@@ -15,15 +15,9 @@ class AvailableCommutersController extends Controller
      * Return commuters with active ride requests visible to current driver
      * Authorization: Driver-only
      */
-    public function getAvailableCommuters(Request $request): JsonResponse
-    {
-        // Verify driver is authenticated with driver role
-        $user = auth()->user();
-        if (!$user || !$user->hasRole('driver')) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
-
-        // Validate required params
+     public function getAvailableCommuters(Request $request): JsonResponse
+     {
+         // Verify required params
         $validated = $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
@@ -32,13 +26,14 @@ class AvailableCommutersController extends Controller
             'radius_meters' => 'nullable|integer|min:100|max:50000',
         ]);
 
-        $driverLatitude = $validated['latitude'];
-        $driverLongitude = $validated['longitude'];
-        $radiusMeters = $validated['radius_meters'] ?? 5000;
-        $radiusKm = $radiusMeters / 1000;
+         $user = auth()->user();
+         $driverLatitude = $validated['latitude'];
+         $driverLongitude = $validated['longitude'];
+         $radiusMeters = $validated['radius_meters'] ?? 5000;
+         $radiusKm = $radiusMeters / 1000;
 
-        // Get active, non-expired commuter requests
-        $query = CommuterRideRequest::where('status', 'active')
+         // Get active, non-expired commuter requests
+         $query = CommuterRideRequest::where('status', 'active')
             ->notExpired();
 
         // Optional filters
@@ -75,15 +70,11 @@ class AvailableCommutersController extends Controller
      * Driver responds to a commuter request
      * Authorization: Driver-only
      */
-    public function respondToCommuter(Request $request): JsonResponse
-    {
-        // Verify driver role
-        $user = auth()->user();
-        if (!$user || !$user->hasRole('driver')) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
+     public function respondToCommuter(Request $request): JsonResponse
+     {
+         $user = auth()->user();
 
-        // Validate input
+         // Validate input
         $validated = $request->validate([
             'commuter_ride_request_id' => 'required|uuid|exists:commuter_ride_requests,id',
             'status' => 'required|in:accepted,rejected',

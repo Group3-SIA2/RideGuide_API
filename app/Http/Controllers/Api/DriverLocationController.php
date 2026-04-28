@@ -14,15 +14,11 @@ class DriverLocationController extends Controller
      * Driver updates their current location (called every 10 seconds)
      * Authorization: Driver-only
      */
-    public function updateLocation(Request $request): JsonResponse
-    {
-        // Verify driver role
-        $user = auth()->user();
-        if (!$user || !$user->hasRole('driver')) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
+     public function updateLocation(Request $request): JsonResponse
+     {
+         $user = auth()->user();
 
-        // Safety check: Ensure user exists in database (should always be true for authenticated user)
+         // Safety check: Ensure user exists in database (should always be true for authenticated user)
         if (!$user->exists) {
             return response()->json(['error' => 'User not found.'], 404);
         }
@@ -75,15 +71,11 @@ class DriverLocationController extends Controller
      * Get authenticated driver's current location
      * Authorization: Driver-only
      */
-    public function getLocation(Request $request): JsonResponse
-    {
-        // Verify driver role
-        $user = auth()->user();
-        if (!$user || !$user->hasRole('driver')) {
-            return response()->json(['error' => 'Unauthorized.'], 403);
-        }
+     public function getLocation(Request $request): JsonResponse
+     {
+         $user = auth()->user();
 
-        // Get driver's current location
+         // Get driver's current location
         $driverLocation = DriverLocation::where('driver_id', $user->id)->first();
 
         if (!$driverLocation) {

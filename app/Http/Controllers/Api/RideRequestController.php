@@ -82,14 +82,16 @@ class RideRequestController extends Controller
             'status' => 'nullable|in:active,accepted,completed,cancelled',
         ]);
 
-        $query = CommuterRideRequest::where('commuter_id', $user->id)
-            ->notExpired(); // Exclude expired requests
+         $query = CommuterRideRequest::where('commuter_id', $user->id)
+             ->notExpired(); // Exclude expired requests
 
-        if ($request->has('status')) {
-            $query->where('status', $validated['status']);
-        }
+         if ($request->has('status')) {
+             $query->where('status', $validated['status']);
+         }
 
-        $requests = $query->with('rideRequests')->get();
+         $requests = $query->with(['rideRequests' => function ($query) {
+             $query->with('driver:id,name'); // Eager load driver data with RideRequest
+         }])->get();
 
         return response()->json($requests->map(function ($request) {
             return [

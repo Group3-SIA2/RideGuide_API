@@ -32,34 +32,49 @@ class LocationController extends Controller
         return response()->json($terminals);
     }
 
-    /**
-     * GET /api/locations/routes
-     * Return all routes with waypoints
-     * Note: Route model does not yet exist; return empty array structure
-     */
-    public function getRoutes(Request $request): JsonResponse
-    {
-        $limit = min($request->query('limit', 100), 1000);
+     /**
+      * GET /api/locations/routes
+      * Return all routes with waypoints
+      * 
+      * Note: Route model implementation pending - Phase 4 task
+      * 
+      * Expected response structure (when implemented):
+      * [
+      *   {
+      *     "id": "uuid",
+      *     "name": "Route Name",
+      *     "waypoints": [
+      *       {"latitude": 6.12, "longitude": 125.19},
+      *       {"latitude": 6.13, "longitude": 125.20}
+      *     ]
+      *   }
+      * ]
+      */
+     public function getRoutes(Request $request): JsonResponse
+     {
+         $limit = min($request->query('limit', 100), 1000);
 
-        // Placeholder: routes would be retrieved like:
-        // $routes = Route::with('waypoints')->limit($limit)->get();
-        // For now, return empty array with correct structure
-        
-        $routes = collect(); // Empty collection until Route model exists
+         // TODO: Implement when Route model is created
+         // $routes = Route::select(['id', 'name'])
+         //     ->with('waypoints:route_id,latitude,longitude')
+         //     ->limit($limit)
+         //     ->get();
+         
+         $routes = collect(); // Empty collection until Route model exists
 
-        return response()->json($routes->map(function ($route) {
-            return [
-                'id' => $route->id ?? null,
-                'name' => $route->name ?? null,
-                'waypoints' => $route->waypoints->map(function ($waypoint) {
-                    return [
-                        'lat' => $waypoint->latitude,
-                        'lng' => $waypoint->longitude,
-                    ];
-                }) ?? [],
-            ];
-        })->values());
-    }
+         return response()->json($routes->map(function ($route) {
+             return [
+                 'id' => $route->id ?? null,
+                 'name' => $route->name ?? null,
+                 'waypoints' => $route->waypoints->map(function ($waypoint) {
+                     return [
+                         'lat' => $waypoint->latitude,
+                         'lng' => $waypoint->longitude,
+                     ];
+                 }) ?? [],
+             ];
+         })->values());
+     }
 
     /**
      * GET /api/locations/barangays
