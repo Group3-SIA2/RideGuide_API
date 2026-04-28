@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
 use App\Models\Role;
+use App\Support\MediaStorage;
 use Illuminate\Http\Request;
 
 class DriverController extends Controller
@@ -19,7 +20,77 @@ class DriverController extends Controller
         $this->authorizePermissions($request, 'view_drivers', 'manage_drivers');
         $currentUser = $request->user();
 
-        $query = Driver::with(['user', 'organization', 'licenseId.image']);
+        if ($driverId = $request->input('driver_id')) {
+            $driver = Driver::with(['user', 'organization', 'licenseId.image', 'vehicles.vehicleType.vehicleImage', 'vehicles.plateNumber'])
+                ->find($driverId);
+
+            if (! $driver) {
+                return response()->json([
+                    'driver' => null,
+                    'vehicles' => [],
+                ], 404);
+            }
+
+            if ($currentUser->hasRole(Role::ORGANIZATION)
+                && ! $currentUser->hasRole(Role::ADMIN)
+                && ! $currentUser->hasRole(Role::SUPER_ADMIN)
+                && $driver->organization
+                && $driver->organization->owner_user_id !== $currentUser->id
+            ) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
+            $license = $driver->licenseId;
+            $licenseImage = $license ? $license->image : null;
+
+            $vehicles = $driver->vehicles->map(function ($vehicle) {
+                $vehicleImage = $vehicle->vehicleType?->vehicleImage;
+
+                $images = [
+                    'Front' => $vehicleImage?->image_front,
+                    'Back' => $vehicleImage?->image_back,
+                    'Left' => $vehicleImage?->image_left,
+                    'Right' => $vehicleImage?->image_right,
+                ];
+
+                $photoUrls = [];
+                foreach ($images as $label => $path) {
+                    $url = $path ? (\App\Support\MediaStorage::url($path)) : null;
+                    if ($url) {
+                        $photoUrls[] = [
+                            'label' => $label,
+                            'url' => $url,
+                        ];
+                    }
+                }
+
+                return [
+                    'id' => $vehicle->id,
+                    'plate_number' => optional($vehicle->plateNumber)->plate_number ?? '—',
+                    'vehicle_type' => optional($vehicle->vehicleType)->vehicle_type ?? '—',
+                    'status' => $vehicle->status,
+                    'verification_status' => $vehicle->verification_status,
+                    'photos' => $photoUrls,
+                ];
+            })->values();
+
+            return response()->json([
+                'driver' => [
+                    'id' => $driver->id,
+                    'name' => trim(($driver->user?->first_name ?? '') . ' ' . ($driver->user?->last_name ?? '')),
+                    'license_id' => $license?->license_id,
+                    'license_front' => $licenseImage && $licenseImage->image_front
+                        ? ($licenseImage->image_front_url ?? MediaStorage::url($licenseImage->image_front))
+                        : null,
+                    'license_back' => $licenseImage && $licenseImage->image_back
+                        ? ($licenseImage->image_back_url ?? MediaStorage::url($licenseImage->image_back))
+                        : null,
+                ],
+                'vehicles' => $vehicles,
+            ]);
+        }
+
+        $query = Driver::with(['user', 'organization', 'licenseId.image', 'vehicles.vehicleType.vehicleImage', 'vehicles.plateNumber']);
 
         // Organization managers can only view drivers assigned to organizations they own.
         if ($currentUser->hasRole(Role::ORGANIZATION)
