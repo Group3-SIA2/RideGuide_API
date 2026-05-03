@@ -25,7 +25,17 @@ class LocationController extends Controller
 
         // Apply limit (default 100, cap at 1000)
         $limit = min($request->query('limit', 100), 1000);
-        $terminals = $query->select(['id', 'terminal_name as name', 'latitude', 'longitude'])
+        $terminals = $query->select([
+            'id',
+            'terminal_name',
+            'terminal_name as name',
+            'barangay',
+            'city',
+            'latitude',
+            'longitude',
+            'created_at',
+            'updated_at',
+        ])
             ->limit($limit)
             ->get();
 
