@@ -61,12 +61,28 @@ class VehicleController extends Controller
             return response()->json(['message' => 'Driver profile not found'], 422);
         }
 
+        $hasActiveVerified = vehicle::where('driver_id', $driver->id)
+            ->where('verification_status', vehicle::VERIFICATION_VERIFIED)
+            ->exists();
+
+        if ($hasActiveVerified) {
+            return response()->json(['message' => 'You already have an active verified vehicle'], 422);
+        }
+
+        $hasPending = vehicle::where('driver_id', $driver->id)
+            ->where('verification_status', vehicle::VERIFICATION_PENDING)
+            ->exists();
+
+        if ($hasPending) {
+            return response()->json(['message' => 'You already have a vehicle pending verification'], 422);
+        }
+
         $vehicle = vehicle::create([
             'driver_id' => $driver->id,
             'vehicle_type_id' => $vehicleType->id,
             'plate_number_id' => $plateNumber->id,
-            'status' => 'inactive', // default status
-            'verification_status' => 'pending', // default verification status
+            'status' => 'inactive',
+            'verification_status' => 'pending',
         ]);
 
         $vehicleDetails = vehicle::with(['vehicleType', 'vehicleType.vehicleImage', 'plateNumber'])

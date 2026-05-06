@@ -232,7 +232,7 @@
                                                                 }
 
                                                                 if (in_array($key, ['ip', 'user_agent'], true) && is_string($value) && $value !== '') {
-                                                                    $displayValue = encrypt($value);
+                                                                    $displayValue = encrypt($value); // Paloy nag encrypt ani NO CAP
                                                                 }
                                                             @endphp
                                                             @if(is_array($value) || is_object($value))
