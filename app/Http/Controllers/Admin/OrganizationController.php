@@ -48,7 +48,11 @@ class OrganizationController extends Controller
                   })
                   ->orWhereHas('hqAddress', function ($addrQ) use ($search) {
                       $addrQ->where('barangay', 'like', "%{$search}%")
-                            ->orWhere('street', 'like', "%{$search}%");
+                            ->orWhere('street', 'like', "%{$search}%")
+                            ->orWhere('city', 'like', "%{$search}%")
+                            ->orWhere('region', 'like', "%{$search}%")
+                            ->orWhere('province', 'like', "%{$search}%")
+                            ->orWhere('postal_code', 'like', "%{$search}%");
                   });
             });
         }
@@ -649,10 +653,27 @@ class OrganizationController extends Controller
 
         // Handle hq_address as a related record
         $hqAddressId = null;
-        if (!empty($validated['hq_barangay']) || !empty($validated['hq_street'])) {
+        $hasAddressInput = collect([
+            $validated['hq_street'] ?? null,
+            $validated['hq_barangay'] ?? null,
+            $validated['hq_city'] ?? null,
+            $validated['hq_region'] ?? null,
+            $validated['hq_province'] ?? null,
+            $validated['hq_postal_code'] ?? null,
+            $validated['hq_subdivision'] ?? null,
+            $validated['hq_floor_unit_room'] ?? null,
+            $validated['hq_lat'] ?? null,
+            $validated['hq_lng'] ?? null,
+        ])->filter(fn ($value) => !empty($value))->isNotEmpty();
+
+        if ($hasAddressInput) {
             $hqAddress = HqAddress::create([
                 'barangay'        => $validated['hq_barangay'] ?? '',
                 'street'          => $validated['hq_street'] ?? '',
+                'city'            => $validated['hq_city'] ?? '',
+                'region'          => $validated['hq_region'] ?? '',
+                'province'        => $validated['hq_province'] ?? '',
+                'postal_code'     => $validated['hq_postal_code'] ?? null,
                 'subdivision'     => $validated['hq_subdivision'] ?? null,
                 'floor_unit_room' => $validated['hq_floor_unit_room'] ?? null,
                 'lat'             => $validated['hq_lat'] ?? null,
@@ -663,7 +684,7 @@ class OrganizationController extends Controller
 
         // Remove address sub-fields from validated data and set the FK
         $orgData = collect($validated)
-            ->except(['hq_barangay', 'hq_street', 'hq_subdivision', 'hq_floor_unit_room', 'hq_lat', 'hq_lng'])
+            ->except(['hq_barangay', 'hq_street', 'hq_city', 'hq_region', 'hq_province', 'hq_postal_code', 'hq_subdivision', 'hq_floor_unit_room', 'hq_lat', 'hq_lng'])
             ->put('hq_address', $hqAddressId)
             ->all();
 
@@ -737,13 +758,17 @@ class OrganizationController extends Controller
         }
 
         // Handle hq_address as a related record
-        $addressFields = ['hq_barangay', 'hq_street', 'hq_subdivision', 'hq_floor_unit_room', 'hq_lat', 'hq_lng'];
+        $addressFields = ['hq_barangay', 'hq_street', 'hq_city', 'hq_region', 'hq_province', 'hq_postal_code', 'hq_subdivision', 'hq_floor_unit_room', 'hq_lat', 'hq_lng'];
         $hasAddressInput = collect($addressFields)->filter(fn($f) => !empty($validated[$f]))->isNotEmpty();
 
         if ($hasAddressInput) {
             $addressData = [
                 'barangay'        => $validated['hq_barangay'] ?? '',
                 'street'          => $validated['hq_street'] ?? '',
+                'city'            => $validated['hq_city'] ?? '',
+                'region'          => $validated['hq_region'] ?? '',
+                'province'        => $validated['hq_province'] ?? '',
+                'postal_code'     => $validated['hq_postal_code'] ?? null,
                 'subdivision'     => $validated['hq_subdivision'] ?? null,
                 'floor_unit_room' => $validated['hq_floor_unit_room'] ?? null,
                 'lat'             => $validated['hq_lat'] ?? null,
@@ -797,6 +822,10 @@ class OrganizationController extends Controller
         $validated = $request->validate([
             'hq_barangay'        => ['required', 'string', 'max:255'],
             'hq_street'          => ['required', 'string', 'max:255'],
+            'hq_city'            => ['required', 'string', 'max:255'],
+            'hq_region'          => ['required', 'string', 'max:255'],
+            'hq_province'        => ['required', 'string', 'max:255'],
+            'hq_postal_code'     => ['nullable', 'string', 'max:20'],
             'hq_subdivision'     => ['nullable', 'string', 'max:255'],
             'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
             'hq_lat'             => ['nullable', 'string', 'max:50'],
@@ -806,6 +835,10 @@ class OrganizationController extends Controller
         $addressData = [
             'barangay'        => $validated['hq_barangay'],
             'street'          => $validated['hq_street'],
+            'city'            => $validated['hq_city'],
+            'region'          => $validated['hq_region'],
+            'province'        => $validated['hq_province'],
+            'postal_code'     => $validated['hq_postal_code'] ?? null,
             'subdivision'     => $validated['hq_subdivision'] ?? null,
             'floor_unit_room' => $validated['hq_floor_unit_room'] ?? null,
             'lat'             => $validated['hq_lat'] ?? null,
