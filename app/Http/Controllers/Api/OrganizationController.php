@@ -295,6 +295,15 @@ class OrganizationController extends Controller
             'hq_address' => ['nullable', 'string', 'max:500'],
             'hq_street' => ['nullable', 'string', 'max:255'],
             'hq_barangay' => ['nullable', 'string', 'max:255'],
+            'hq_city' => ['nullable', 'string', 'max:255'],
+            'hq_region' => ['nullable', 'string', 'max:255'],
+            'hq_province' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::exists('provinces', 'name')->whereNull('deleted_at'),
+            ],
+            'hq_postal_code' => ['nullable', 'string', 'max:50'],
             'hq_subdivision' => ['nullable', 'string', 'max:255'],
             'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
             'hq_lat' => ['nullable', 'string', 'max:50'],
@@ -408,6 +417,15 @@ class OrganizationController extends Controller
             'hq_address' => ['nullable', 'string', 'max:500'],
             'hq_street' => ['nullable', 'string', 'max:255'],
             'hq_barangay' => ['nullable', 'string', 'max:255'],
+            'hq_city' => ['nullable', 'string', 'max:255'],
+            'hq_region' => ['nullable', 'string', 'max:255'],
+            'hq_province' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::exists('provinces', 'name')->whereNull('deleted_at'),
+            ],
+            'hq_postal_code' => ['nullable', 'string', 'max:50'],
             'hq_subdivision' => ['nullable', 'string', 'max:255'],
             'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
             'hq_lat' => ['nullable', 'string', 'max:50'],
@@ -447,6 +465,10 @@ class OrganizationController extends Controller
             array_key_exists('hq_address', $validated)
             || array_key_exists('hq_street', $validated)
             || array_key_exists('hq_barangay', $validated)
+            || array_key_exists('hq_city', $validated)
+            || array_key_exists('hq_region', $validated)
+            || array_key_exists('hq_province', $validated)
+            || array_key_exists('hq_postal_code', $validated)
             || array_key_exists('hq_subdivision', $validated)
             || array_key_exists('hq_floor_unit_room', $validated)
             || array_key_exists('hq_lat', $validated)
@@ -459,6 +481,10 @@ class OrganizationController extends Controller
         unset(
             $validated['hq_street'],
             $validated['hq_barangay'],
+            $validated['hq_city'],
+            $validated['hq_region'],
+            $validated['hq_province'],
+            $validated['hq_postal_code'],
             $validated['hq_subdivision'],
             $validated['hq_floor_unit_room'],
             $validated['hq_lat'],
@@ -638,6 +664,10 @@ class OrganizationController extends Controller
     {
         $street = trim((string) ($payload['hq_street'] ?? ''));
         $barangay = trim((string) ($payload['hq_barangay'] ?? ''));
+        $city = trim((string) ($payload['hq_city'] ?? ''));
+        $region = trim((string) ($payload['hq_region'] ?? ''));
+        $province = trim((string) ($payload['hq_province'] ?? ''));
+        $postalCode = $this->normalizeDescription($payload['hq_postal_code'] ?? null);
         $subdivision = $this->normalizeDescription($payload['hq_subdivision'] ?? null);
         $floorUnitRoom = $this->normalizeDescription($payload['hq_floor_unit_room'] ?? null);
         $latitude = $this->normalizeDescription($payload['hq_lat'] ?? null);
@@ -658,10 +688,21 @@ class OrganizationController extends Controller
                     'hq_barangay' => 'Both hq_street and hq_barangay are required when providing HQ address details.',
                 ]);
             }
+            if ($city === '' || $region === '' || $province === '') {
+                throw ValidationException::withMessages([
+                    'hq_city' => 'hq_city, hq_region, and hq_province are required when providing HQ address details.',
+                    'hq_region' => 'hq_city, hq_region, and hq_province are required when providing HQ address details.',
+                    'hq_province' => 'hq_city, hq_region, and hq_province are required when providing HQ address details.',
+                ]);
+            }
 
             $addressData = [
                 'street' => $street,
                 'barangay' => $barangay,
+                'city' => $city,
+                'region' => $region,
+                'province' => $province,
+                'postal_code' => $postalCode,
                 'subdivision' => $subdivision,
                 'floor_unit_room' => $floorUnitRoom,
                 'lat' => $latitude,
@@ -680,6 +721,10 @@ class OrganizationController extends Controller
                     'street' => $street,
                 ],
                 [
+                    'city' => $city,
+                    'region' => $region,
+                    'province' => $province,
+                    'postal_code' => $postalCode,
                     'subdivision' => $subdivision,
                     'floor_unit_room' => $floorUnitRoom,
                     'lat' => $latitude,
@@ -727,6 +772,10 @@ class OrganizationController extends Controller
             [
                 'subdivision' => $derivedSubdivision,
                 'floor_unit_room' => null,
+                'city' => 'Unknown',
+                'region' => 'Unknown',
+                'province' => 'Unknown',
+                'postal_code' => null,
                 'lat' => null,
                 'lng' => null,
             ]
