@@ -17,6 +17,11 @@ return new class extends Migration
             $table->string('street')->notNull();
             $table->string('subdivision')->nullable();
             $table->string('floor_unit_room')->nullable();
+            $table->string('city')->notNull();
+            $table->string('region')->notNull();
+            $table->string('province')->notNull();
+            $table->string('postal_code')->nullable();
+
             $table->string('lat')->nullable();
             $table->string('lng')->nullable();
             $table->timestamps();

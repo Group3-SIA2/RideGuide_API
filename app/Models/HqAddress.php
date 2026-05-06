@@ -17,6 +17,10 @@ class HqAddress extends Model
         'street',
         'subdivision',
         'floor_unit_room',
+        'city',
+        'region',
+        'province',
+        'postal_code',
         'lat',
         'lng',
     ];
