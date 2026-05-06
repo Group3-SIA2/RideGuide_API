@@ -8,6 +8,8 @@ use App\Models\Otp;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\InputValidation;
+use App\Support\AppRoleContext;
+use App\Support\DashboardCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,9 +20,38 @@ use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 use Kreait\Firebase\Factory;
 use RuntimeException;
 use Throwable;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    private function roleContextData(User $user): array
+    {
+        $roles = AppRoleContext::assignedMobileRoles($user);
+        $activeRole = is_string($user->active_role) ? strtolower($user->active_role) : null;
+        $isActiveValid = $activeRole !== null && in_array($activeRole, $roles, true);
+
+        return [
+            'roles' => $roles,
+            'active_role' => $isActiveValid ? $activeRole : null,
+            'role_selection_required' => count($roles) > 1 && !$isActiveValid,
+        ];
+    }
+
+    private function setActiveRoleForUser(User $user, string $role): void
+    {
+        $normalizedRole = strtolower(trim($role));
+        $roles = AppRoleContext::assignedMobileRoles($user);
+
+        if (!in_array($normalizedRole, $roles, true)) {
+            throw ValidationException::withMessages([
+                'role' => ['Selected role is not assigned to this account.'],
+            ]);
+        }
+
+        $user->forceFill(['active_role' => $normalizedRole])->save();
+        DashboardCache::forgetUserDashboards($user->id);
+    }
+
     /*
         POST /api/register
         Body: name, email, password, password_confirmation, role (admin|driver|commuter)
@@ -319,6 +350,7 @@ class AuthController extends Controller
                 ],
                 'token' => $token,
                 'token_type' => 'Bearer',
+                ...$this->roleContextData($user),
             ],
         ], 200);
     }
@@ -397,6 +429,7 @@ class AuthController extends Controller
                     ],
                     'token' => $token,
                     'token_type' => 'Bearer',
+                    ...$this->roleContextData($user),
                 ],
             ], 200);
         }
@@ -422,6 +455,7 @@ class AuthController extends Controller
                     ],
                     'token' => $token,
                     'token_type' => 'Bearer',
+                    ...$this->roleContextData($user),
                 ],
             ], 200);
         }
@@ -444,6 +478,31 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Logged out successfully.',
+        ], 200);
+    }
+
+    public function selectRole(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'role' => ['required', 'string'],
+        ]);
+
+        $this->setActiveRoleForUser($user, $validated['role']);
+        $user->refresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Active role updated.',
+            'data' => $this->roleContextData($user),
         ], 200);
     }
 
