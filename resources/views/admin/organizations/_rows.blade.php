@@ -29,13 +29,8 @@
 
     <td class="rg-td-muted">
         @if($org->hqAddress)
-            <span title="{{ implode(', ', array_filter([
-                $org->hqAddress->floor_unit_room,
-                $org->hqAddress->subdivision,
-                $org->hqAddress->street,
-                $org->hqAddress->barangay,
-            ])) }}">
-                {{ $org->hqAddress->street }}, {{ $org->hqAddress->barangay }}
+            <span title="{{ $org->hqAddress->formatted }}">
+                {{ $org->hqAddress->formatted }}
             </span>
         @else
             <span class="text-muted fst-italic">—</span>
@@ -71,6 +66,10 @@
                         data-org-name="{{ $org->name }}"
                         data-hq-street="{{ $org->hqAddress->street ?? '' }}"
                         data-hq-barangay="{{ $org->hqAddress->barangay ?? '' }}"
+                        data-hq-city="{{ $org->hqAddress->city ?? '' }}"
+                        data-hq-region="{{ $org->hqAddress->region ?? '' }}"
+                        data-hq-province="{{ $org->hqAddress->province ?? '' }}"
+                        data-hq-postal-code="{{ $org->hqAddress->postal_code ?? '' }}"
                         data-hq-subdivision="{{ $org->hqAddress->subdivision ?? '' }}"
                         data-hq-floor-unit-room="{{ $org->hqAddress->floor_unit_room ?? '' }}"
                         data-hq-lat="{{ $org->hqAddress->lat ?? '' }}"
