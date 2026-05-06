@@ -15,10 +15,12 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name')->unique();
             $table->string('description')->nullable();
+            $table->boolean('is_reserved')->default(false);
             $table->timestamps();
             $table->softDeletes();
 
             $table->index('deleted_at');
+            $table->index('is_reserved');
         });
     }
 

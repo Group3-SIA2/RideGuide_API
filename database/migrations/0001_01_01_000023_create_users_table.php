@@ -28,12 +28,14 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
             $table->string('status_reason')->nullable();
             $table->timestamp('status_changed_at')->nullable();
+            $table->string('active_role')->nullable();
             $table->rememberToken();
             
             $table->timestamps();
             $table->softDeletes();
 
             $table->index(['status', 'deleted_at']);
+            $table->index('active_role');
 
         });
 
