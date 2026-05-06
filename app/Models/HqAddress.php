@@ -43,6 +43,10 @@ class HqAddress extends Model
             $this->subdivision,
             $this->street,
             $this->barangay,
+            $this->city,
+            $this->province,
+            $this->region,
+            $this->postal_code,
         ]));
     }
 }
