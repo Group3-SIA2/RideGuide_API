@@ -35,7 +35,7 @@ class ForgotPasswordController extends Controller
             return back()
                 ->withInput($request->only('email'))
                 ->withErrors([
-                    'email' => 'Password reset is not allowed for Admin and Super Admin accounts from this endpoint.',
+                    'email' => 'Your account is not eligible for password reset.',
                 ]);
         }
 

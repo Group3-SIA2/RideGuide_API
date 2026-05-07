@@ -37,7 +37,7 @@ class Auth2faController extends Controller
             $lockedUntil = $user->locked_until ? $user->locked_until->format('Y-m-d h:i A') : 'later';
 
             return back()->withErrors([
-                'email' => "Your account is locked due to multiple failed login attempts. Try again after {$lockedUntil} or contact a Super Admin.",
+                'email' => "Your account is locked due to multiple failed login attempts. Try again after {$lockedUntil} or contact Admins.",
             ])->withInput();
         }
 
@@ -53,7 +53,7 @@ class Auth2faController extends Controller
                     $user->lockAccount(User::LOCK_REASON_FAILED_ATTEMPTS);
 
                     return back()->withErrors([
-                        'email' => 'Your account has been locked after 3 failed login attempts. Please contact a Super Admin for secure reset.',
+                        'email' => 'Your account has been locked after 3 failed login attempts. Please contact a Admins for a request password reset.',
                     ])->withInput();
                 }
 
@@ -130,7 +130,7 @@ class Auth2faController extends Controller
 
         if ($user->isAdminOrSuperAdmin() && $user->isAccountLocked()) {
             session()->forget(['2fa:user_id', '2fa:remember']);
-            return redirect()->route('login')->withErrors(['email' => 'Your account is locked. Please contact a Super Admin.']);
+            return redirect()->route('login')->withErrors(['email' => 'Your account is locked. Please contact Admins.']);
         }
 
         if (!$user->isAccountActive()) {
