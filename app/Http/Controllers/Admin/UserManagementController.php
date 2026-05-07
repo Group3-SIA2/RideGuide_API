@@ -228,6 +228,7 @@ class UserManagementController extends Controller
             'discounts' => $discounts,
             'stats' => $stats,
             'filters' => ['search' => $search],
+            'getStatusBadgeClass' => fn($status) => $this->getStatusBadgeClass($status),
             'driverFilters' => [
                 'search' => $driverSearch,
                 'status' => $driverStatus,
@@ -240,11 +241,7 @@ class UserManagementController extends Controller
                 'search' => $discountSearch,
                 'status' => $discountStatus,
             ],
-            'userStatusOptions' => [
-                User::STATUS_ACTIVE => 'Active',
-                User::STATUS_INACTIVE => 'Inactive',
-                User::STATUS_SUSPENDED => 'Suspended',
-            ],
+            'userStatusOptions' => $this->getUserStatusOptions(),
             'driverVerificationOptions' => [
                 LicenseId::VERIFICATION_STATUS_UNVERIFIED => 'Unverified',
                 LicenseId::VERIFICATION_STATUS_VERIFIED => 'Verified',
@@ -401,7 +398,7 @@ class UserManagementController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => ['required', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE, User::STATUS_SUSPENDED])],
+            'status' => ['required', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE, User::STATUS_SUSPENDED, User::STATUS_LOCKED])],
             'status_reason' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -604,6 +601,173 @@ class UserManagementController extends Controller
         ]);
     }
 
+    public function resetLockedAccountPassword(Request $request, User $user)
+    {
+        $this->authorizePermissions($request, 'reset_locked_admin_passwords');
+
+        // Verify that the user is an admin or super admin
+        if (!$user->isAdminOrSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This user is not an admin or super admin.',
+            ], 422);
+        }
+
+        // Verify that the account is actually locked
+        if (!$user->isAccountLocked()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account is not locked.',
+            ], 422);
+        }
+
+        // Validate the new password
+        $validated = $request->validate([
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        // Check if the new password matches any previously failed password
+        // Consider only active failed attempts when checking previously attempted passwords
+        $failedAttempts = $user->loginFailAttempts()
+            ->where('status', 'active')
+            ->where('created_at', '>', now()->subMonths(12))
+            ->get();
+
+        foreach ($failedAttempts as $attempt) {
+            if ($attempt->failed_password && Hash::check($validated['password'], $attempt->failed_password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The new password cannot match any previously attempted password. Please choose a different password.',
+                    'error_code' => 'PASSWORD_PREVIOUSLY_ATTEMPTED',
+                ], 422);
+            }
+        }
+
+        // Update the password and unlock the account
+        $user->update([
+            'password' => $validated['password'],
+        ]);
+
+        $user->unlockAccount();
+
+        // Mark previous active failed attempts as resolved so the failed-attempts count resets
+        $user->loginFailAttempts()->where('status', 'active')->update(['status' => 'resolved']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset successfully. The admin account has been unlocked.',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'status' => $user->status,
+                    'locked_until' => $user->locked_until,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Unlock an admin account that is locked.
+     * This requires proper permission checks.
+     */
+    public function unlockAdminAccount(Request $request, User $user)
+    {
+        $this->authorizePermissions($request, 'manage_locked_accounts');
+
+        // Verify that the user is an admin or super admin
+        if (!$user->isAdminOrSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This user is not an admin or super admin.',
+            ], 422);
+        }
+
+        // Verify that the account is actually locked
+        if (!$user->isAccountLocked()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account is not locked.',
+            ], 422);
+        }
+
+        $user->unlockAccount();
+
+        // Mark previous active failed attempts as resolved so the failed-attempts count resets
+        $user->loginFailAttempts()->where('status', 'active')->update(['status' => 'resolved']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin account unlocked successfully. User can now attempt login again.',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'status' => $user->status,
+                    'locked_until' => $user->locked_until,
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Show locked admin accounts view page.
+     */
+    public function showLockedAccounts(Request $request)
+    {
+        $this->authorizePermissions($request, 'manage_locked_accounts');
+
+        return view('admin.users.locked-accounts');
+    }
+
+    /**
+     * Get locked admin accounts (for dashboard/monitoring).
+     */
+    public function getLockedAdminAccounts(Request $request)
+    {
+        $this->authorizePermissions($request, 'manage_locked_accounts');
+
+        $lockedUsers = User::where('status', User::STATUS_LOCKED)
+            ->whereHas('roles', function ($query) {
+                $query->whereIn('name', [Role::ADMIN, Role::SUPER_ADMIN]);
+            })
+            ->with('roles')
+            ->get()
+            ->map(function ($user) {
+                // Auto-unlock if lock period has expired
+                if ($user->locked_until && $user->locked_until->isPast()) {
+                    $user->unlockAccount();
+                    // Mark any remaining active attempts as resolved when auto-unlocking
+                    $user->loginFailAttempts()->where('status', 'active')->update(['status' => 'resolved']);
+                    return null;
+                }
+
+                // Determine locked_at from the most recent active failed attempt (last of the attempts)
+                $latestAttempt = $user->loginFailAttempts()
+                    ->where('status', 'active')
+                    ->orderByDesc('created_at')
+                    ->first();
+
+                if ($latestAttempt && $latestAttempt->created_at) {
+                    $user->setAttribute('locked_at', $latestAttempt->created_at->toIso8601String());
+                } else {
+                    // fallback to status_changed_at if no attempt found
+                    $user->setAttribute('locked_at', optional($user->status_changed_at)?->toIso8601String());
+                }
+
+                return $user;
+            })
+            ->filter();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'locked_accounts' => $lockedUsers,
+                'total_locked' => $lockedUsers->count(),
+            ],
+        ]);
+    }
+
     // Helper Methods
     private function sendEmailVerificationOtp(User $user): void
     {
@@ -781,5 +945,34 @@ class UserManagementController extends Controller
         }
 
         return 'admin.' . $suffix;
+    }
+
+    /**
+     * Get CSS class for status badge based on status value.
+     * Dynamically handles any status: active/verified → success, rejected/suspended/blocked/locked → danger, others → pending.
+     */
+    private function getStatusBadgeClass(string $status): string
+    {
+        $status = strtolower($status);
+
+        if (in_array($status, ['active', 'verified'])) {
+            return 'rg-status-active';
+        }
+
+        if (in_array($status, ['rejected', 'suspended', 'locked', 'inactive'])) {
+            return 'rg-status-danger';
+        }
+
+        return 'rg-status-pending';
+    }
+
+    private function getUserStatusOptions(): array
+    {
+        return [
+            User::STATUS_ACTIVE => 'Active',
+            User::STATUS_INACTIVE => 'Inactive',
+            User::STATUS_SUSPENDED => 'Suspended',
+            User::STATUS_LOCKED => 'Locked',
+        ];
     }
 }

@@ -29,7 +29,41 @@ class Auth2faController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (!$user) {
+            return back()->withErrors(['email' => 'Invalid credentials'])->withInput();
+        }
+
+        if ($user->isAdminOrSuperAdmin() && $user->isAccountLocked()) {
+            $lockedUntil = $user->locked_until ? $user->locked_until->format('Y-m-d h:i A') : 'later';
+
+            return back()->withErrors([
+                'email' => "Your account is locked due to multiple failed login attempts. Try again after {$lockedUntil} or contact a Super Admin.",
+            ])->withInput();
+        }
+
+        if (!Hash::check($validated['password'], $user->password)) {
+            if ($user->isAdminOrSuperAdmin()) {
+                $user->loginFailAttempts()->create([
+                    'failed_password' => Hash::make($validated['password']),
+                ]);
+
+                $failedCount = $user->getRecentFailedAttemptCount();
+
+                if ($failedCount >= User::FAILED_LOGIN_THRESHOLD) {
+                    $user->lockAccount(User::LOCK_REASON_FAILED_ATTEMPTS);
+
+                    return back()->withErrors([
+                        'email' => 'Your account has been locked after 3 failed login attempts. Please contact a Super Admin for secure reset.',
+                    ])->withInput();
+                }
+
+                $remaining = max(0, User::FAILED_LOGIN_THRESHOLD - $failedCount);
+
+                return back()->withErrors([
+                    'email' => "Invalid credentials. {$remaining} attempt(s) remaining before your account is locked.",
+                ])->withInput();
+            }
+
             return back()->withErrors(['email' => 'Invalid credentials'])->withInput();
         }
 
@@ -93,6 +127,11 @@ class Auth2faController extends Controller
         $otp->update(['used_at' => now()]);
 
         $user = User::findOrFail($userId);
+
+        if ($user->isAdminOrSuperAdmin() && $user->isAccountLocked()) {
+            session()->forget(['2fa:user_id', '2fa:remember']);
+            return redirect()->route('login')->withErrors(['email' => 'Your account is locked. Please contact a Super Admin.']);
+        }
 
         if (!$user->isAccountActive()) {
             session()->forget(['2fa:user_id', '2fa:remember']);
