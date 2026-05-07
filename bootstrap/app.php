@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(prepend: [
             \App\Http\Middleware\SanitizeApiInput::class,
+            \App\Http\Middleware\ResolveActiveRole::class,
         ]);
 
         $middleware->alias([
@@ -26,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'panel.role' => \App\Http\Middleware\EnsurePanelRole::class,
             'admin.audit' => \App\Http\Middleware\LogAdminTransactions::class,
             'role' => \App\Http\Middleware\CheckRole::class,
+            'active.role.required' => \App\Http\Middleware\RequireActiveRole::class,
+            'active.role.match' => \App\Http\Middleware\EnsureRoleMatchesActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
