@@ -38,6 +38,7 @@ class User extends Authenticatable
         'status',
         'status_reason',
         'status_changed_at',
+        'active_role',
     ];
 
     /**
