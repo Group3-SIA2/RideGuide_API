@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Carbon\Carbon;
 
 class BackupController extends Controller
 {
@@ -65,6 +66,28 @@ class BackupController extends Controller
                             'updated_at' => $file['updated_at'] ?? null,
                         ])
                         ->values();
+
+                    // Apply filtering by month/day/year if provided
+                    $month = $request->query('month', null);
+                    $day   = $request->query('day', null);
+                    $year  = $request->query('year', null);
+
+                    if (($month !== null && $month !== '') || ($day !== null && $day !== '') || ($year !== null && $year !== '')) {
+                        $backups = $backups->filter(function ($b) use ($month, $day, $year) {
+                            if (empty($b['created_at'])) return false;
+                            try {
+                                $dt = Carbon::parse($b['created_at']);
+                            } catch (\Exception $e) {
+                                return false;
+                            }
+
+                            if ($month !== null && $month !== '' && (int)$dt->month !== (int)$month) return false;
+                            if ($day !== null && $day !== '' && (int)$dt->day !== (int)$day) return false;
+                            if ($year !== null && $year !== '' && (int)$dt->year !== (int)$year) return false;
+
+                            return true;
+                        })->values();
+                    }
                 }
             } catch (\Exception $e) {
                 Log::error('Backup list fetch failed: ' . $e->getMessage());
