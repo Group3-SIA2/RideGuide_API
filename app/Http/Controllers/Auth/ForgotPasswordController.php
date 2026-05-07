@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class ForgotPasswordController extends Controller
 {
@@ -19,4 +22,23 @@ class ForgotPasswordController extends Controller
     */
 
     use SendsPasswordResetEmails;
+
+    public function sendResetLinkEmail(Request $request): RedirectResponse
+    {
+        $this->validateEmail($request);
+
+        $email = strtolower(trim((string) $request->input('email')));
+
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        if ($user && $user->isAdminOrSuperAdmin()) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors([
+                    'email' => 'Password reset is not allowed for Admin and Super Admin accounts from this endpoint.',
+                ]);
+        }
+
+        return parent::sendResetLinkEmail($request);
+    }
 }
