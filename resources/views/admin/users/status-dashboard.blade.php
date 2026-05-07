@@ -29,11 +29,17 @@
         <div class="d-flex flex-row flex-wrap justify-content-md-end align-items-center">
             <a href="{{ route($panelPrefix . '.user-status.create') }}" class="btn btn-outline-success mr-2 mb-2 mb-md-0">
                 <i class="fas fa-user-plus mr-1"></i>
-                Create New User
+                Create User
             </a>
+            @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('manage_locked_accounts'))
+                <a href="{{ route($panelPrefix . '.security.locked-accounts') }}" class="btn btn-outline-dark mr-2 mb-2 mb-md-0">
+                    <i class="fas fa-lock mr-1"></i>
+                    Locked Accounts
+                </a>
+            @endif
             <button type="button" class="btn btn-outline-primary mb-2 mb-md-0" data-toggle="modal" data-target="#restoreRecordsModal">
                 <i class="fas fa-history mr-1"></i>
-                Restore Deleted Records
+                Restore Records
             </button>
         </div>
     </div>
@@ -64,6 +70,8 @@
             </ul>
         </div>
     @endif
+
+    <div id="rg-feedback-users" style="display: none;" class="alert mb-3"></div>
 
     <div class="rg-card">
         <div class="rg-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
@@ -170,7 +178,7 @@
                                 @endforelse
                             </td>
                             <td>
-                                <span class="rg-status-badge {{ $user->status === 'active' ? 'rg-status-active' : ($user->status === 'suspended' ? 'rg-status-danger' : 'rg-status-pending') }}">
+                                <span class="rg-status-badge {{ $getStatusBadgeClass($user->status) }}">
                                     {{ ucfirst($user->status) }}
                                 </span>
                                 @if($user->status_reason)
@@ -178,14 +186,17 @@
                                 @endif
                             </td>
                             <td>
-                                <form action="{{ route($userStatusUsersUpdateRoute, $user) }}" method="POST" class="form-inline">
+                                <form class="rg-status-update-form form-inline" data-route="{{ route($userStatusUsersUpdateRoute, $user) }}" data-type="user">
                                     @csrf
                                     @method('PATCH')
+                                    <input type="hidden" name="user_id" value="{{ $user->id }}">
                                     <div class="form-row w-100">
                                         <div class="col-md-4 mb-2 mb-md-0">
                                             <select name="status" class="form-control form-control-sm">
                                                 @foreach($userStatusOptions as $value => $label)
-                                                    <option value="{{ $value }}" @selected($user->status === $value)>{{ $label }}</option>
+                                                    @if(in_array($value, ['active', 'locked', 'inactive', 'suspended']))
+                                                        <option value="{{ $value }}" @selected($user->status === $value)>{{ $label }}</option>
+                                                    @endif
                                                 @endforeach
                                             </select>
                                         </div>
@@ -216,6 +227,8 @@
         </div>
         @endif
     </div>
+
+    <div id="rg-feedback-drivers" style="display: none;" class="alert mb-3"></div>
 
     <div class="row mt-4">
         <div class="col-12">
@@ -282,7 +295,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="rg-status-badge {{ $licenseStatus === 'verified' ? 'rg-status-active' : ($licenseStatus === 'rejected' ? 'rg-status-danger' : 'rg-status-pending') }}">
+                                        <span class="rg-status-badge {{ $getStatusBadgeClass($licenseStatus) }}">
                                             {{ ucfirst($licenseStatus) }}
                                         </span>
                                         @if($license && $license->rejection_reason)
@@ -290,9 +303,10 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <form action="{{ route($userStatusDriversUpdateRoute, $driver) }}" method="POST">
+                                        <form class="rg-status-update-form" data-route="{{ route($userStatusDriversUpdateRoute, $driver) }}" data-type="driver">
                                             @csrf
                                             @method('PATCH')
+                                            <input type="hidden" name="driver_id" value="{{ $driver->id }}">
                                             <div class="form-row align-items-start">
                                                 <div class="col-12 col-md-5 mb-2 mb-md-0">
                                                     <select name="verification_status" class="form-control form-control-sm">
@@ -374,6 +388,7 @@
             </div>
         </div>
         <div class="col-12 mt-4">
+            <div id="rg-feedback-vehicles" style="display: none;" class="alert mb-3"></div>
             <div class="rg-card h-100">
                 <div class="rg-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                     <div class="d-flex align-items-center mb-2 mb-md-0">
@@ -413,10 +428,10 @@
                                     </td>
                                     <td>
                                         <div>
-                                            <span class="rg-status-badge {{ $vehicle->status === 'active' ? 'rg-status-active' : 'rg-status-pending' }}">
+                                            <span class="rg-status-badge {{ $getStatusBadgeClass($vehicle->status) }}">
                                                 {{ ucfirst($vehicle->status) }}
                                             </span>
-                                            <span class="rg-status-badge ml-1 {{ $vehicle->verification_status === 'verified' ? 'rg-status-active' : ($vehicle->verification_status === 'rejected' ? 'rg-status-danger' : 'rg-status-pending') }}">
+                                            <span class="rg-status-badge ml-1 {{ $getStatusBadgeClass($vehicle->verification_status) }}">
                                                 {{ ucfirst($vehicle->verification_status) }}
                                             </span>
                                         </div>
@@ -435,9 +450,10 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <form action="{{ route($userStatusVehiclesUpdateRoute, $vehicle) }}" method="POST">
+                                        <form class="rg-status-update-form" data-route="{{ route($userStatusVehiclesUpdateRoute, $vehicle) }}" data-type="vehicle">
                                             @csrf
                                             @method('PATCH')
+                                            <input type="hidden" name="vehicle_id" value="{{ $vehicle->id }}">
                                             <div class="form-row">
                                                 <div class="col-12 col-md-4 mb-2 mb-md-0">
                                                     <select name="status" class="form-control form-control-sm">
@@ -550,6 +566,8 @@
         </div>
     </div>
 
+    <div id="rg-feedback-discounts" style="display: none;" class="alert mb-3"></div>
+
     <div class="rg-card mt-4">
         <div class="rg-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
             <div class="d-flex align-items-center mb-2 mb-md-0">
@@ -595,7 +613,7 @@
                                 <small class="text-muted">{{ optional($discount->classificationType)->classification_name ?? 'No classification' }}</small>
                             </td>
                             <td>
-                                <span class="rg-status-badge {{ $discount->verification_status === 'verified' ? 'rg-status-active' : ($discount->verification_status === 'rejected' ? 'rg-status-danger' : 'rg-status-pending') }}">
+                                <span class="rg-status-badge {{ $getStatusBadgeClass($discount->verification_status) }}">
                                     {{ ucfirst($discount->verification_status) }}
                                 </span>
                                 @if($discount->rejection_reason)
@@ -619,9 +637,10 @@
                                 @endif
                             </td>
                             <td>
-                                <form action="{{ route($userStatusDiscountsUpdateRoute, $discount) }}" method="POST">
+                                <form class="rg-status-update-form" data-route="{{ route($userStatusDiscountsUpdateRoute, $discount) }}" data-type="discount">
                                     @csrf
                                     @method('PATCH')
+                                    <input type="hidden" name="discount_id" value="{{ $discount->id }}">
                                     <div class="form-row">
                                         <div class="col-12 col-md-4 mb-2 mb-md-0">
                                             <select name="verification_status" class="form-control form-control-sm">
@@ -707,6 +726,84 @@
 
 @push('js')
 <script>
+// Shared feedback display function
+function showStatusFeedback(type, message) {
+    const feedbackMap = {
+        'user': document.getElementById('rg-feedback-users'),
+        'driver': document.getElementById('rg-feedback-drivers'),
+        'vehicle': document.getElementById('rg-feedback-vehicles'),
+        'discount': document.getElementById('rg-feedback-discounts'),
+    };
+
+    const feedback = feedbackMap[type];
+    if (!feedback) return;
+
+    const typeClass = message.startsWith('Error') ? 'alert-danger' : 'alert-success';
+    feedback.className = `alert ${typeClass} mb-3`;
+    feedback.innerHTML = `<i class="fas fa-${message.startsWith('Error') ? 'exclamation-circle' : 'check-circle'} mr-1"></i> ${message}`;
+    feedback.style.display = 'block';
+
+    window.clearTimeout(showStatusFeedback._timers = showStatusFeedback._timers || {});
+    showStatusFeedback._timers[type] = window.setTimeout(() => {
+        feedback.style.display = 'none';
+    }, 4000);
+}
+
+// Handle all status update forms
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.rg-status-update-form').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const route = form.dataset.route;
+            const type = form.dataset.type;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const button = form.querySelector('button[type="submit"]');
+            const originalText = button.textContent;
+
+            button.disabled = true;
+            button.textContent = 'Updating…';
+
+            const formData = new FormData(form);
+            const body = {};
+            formData.forEach((val, key) => {
+                if (key !== '_token' && key !== '_method') {
+                    body[key] = val;
+                }
+            });
+
+            try {
+                const response = await fetch(route, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify(body),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatusFeedback(type, data.message || 'Updated successfully.');
+                    button.disabled = false;
+                    button.textContent = originalText;
+                } else {
+                    showStatusFeedback(type, `Error: ${data.message || 'Update failed.'}`);
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            } catch (error) {
+                showStatusFeedback(type, `Error: ${error.message || 'Request failed.'}`);
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        });
+    });
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     const modal = $('#restoreRecordsModal');
     const form = document.getElementById('restoreSearchForm');

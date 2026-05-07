@@ -128,6 +128,12 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/user-status/store',                 [UserManagementController::class, 'storeUser'])->name('user-status.store');
         Route::post('/user-status/verify-email',          [UserManagementController::class, 'verifyUserEmail'])->name('user-status.verify-email');
         Route::post('/user-status/resend-otp',            [UserManagementController::class, 'resendUserVerificationOtp'])->name('user-status.resend-otp');
+
+        // Account Security Routes
+            Route::get('/security/locked-accounts',               [UserManagementController::class, 'showLockedAccounts'])->name('security.locked-accounts');
+            Route::get('/security/locked-accounts/api',           [UserManagementController::class, 'getLockedAdminAccounts'])->name('security.locked-accounts.api');
+        Route::post('/security/unlock/{user}',                [UserManagementController::class, 'unlockAdminAccount'])->name('security.unlock-account');
+        Route::post('/security/reset-password/{user}',        [UserManagementController::class, 'resetLockedAccountPassword'])->name('security.reset-locked-password');
     });
 
     Route::prefix('super-admin')->name('super-admin.')->middleware(['panel.role:super-admin'])->group(function () {
@@ -190,6 +196,12 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/user-status/store',                 [UserManagementController::class, 'storeUser'])->name('user-status.store');
         Route::post('/user-status/verify-email',          [UserManagementController::class, 'verifyUserEmail'])->name('user-status.verify-email');
         Route::post('/user-status/resend-otp',            [UserManagementController::class, 'resendUserVerificationOtp'])->name('user-status.resend-otp');
+
+        // Account Security Routes
+        Route::get('/security/locked-accounts',               [UserManagementController::class, 'showLockedAccounts'])->name('security.locked-accounts');
+        Route::get('/security/locked-accounts/api',           [UserManagementController::class, 'getLockedAdminAccounts'])->name('security.locked-accounts.api');
+        Route::post('/security/unlock/{user}',                [UserManagementController::class, 'unlockAdminAccount'])->name('security.unlock-account');
+        Route::post('/security/reset-password/{user}',        [UserManagementController::class, 'resetLockedAccountPassword'])->name('security.reset-locked-password');
 
         Route::get('/backups',                     [BackupController::class, 'index'])->name('backups.index');
         Route::post('/backups',                    [BackupController::class, 'create'])->name('backups.create');
