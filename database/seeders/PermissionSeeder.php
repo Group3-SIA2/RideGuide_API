@@ -67,6 +67,11 @@ class PermissionSeeder extends Seeder
             // Transaction Logbook
             ['name' => 'view_transactions', 'display_name' => 'View Transactions', 'group' => 'audit', 'description' => 'Can view transaction logbook.'],
 
+            // Account Security Management
+            ['name' => 'manage_locked_accounts', 'display_name' => 'Manage Locked Accounts', 'group' => 'security', 'description' => 'Can manage and unlock locked admin/super admin accounts.'],
+            ['name' => 'reset_locked_admin_passwords', 'display_name' => 'Reset Locked Admin Passwords', 'group' => 'security', 'description' => 'Can reset passwords for locked admin and super admin accounts.'],
+            ['name' => 'manage_admin_security_settings', 'display_name' => 'Manage Admin Security Settings', 'group' => 'security', 'description' => 'Can manage security settings and policies for admin accounts.'],
+
             // Map Visibility Permissions
             ['name' => 'view_map_locations',              'display_name' => 'View Locations on Map',        'group' => 'map', 'description' => 'Can view location/terminal/barangay layer on map.'],
             ['name' => 'view_map_routes',                 'display_name' => 'View Routes on Map',           'group' => 'map', 'description' => 'Can view routes and stops layer on map.'],
@@ -106,6 +111,9 @@ class PermissionSeeder extends Seeder
                     'view_map_drivers',
                     'view_map_available_commuters',
                     'view_map_route_planning',
+                    'manage_locked_accounts',
+                    'reset_locked_admin_passwords',
+                    'manage_admin_security_settings',
                 ]
             ))->pluck('id')->toArray();
             $adminRole->permissions()->sync($adminPermissions);
