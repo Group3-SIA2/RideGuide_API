@@ -1,6 +1,6 @@
 @extends('adminlte::page')
 
-@section('title', 'Locked Admin Accounts — RideGuide Admin')
+@section('title', 'Suspicious Login Attempts — RideGuide Admin')
 
 @php
     $panelPrefix = request()->routeIs('super-admin.*') ? 'super-admin' : 'admin';
@@ -9,7 +9,7 @@
 @section('content_header')
     <div class="rg-page-header">
         <div>
-            <h4 class="rg-page-title">Locked Admin Accounts</h4>
+            <h4 class="rg-page-title">Suspicious Login Attempts</h4>
             <p class="rg-page-subtitle">Manage and monitor locked admin and super admin accounts.</p>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">

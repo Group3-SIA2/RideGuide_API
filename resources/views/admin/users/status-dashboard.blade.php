@@ -34,7 +34,7 @@
             @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('manage_locked_accounts'))
                 <a href="{{ route($panelPrefix . '.security.locked-accounts') }}" class="btn btn-outline-dark mr-2 mb-2 mb-md-0">
                     <i class="fas fa-lock mr-1"></i>
-                    Locked Accounts
+                    Suspicious Logins
                 </a>
             @endif
             <button type="button" class="btn btn-outline-primary mb-2 mb-md-0" data-toggle="modal" data-target="#restoreRecordsModal">
@@ -186,7 +186,7 @@
                                 @endif
                             </td>
                             <td>
-                                <form class="rg-status-update-form form-inline" data-route="{{ route($userStatusUsersUpdateRoute, $user) }}" data-type="user">
+                                <form class="form-inline" action="{{ route($userStatusUsersUpdateRoute, $user) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="user_id" value="{{ $user->id }}">
