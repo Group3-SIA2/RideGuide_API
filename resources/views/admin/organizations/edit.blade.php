@@ -135,6 +135,54 @@
                                     </div>
                                     <div class="col-12 col-md-6">
                                         <div class="rg-form-group mb-2">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_city">City <span class="rg-required">*</span></label>
+                                            <input id="hq_city" name="hq_city" type="text"
+                                                   class="rg-form-control @error('hq_city') is-invalid @enderror"
+                                                   value="{{ old('hq_city', $addr->city ?? '') }}"
+                                                   placeholder="e.g. General Santos City">
+                                            @error('hq_city')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-2">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_region">Region <span class="rg-required">*</span></label>
+                                            <input id="hq_region" name="hq_region" type="text"
+                                                   class="rg-form-control @error('hq_region') is-invalid @enderror"
+                                                   value="{{ old('hq_region', $addr->region ?? '') }}"
+                                                   placeholder="e.g. Region XII">
+                                            @error('hq_region')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-2">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_province">Province <span class="rg-required">*</span></label>
+                                            <input id="hq_province" name="hq_province" type="text"
+                                                   class="rg-form-control @error('hq_province') is-invalid @enderror"
+                                                   value="{{ old('hq_province', $addr->province ?? '') }}"
+                                                   placeholder="e.g. South Cotabato">
+                                            @error('hq_province')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-2">
+                                            <label class="rg-form-label rg-form-label-sm" for="hq_postal_code">Postal Code</label>
+                                            <input id="hq_postal_code" name="hq_postal_code" type="text"
+                                                   class="rg-form-control @error('hq_postal_code') is-invalid @enderror"
+                                                   value="{{ old('hq_postal_code', $addr->postal_code ?? '') }}"
+                                                   placeholder="e.g. 9500 (optional)">
+                                            @error('hq_postal_code')
+                                                <p class="rg-form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <div class="rg-form-group mb-2">
                                             <label class="rg-form-label rg-form-label-sm" for="hq_subdivision">Subdivision</label>
                                             <input id="hq_subdivision" name="hq_subdivision" type="text"
                                                    class="rg-form-control @error('hq_subdivision') is-invalid @enderror"
@@ -168,7 +216,7 @@
                                     <small class="text-muted">Click on the map to set latitude and longitude.</small>
                                 </div>
                             </div>
-                            <p class="rg-form-hint">Street and Barangay are required if you want to set a head office address.</p>
+                            <p class="rg-form-hint">Street, Barangay, City, Region, and Province are required when you set a head office address.</p>
                         </div>
 
                         <div class="rg-form-group">

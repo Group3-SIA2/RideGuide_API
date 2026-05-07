@@ -25,7 +25,9 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('phone_verified_at')->nullable();
             $table->string('password');
-            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
+            $table->enum('status', ['active', 'inactive', 'suspended', 'locked'])->default('active');
+            $table->timestamp('locked_until')->nullable();
+            $table->string('lock_reason')->nullable();
             $table->string('status_reason')->nullable();
             $table->timestamp('status_changed_at')->nullable();
             $table->string('active_role')->nullable();

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\InputValidation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -83,12 +84,12 @@ class UserController extends Controller
         $this->authorizePermissions($request, 'create_users');
 
         $validated = $request->validate([
-            'first_name'   => ['required', 'string', 'max:255'],
-            'middle_name'  => ['nullable', 'string', 'max:255'],
-            'last_name'    => ['required', 'string', 'max:255'],
-            'email'        => ['required', 'email', 'max:255', 'unique:users,email'],
+            'first_name'   => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\-]+$/'],
+            'middle_name'  => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-Z\s\-]+$/'],
+            'last_name'    => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\-]+$/'],
+            'email'        => ['required', 'string', 'email:rfc,filter', 'max:255', 'unique:users,email'],
             'phone_number' => ['nullable', 'string', 'max:20'],
-            'password'     => ['required', 'string', 'min:8', 'confirmed'],
+            'password'     => InputValidation::passwordRequiredRules(),
             'role'         => ['nullable', 'string', Rule::exists('roles', 'name')],
             'status'       => ['nullable', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE, User::STATUS_SUSPENDED])],
             'status_reason' => ['nullable', 'string', 'max:255'],
@@ -132,12 +133,12 @@ class UserController extends Controller
         $this->authorizePermissions($request, 'edit_users');
 
         $validated = $request->validate([
-            'first_name'   => ['required', 'string', 'max:255'],
-            'middle_name'  => ['nullable', 'string', 'max:255'],
-            'last_name'    => ['required', 'string', 'max:255'],
-            'email'        => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'first_name'   => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\-]+$/'],
+            'middle_name'  => ['nullable', 'string', 'max:255', 'regex:/^[a-zA-Z\s\-]+$/'],
+            'last_name'    => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z\s\-]+$/'],
+            'email'        => ['required', 'string', 'email:rfc,filter', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'phone_number' => ['nullable', 'string', 'max:20'],
-            'password'     => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password'     => ['nullable', 'string', ...InputValidation::passwordConfirmedRules()],
             'role'         => ['nullable', 'string', Rule::exists('roles', 'name')],
             'status'       => ['nullable', Rule::in([User::STATUS_ACTIVE, User::STATUS_INACTIVE, User::STATUS_SUSPENDED])],
             'status_reason' => ['nullable', 'string', 'max:255'],

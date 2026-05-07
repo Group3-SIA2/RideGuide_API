@@ -30,6 +30,12 @@ class UpdateOrganizationRequest extends FormRequest
                 'uuid',
                 new OrganizationOwnerEligible(),
             ],
+            'hq_street'          => ['nullable', 'string', 'max:255', 'required_with:hq_barangay,hq_city,hq_region,hq_province,hq_postal_code'],
+            'hq_barangay'        => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_city,hq_region,hq_province,hq_postal_code'],
+            'hq_city'            => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_region,hq_province,hq_postal_code'],
+            'hq_region'          => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_city,hq_province,hq_postal_code'],
+            'hq_province'        => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_city,hq_region,hq_postal_code'],
+            'hq_postal_code'     => ['nullable', 'string', 'max:20'],
             'status'         => ['required', Rule::in(['active', 'inactive'])],
         ];
     }

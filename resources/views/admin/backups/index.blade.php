@@ -59,9 +59,68 @@
         <div class="col-12">
             <div class="rg-card">
                 <div class="rg-card-header">
-                    <div class="d-flex align-items-center">
-                        <span class="rg-card-dot"></span>
-                        <h6 class="rg-card-title mb-0">Backup Files</h6>
+                    @php
+                        $years = $backups->pluck('created_at')
+                            ->filter()
+                            ->map(function ($d) {
+                                try {
+                                    return \Carbon\Carbon::parse($d)->year;
+                                } catch (\Exception $e) {
+                                    return null;
+                                }
+                            })
+                            ->filter()
+                            ->unique()
+                            ->sortDesc()
+                            ->values();
+                    @endphp
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <span class="rg-card-dot"></span>
+                            <h6 class="rg-card-title mb-0">Backup Files</h6>
+                        </div>
+                        
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <form id="rg-filter-form" method="GET" action="{{ route($backupsIndexRoute) }}" class="rg-filter-bar mt-3 mt-md-0">
+                            <select name="month" id="rg-filter-month" class="rg-filter-select">
+                                <option value="">Month</option>
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+
+                            <select name="day" id="rg-filter-day" class="rg-filter-select">
+                                <option value="">Day</option>
+                                @for($d = 1; $d <= 31; $d++)
+                                    <option value="{{ $d }}">{{ $d }}</option>
+                                @endfor
+                            </select>
+
+                            <select name="year" id="rg-filter-year" class="rg-filter-select">
+                                <option value="">Year</option>
+                                @foreach($years as $y)
+                                    <option value="{{ $y }}">{{ $y }}</option>
+                                @endforeach
+                            </select>
+
+                            <button type="submit" class="rg-btn-search">
+                                <i class="fas fa-search"></i>
+                                <span>Apply</span>
+                            </button>
+
+                            <a href="{{ route($backupsIndexRoute) }}" id="rg-filter-clear" class="rg-btn-clear">Clear</a>
+                        </form>
                     </div>
                 </div>
                 <div class="rg-card-body p-0">
@@ -333,7 +392,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Refresh backup list via AJAX ───────────────────────
     function refreshList() {
         tbody.style.opacity = '0.35';
-        fetch("{{ route($backupsIndexRoute) }}", {
+
+        // Build URL with filter params
+        var baseUrl = "{{ route($backupsIndexRoute) }}";
+        var params = new URLSearchParams();
+        var m = document.getElementById('rg-filter-month').value;
+        var d = document.getElementById('rg-filter-day').value;
+        var y = document.getElementById('rg-filter-year').value;
+        if (m) params.set('month', m);
+        if (d) params.set('day', d);
+        if (y) params.set('year', y);
+
+        var url = baseUrl + (params.toString() ? ('?' + params.toString()) : '');
+
+        fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(function(r) { return r.json(); })
@@ -468,6 +540,34 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     }
+
+    // ── Filter controls: submit form via AJAX and Clear handler ──
+    var filterForm = document.getElementById('rg-filter-form');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            refreshList();
+        });
+    }
+
+    var clearLink = document.getElementById('rg-filter-clear');
+    if (clearLink) {
+        clearLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.getElementById('rg-filter-month').value = '';
+            document.getElementById('rg-filter-day').value = '';
+            document.getElementById('rg-filter-year').value = '';
+            refreshList();
+        });
+    }
+
+    // Populate filter controls from URL params so the UI reflects current filters
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var pm = params.get('month'); if (pm) document.getElementById('rg-filter-month').value = pm;
+        var pd = params.get('day'); if (pd) document.getElementById('rg-filter-day').value = pd;
+        var py = params.get('year'); if (py) document.getElementById('rg-filter-year').value = py;
+    } catch (e) {}
 
     // Initial bind
     bindActions();

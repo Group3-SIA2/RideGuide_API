@@ -137,6 +137,41 @@
                             </div>
                             <div class="col-12 col-md-6">
                                 <div class="rg-form-group mb-3">
+                                    <label class="rg-form-label rg-form-label-sm" for="modal-hq-city">City <span class="rg-required">*</span></label>
+                                    <input id="modal-hq-city" name="hq_city" type="text"
+                                           class="rg-form-control"
+                                           placeholder="e.g. General Santos City"
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="rg-form-group mb-3">
+                                    <label class="rg-form-label rg-form-label-sm" for="modal-hq-region">Region <span class="rg-required">*</span></label>
+                                    <input id="modal-hq-region" name="hq_region" type="text"
+                                           class="rg-form-control"
+                                           placeholder="e.g. Region XII"
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="rg-form-group mb-3">
+                                    <label class="rg-form-label rg-form-label-sm" for="modal-hq-province">Province <span class="rg-required">*</span></label>
+                                    <input id="modal-hq-province" name="hq_province" type="text"
+                                           class="rg-form-control"
+                                           placeholder="e.g. South Cotabato"
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="rg-form-group mb-3">
+                                    <label class="rg-form-label rg-form-label-sm" for="modal-hq-postal-code">Postal Code</label>
+                                    <input id="modal-hq-postal-code" name="hq_postal_code" type="text"
+                                           class="rg-form-control"
+                                           placeholder="e.g. 9500 (optional)">
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="rg-form-group mb-3">
                                     <label class="rg-form-label rg-form-label-sm" for="modal-hq-subdivision">Subdivision</label>
                                     <input id="modal-hq-subdivision" name="hq_subdivision" type="text"
                                            class="rg-form-control"
@@ -272,6 +307,10 @@ function openAddressModal(btn) {
 
     document.getElementById('modal-hq-street').value         = btn.getAttribute('data-hq-street') || '';
     document.getElementById('modal-hq-barangay').value       = btn.getAttribute('data-hq-barangay') || '';
+    document.getElementById('modal-hq-city').value           = btn.getAttribute('data-hq-city') || '';
+    document.getElementById('modal-hq-region').value         = btn.getAttribute('data-hq-region') || '';
+    document.getElementById('modal-hq-province').value       = btn.getAttribute('data-hq-province') || '';
+    document.getElementById('modal-hq-postal-code').value    = btn.getAttribute('data-hq-postal-code') || '';
     document.getElementById('modal-hq-subdivision').value    = btn.getAttribute('data-hq-subdivision') || '';
     document.getElementById('modal-hq-floor-unit-room').value = btn.getAttribute('data-hq-floor-unit-room') || '';
     document.getElementById('modal-hq-lat').value            = btn.getAttribute('data-hq-lat') || '';
@@ -332,6 +371,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (triggerBtn) {
                     triggerBtn.setAttribute('data-hq-street',         formData.get('hq_street') || '');
                     triggerBtn.setAttribute('data-hq-barangay',       formData.get('hq_barangay') || '');
+                    triggerBtn.setAttribute('data-hq-city',           formData.get('hq_city') || '');
+                    triggerBtn.setAttribute('data-hq-region',         formData.get('hq_region') || '');
+                    triggerBtn.setAttribute('data-hq-province',       formData.get('hq_province') || '');
+                    triggerBtn.setAttribute('data-hq-postal-code',    formData.get('hq_postal_code') || '');
                     triggerBtn.setAttribute('data-hq-subdivision',    formData.get('hq_subdivision') || '');
                     triggerBtn.setAttribute('data-hq-floor-unit-room', formData.get('hq_floor_unit_room') || '');
                     triggerBtn.setAttribute('data-hq-lat',            formData.get('hq_lat') || '');
@@ -342,11 +385,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (row) {
                         var addressCell = row.querySelector('td:nth-child(4)');
                         if (addressCell) {
-                            var street   = formData.get('hq_street') || '';
-                            var barangay = formData.get('hq_barangay') || '';
-                            if (street || barangay) {
-                                addressCell.innerHTML = '<span>' + street + ', ' + barangay + '</span>';
-                            }
+                            var parts = [
+                                formData.get('hq_floor_unit_room'),
+                                formData.get('hq_subdivision'),
+                                formData.get('hq_street'),
+                                formData.get('hq_barangay'),
+                                formData.get('hq_city'),
+                                formData.get('hq_region'),
+                                formData.get('hq_province'),
+                                formData.get('hq_postal_code'),
+                            ].filter(function (part) {
+                                return part && String(part).trim() !== '';
+                            });
+
+                            addressCell.textContent = parts.length ? parts.join(', ') : '—';
                         }
                     }
                 }

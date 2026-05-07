@@ -85,6 +85,10 @@ class OrganizationController extends Controller
                     ->orWhereHas('hqAddress', function ($addressQ) use ($search) {
                         $addressQ->where('barangay', 'like', "%{$search}%")
                             ->orWhere('street', 'like', "%{$search}%")
+                            ->orWhere('city', 'like', "%{$search}%")
+                            ->orWhere('region', 'like', "%{$search}%")
+                            ->orWhere('province', 'like', "%{$search}%")
+                            ->orWhere('postal_code', 'like', "%{$search}%")
                             ->orWhere('subdivision', 'like', "%{$search}%")
                             ->orWhere('floor_unit_room', 'like', "%{$search}%");
                     });
@@ -293,17 +297,17 @@ class OrganizationController extends Controller
             ],
             'description' => ['nullable', 'string', 'max:1000'],
             'hq_address' => ['nullable', 'string', 'max:500'],
-            'hq_street' => ['nullable', 'string', 'max:255'],
-            'hq_barangay' => ['nullable', 'string', 'max:255'],
-            'hq_city' => ['nullable', 'string', 'max:255'],
-            'hq_region' => ['nullable', 'string', 'max:255'],
+            'hq_street' => ['nullable', 'string', 'max:255', 'required_with:hq_barangay,hq_city,hq_region,hq_province,hq_postal_code'],
+            'hq_barangay' => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_city,hq_region,hq_province,hq_postal_code'],
+            'hq_city' => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_region,hq_province,hq_postal_code'],
+            'hq_region' => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_city,hq_province,hq_postal_code'],
             'hq_province' => [
                 'nullable',
                 'string',
                 'max:255',
                 Rule::exists('provinces', 'name')->whereNull('deleted_at'),
             ],
-            'hq_postal_code' => ['nullable', 'string', 'max:50'],
+            'hq_postal_code' => ['nullable', 'string', 'max:20'],
             'hq_subdivision' => ['nullable', 'string', 'max:255'],
             'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
             'hq_lat' => ['nullable', 'string', 'max:50'],
@@ -415,17 +419,17 @@ class OrganizationController extends Controller
             ],
             'description' => ['nullable', 'string', 'max:1000'],
             'hq_address' => ['nullable', 'string', 'max:500'],
-            'hq_street' => ['nullable', 'string', 'max:255'],
-            'hq_barangay' => ['nullable', 'string', 'max:255'],
-            'hq_city' => ['nullable', 'string', 'max:255'],
-            'hq_region' => ['nullable', 'string', 'max:255'],
+            'hq_street' => ['nullable', 'string', 'max:255', 'required_with:hq_barangay,hq_city,hq_region,hq_province,hq_postal_code'],
+            'hq_barangay' => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_city,hq_region,hq_province,hq_postal_code'],
+            'hq_city' => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_region,hq_province,hq_postal_code'],
+            'hq_region' => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_city,hq_province,hq_postal_code'],
             'hq_province' => [
                 'nullable',
                 'string',
                 'max:255',
                 Rule::exists('provinces', 'name')->whereNull('deleted_at'),
             ],
-            'hq_postal_code' => ['nullable', 'string', 'max:50'],
+            'hq_postal_code' => ['nullable', 'string', 'max:20'],
             'hq_subdivision' => ['nullable', 'string', 'max:255'],
             'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],
             'hq_lat' => ['nullable', 'string', 'max:50'],
@@ -676,16 +680,23 @@ class OrganizationController extends Controller
         $hasStructuredAddressInput =
             $street !== ''
             || $barangay !== ''
+            || $city !== ''
+            || $region !== ''
+            || $province !== ''
+            || ! is_null($postalCode)
             || ! is_null($subdivision)
             || ! is_null($floorUnitRoom)
             || ! is_null($latitude)
             || ! is_null($longitude);
 
         if ($hasStructuredAddressInput) {
-            if ($street === '' || $barangay === '') {
+            if ($street === '' || $barangay === '' || $city === '' || $region === '' || $province === '') {
                 throw ValidationException::withMessages([
-                    'hq_street' => 'Both hq_street and hq_barangay are required when providing HQ address details.',
-                    'hq_barangay' => 'Both hq_street and hq_barangay are required when providing HQ address details.',
+                    'hq_street' => 'hq_street, hq_barangay, hq_city, hq_region, and hq_province are required when providing HQ address details.',
+                    'hq_barangay' => 'hq_street, hq_barangay, hq_city, hq_region, and hq_province are required when providing HQ address details.',
+                    'hq_city' => 'hq_street, hq_barangay, hq_city, hq_region, and hq_province are required when providing HQ address details.',
+                    'hq_region' => 'hq_street, hq_barangay, hq_city, hq_region, and hq_province are required when providing HQ address details.',
+                    'hq_province' => 'hq_street, hq_barangay, hq_city, hq_region, and hq_province are required when providing HQ address details.',
                 ]);
             }
             if ($city === '' || $region === '' || $province === '') {
@@ -719,6 +730,12 @@ class OrganizationController extends Controller
                 [
                     'barangay' => $barangay,
                     'street' => $street,
+                    'city' => $city,
+                    'region' => $region,
+                    'province' => $province,
+                    'postal_code' => $postalCode,
+                    'subdivision' => $subdivision,
+                    'floor_unit_room' => $floorUnitRoom,
                 ],
                 [
                     'city' => $city,
@@ -763,11 +780,18 @@ class OrganizationController extends Controller
         $derivedStreet = $parts[0] ?? 'Unspecified Street';
         $derivedBarangay = $parts[1] ?? $derivedStreet;
         $derivedSubdivision = $parts[2] ?? null;
+        $derivedCity = trim((string) ($payload['hq_city'] ?? 'Unspecified City'));
+        $derivedRegion = trim((string) ($payload['hq_region'] ?? 'Unspecified Region'));
+        $derivedProvince = trim((string) ($payload['hq_province'] ?? 'Unspecified Province'));
 
         $legacyAddress = HqAddress::query()->firstOrCreate(
             [
                 'barangay' => $derivedBarangay,
                 'street' => $derivedStreet,
+                'city' => $derivedCity,
+                'region' => $derivedRegion,
+                'province' => $derivedProvince,
+                'postal_code' => $payload['hq_postal_code'] ?? null,
             ],
             [
                 'subdivision' => $derivedSubdivision,
