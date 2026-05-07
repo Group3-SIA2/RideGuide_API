@@ -7,9 +7,49 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Support\AppRoleContext;
+use App\Support\DashboardCache;
 
 class UserController extends Controller
 {
+    public function updateActiveRole(Request $request): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'active_role' => ['required', 'string'],
+        ]);
+
+        $targetRole = strtolower(trim($validated['active_role']));
+        $roles = AppRoleContext::assignedMobileRoles($user);
+        if (!in_array($targetRole, $roles, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selected active role is not assigned to this account.',
+            ], 422);
+        }
+
+        $user->forceFill(['active_role' => $targetRole])->save();
+        DashboardCache::forgetUserDashboards($user->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Active role updated.',
+            'data' => [
+                'roles' => $roles,
+                'active_role' => $targetRole,
+                'role_selection_required' => false,
+            ],
+        ], 200);
+    }
+
     /*
         Endpoint: /api/users
         Query Params (admin only): status (active, inactive, suspended)
@@ -99,6 +139,7 @@ class UserController extends Controller
             'middle_name'       => $user->middle_name,
             'email'             => $user->email,
             'role'              => $user->roles->pluck('name'),
+            'active_role'       => $user->active_role,
             'status'            => $user->status,
             'status_reason'     => $user->status_reason,
             'status_changed_at' => $user->status_changed_at,

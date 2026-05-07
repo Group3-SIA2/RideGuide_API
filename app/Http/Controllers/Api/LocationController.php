@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Barangay;
+use App\Models\Province;
 use App\Models\Terminal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -105,6 +106,24 @@ class LocationController extends Controller
         ])->get();
 
         return response()->json($barangays);
+    }
+
+    /**
+     * GET /api/locations/provinces
+     * Return all provinces for dropdown selection.
+     */
+    public function getProvinces(): JsonResponse
+    {
+        $provinces = Province::query()
+            ->select(['id', 'name', 'code', 'region'])
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $provinces,
+        ]);
     }
 
     /**

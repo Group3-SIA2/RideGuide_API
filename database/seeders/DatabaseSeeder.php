@@ -2,11 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,10 +14,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed roles first
+        // Seed core lookup/reference data first.
         $this->call(RoleSeeder::class);
         $this->call(DiscountTypesSeeder::class);
         $this->call(PermissionSeeder::class);
+        $this->call(BarangaySeeder::class);
+        $this->call(ProvinceSeeder::class);
         $this->call(HQAddressSeeder::class);
         $this->call(OrganizationTypeSeeder::class);
         $this->call(OrganizationSeeder::class);

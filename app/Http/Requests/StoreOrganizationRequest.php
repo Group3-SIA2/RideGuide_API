@@ -38,7 +38,7 @@ class StoreOrganizationRequest extends FormRequest
             'hq_barangay'        => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_city,hq_region,hq_province,hq_postal_code'],
             'hq_city'            => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_region,hq_province,hq_postal_code'],
             'hq_region'          => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_city,hq_province,hq_postal_code'],
-            'hq_province'        => ['nullable', 'string', 'max:255', 'required_with:hq_street,hq_barangay,hq_city,hq_region,hq_postal_code'],
+            'hq_province'        => ['nullable', 'string', 'max:255', Rule::exists('provinces', 'name')->whereNull('deleted_at')],
             'hq_postal_code'     => ['nullable', 'string', 'max:20'],
             'hq_subdivision'     => ['nullable', 'string', 'max:255'],
             'hq_floor_unit_room' => ['nullable', 'string', 'max:255'],

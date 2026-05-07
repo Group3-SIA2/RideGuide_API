@@ -6,29 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('provinces', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name')->unique();
-            $table->string('description')->nullable();
-            $table->boolean('is_reserved')->default(false);
+            $table->string('code', 10)->nullable()->unique();
+            $table->string('region')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             $table->index('deleted_at');
-            $table->index('is_reserved');
+            $table->index('name');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('provinces');
     }
 };

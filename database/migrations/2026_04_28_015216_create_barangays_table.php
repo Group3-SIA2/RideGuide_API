@@ -15,12 +15,13 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('code')->unique();
-            $table->decimal('center_latitude', 8, 6);
-            $table->decimal('center_longitude', 8, 6);
-            $table->decimal('north_latitude', 8, 6);
-            $table->decimal('south_latitude', 8, 6);
-            $table->decimal('east_longitude', 8, 6);
-            $table->decimal('west_longitude', 8, 6);
+            // 9,6 supports PH coordinates with 3 integer digits (e.g. 125.xxxxxx).
+            $table->decimal('center_latitude', 9, 6);
+            $table->decimal('center_longitude', 9, 6);
+            $table->decimal('north_latitude', 9, 6);
+            $table->decimal('south_latitude', 9, 6);
+            $table->decimal('east_longitude', 9, 6);
+            $table->decimal('west_longitude', 9, 6);
             $table->timestamps();
 
             $table->index('name');

@@ -8,15 +8,19 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\EmergencyContactController;
 use App\Http\Controllers\Api\OrganizationController;
+use App\Http\Controllers\Api\OrganizationOperationsController;
 use App\Http\Controllers\Api\PhoneController;
 use App\Http\Controllers\Api\RideRequestController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SetUpController;
+use App\Http\Controllers\Api\TransactionHistoryController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\FareController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\MapExperienceController;
+use App\Http\Controllers\Api\InquiryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +33,7 @@ Route::controller(LocationController::class)->prefix('locations')->group(functio
     Route::get('/terminals', 'getTerminals')->name('api.locations.terminals');
     Route::get('/routes', 'getRoutes')->name('api.locations.routes');
     Route::get('/barangays', 'getBarangays')->name('api.locations.barangays');
+    Route::get('/provinces', 'getProvinces')->name('api.locations.provinces');
 });
 
 Route::controller(LocationController::class)->prefix('map')->group(function (): void {
@@ -65,7 +70,7 @@ Route::controller(PhoneController::class)->prefix('auth/phone')->group(function 
 | Driver-Only Endpoints (Auth + Driver Role Required)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'active.user', 'role:driver'])->group(function (): void {
+Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:driver', 'active.role.match:driver'])->group(function (): void {
     Route::controller(AvailableCommutersController::class)->prefix('available-commuters')->group(function (): void {
         Route::get('/', 'getAvailableCommuters')->name('api.available-commuters.get');
         Route::post('/respond', 'respondToCommuter')->name('api.available-commuters.respond');
@@ -75,6 +80,11 @@ Route::middleware(['auth:sanctum', 'active.user', 'role:driver'])->group(functio
         Route::post('/', 'updateLocation')->name('api.driver-location.update');
         Route::get('/', 'getLocation')->name('api.driver-location.get');
     });
+
+    Route::controller(InquiryController::class)->prefix('inquiry/driver')->group(function (): void {
+        Route::get('/', 'driverList')->name('api.inquiry.driver.list');
+        Route::post('/respond', 'driverRespond')->name('api.inquiry.driver.respond');
+    });
 });
 
 /*
@@ -82,11 +92,33 @@ Route::middleware(['auth:sanctum', 'active.user', 'role:driver'])->group(functio
 | Commuter Endpoints (Auth Required)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
+Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:commuter', 'active.role.match:commuter'])->group(function (): void {
     Route::controller(RideRequestController::class)->prefix('commuter/ride-requests')->group(function (): void {
         Route::post('/', 'createRideRequest')->name('api.commuter.ride-requests.create');
         Route::get('/', 'listRideRequests')->name('api.commuter.ride-requests.list');
         Route::put('/{id}', 'updateRideRequestResponse')->name('api.commuter.ride-requests.update');
+    });
+
+    Route::controller(InquiryController::class)->prefix('inquiry/commuter')->group(function (): void {
+        Route::get('/', 'commuterList')->name('api.inquiry.commuter.list');
+        Route::put('/{id}', 'commuterRespond')->name('api.inquiry.commuter.respond');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Organization Role Endpoints
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:organization', 'active.role.match:organization'])->group(function (): void {
+    Route::controller(OrganizationOperationsController::class)->prefix('organization')->group(function (): void {
+        Route::get('/terminals', 'listTerminals')->name('api.organization.terminals.list');
+        Route::post('/terminals', 'createTerminal')->name('api.organization.terminals.create');
+        Route::put('/terminals/{terminalId}', 'updateTerminal')->name('api.organization.terminals.update');
+        Route::delete('/terminals/{terminalId}', 'deleteTerminal')->name('api.organization.terminals.delete');
+        Route::get('/assign/drivers', 'listAssignableDrivers')->name('api.organization.assign.drivers.list');
+        Route::post('/assign/drivers', 'assignDriver')->name('api.organization.assign.drivers.assign');
+        Route::delete('/assign/drivers/{driverId}', 'unassignDriver')->name('api.organization.assign.drivers.unassign');
     });
 });
 
@@ -99,6 +131,7 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
 
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
+    Route::post('/auth/select-role', [AuthController::class, 'selectRole'])->name('api.auth.select-role');
 
     // Driver Routes
     Route::controller(DriverController::class)->prefix('drivers')->group(function (): void {
@@ -113,6 +146,7 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
     Route::controller(UserController::class)->prefix('users')->group(function (): void {
         Route::get('/', 'index')->name('api.users.index');
         Route::get('/{id}', 'show')->name('api.users.show');
+        Route::patch('/me/active-role', 'updateActiveRole')->name('api.users.me.active-role');
     });
 
     // Commuter Routes
@@ -176,6 +210,17 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
     // Fare Routes
     Route::controller(FareController::class)->prefix('fare')->group(function (): void {
         Route::post('/calculate', 'calculateFare')->name('api.fare.calculate');
+    });
+
+    // Transaction history (map/inquiry/history offline sync source)
+    Route::controller(TransactionHistoryController::class)->prefix('transactions')->middleware(['active.role.required'])->group(function (): void {
+        Route::get('/history', 'index')->name('api.transactions.history');
+    });
+
+    // Role-scoped map shell behavior + overlays.
+    Route::controller(MapExperienceController::class)->prefix('map')->middleware(['active.role.required'])->group(function (): void {
+        Route::get('/experience', 'experience')->name('api.map.experience');
+        Route::get('/overlays', 'overlays')->name('api.map.overlays');
     });
 
     // Feedback Routes
