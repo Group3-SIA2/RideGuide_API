@@ -20,6 +20,17 @@ class User extends Authenticatable
     public const STATUS_ACTIVE = 'active';
     public const STATUS_INACTIVE = 'inactive';
     public const STATUS_SUSPENDED = 'suspended';
+    public const STATUS_LOCKED = 'locked';
+
+    // Account lock reasons
+    public const LOCK_REASON_FAILED_ATTEMPTS = 'failed_login_attempts';
+    public const LOCK_REASON_ADMIN_INITIATED = 'admin_initiated';
+
+    // Failed login attempt threshold
+    public const FAILED_LOGIN_THRESHOLD = 3;
+
+    // Account lock cooldown duration (in hours)
+    public const ACCOUNT_LOCK_COOLDOWN_HOURS = 24;
 
     /**
      * The attributes that are mass assignable.
@@ -38,6 +49,8 @@ class User extends Authenticatable
         'status',
         'status_reason',
         'status_changed_at',
+        'locked_until',
+        'lock_reason',
     ];
 
     /**
@@ -61,6 +74,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'status_changed_at' => 'datetime',
+            'locked_until' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -230,5 +244,92 @@ class User extends Authenticatable
         return $this->organizationUserRoles()
             ->where('status', 'active')
             ->exists();
+    }
+
+    /**
+     * Get the failed login attempts for this user.
+     */
+    public function loginFailAttempts(): HasMany
+    {
+        return $this->hasMany(LoginFailAttempt::class);
+    }
+
+    /**
+     * Check if the account is currently locked.
+     */
+    public function isAccountLocked(): bool
+    {
+        if ($this->status !== self::STATUS_LOCKED) {
+            return false;
+        }
+
+        // Check if lock has expired
+        if ($this->locked_until && $this->locked_until->isPast()) {
+            // Auto-unlock the account
+            $this->update([
+                'status' => self::STATUS_ACTIVE,
+                'status_changed_at' => now(),
+                'locked_until' => null,
+                'lock_reason' => null,
+            ]);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Lock the user's account with a reason.
+     */
+    public function lockAccount(string $reason = self::LOCK_REASON_ADMIN_INITIATED): void
+    {
+        $this->update([
+            'status' => self::STATUS_LOCKED,
+            'status_changed_at' => now(),
+            'locked_until' => now()->addHours(self::ACCOUNT_LOCK_COOLDOWN_HOURS),
+            'lock_reason' => $reason,
+        ]);
+    }
+
+    /**
+     * Unlock the user's account.
+     */
+    public function unlockAccount(): void
+    {
+        $this->update([
+            'status' => self::STATUS_ACTIVE,
+            'status_changed_at' => now(),
+            'locked_until' => null,
+            'lock_reason' => null,
+        ]);
+    }
+
+    /**
+     * Get the count of recent failed login attempts.
+     */
+    public function getRecentFailedAttemptCount(): int
+    {
+        // Count only active attempts from the last 24 hours
+        return $this->loginFailAttempts()
+            ->where('status', 'active')
+            ->where('created_at', '>', now()->subHours(24))
+            ->count();
+    }
+
+    /**
+     * Check if user is an admin or super admin.
+     */
+    public function isAdminOrSuperAdmin(): bool
+    {
+        return $this->isAdmin() || $this->isSuperAdmin();
+    }
+
+    /**
+     * Check if this user can perform account management actions.
+     */
+    public function canManageAccounts(): bool
+    {
+        // Only super admins or specific admins with permission
+        return $this->hasPermission('manage_locked_accounts');
     }
 }
