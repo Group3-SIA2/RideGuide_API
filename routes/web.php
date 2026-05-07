@@ -129,9 +129,9 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::post('/user-status/verify-email',          [UserManagementController::class, 'verifyUserEmail'])->name('user-status.verify-email');
         Route::post('/user-status/resend-otp',            [UserManagementController::class, 'resendUserVerificationOtp'])->name('user-status.resend-otp');
 
-        // Account Security Routes
-            Route::get('/security/locked-accounts',               [UserManagementController::class, 'showLockedAccounts'])->name('security.locked-accounts');
-            Route::get('/security/locked-accounts/api',           [UserManagementController::class, 'getLockedAdminAccounts'])->name('security.locked-accounts.api');
+        
+        Route::get('/security/locked-accounts',               [UserManagementController::class, 'showLockedAccounts'])->name('security.locked-accounts');
+        Route::get('/security/locked-accounts/api',           [UserManagementController::class, 'getLockedAdminAccounts'])->name('security.locked-accounts.api');
         Route::post('/security/unlock/{user}',                [UserManagementController::class, 'unlockAdminAccount'])->name('security.unlock-account');
         Route::post('/security/reset-password/{user}',        [UserManagementController::class, 'resetLockedAccountPassword'])->name('security.reset-locked-password');
     });
