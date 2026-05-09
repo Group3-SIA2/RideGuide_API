@@ -441,6 +441,10 @@ class UserManagementController extends Controller
         }
         DashboardCache::forgetAdminDashboards();
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Discount verification updated successfully.']);
+        }
+
         return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'Discount verification updated successfully.');
     }
@@ -465,6 +469,10 @@ class UserManagementController extends Controller
             'rejection_reason' => $validated['rejection_reason'] ?? null,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Vehicle status updated successfully.']);
+        }
+
         return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'Vehicle status updated successfully.');
     }
@@ -485,8 +493,14 @@ class UserManagementController extends Controller
         $license = $driver->loadMissing('licenseId')->licenseId;
 
         if (! $license) {
+            $message = 'Driver license record not found, unable to update status.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
             return redirect()->route($this->panelRouteName($request, 'user-status.index'))
-                ->with('error', 'Driver license record not found, unable to update status.');
+                ->with('error', $message);
         }
 
         $license->update([
@@ -495,6 +509,10 @@ class UserManagementController extends Controller
                 ? ($validated['rejection_reason'] ?? null)
                 : null,
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Driver verification updated successfully.']);
+        }
 
         return redirect()->route($this->panelRouteName($request, 'user-status.index'))
             ->with('success', 'Driver verification updated successfully.');
