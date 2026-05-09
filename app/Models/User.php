@@ -92,6 +92,7 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Role::class, 'user_role')
             ->using(UserRole::class)
+            ->wherePivotNull('deleted_at')
             ->withTimestamps();
     }
 
