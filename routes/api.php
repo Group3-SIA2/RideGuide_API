@@ -20,9 +20,13 @@ use App\Http\Controllers\Api\FareController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapExperienceController;
+use App\Http\Controllers\Api\UserLiveLocationController;
 use App\Http\Controllers\Api\InquiryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+/** @var list<string> */
+$sanctumStack = ['auth:sanctum', 'resolve.active.role', 'active.user'];
 
 /*
 |--------------------------------------------------------------------------
@@ -37,7 +41,7 @@ Route::controller(LocationController::class)->prefix('locations')->group(functio
 });
 
 Route::controller(LocationController::class)->prefix('map')->group(function (): void {
-    Route::get('/available-filters', 'getAvailableFilters')->middleware('auth:sanctum')->name('api.map.available-filters');
+    Route::get('/available-filters', 'getAvailableFilters')->middleware(['auth:sanctum', 'resolve.active.role'])->name('api.map.available-filters');
 });
 
 /*
@@ -70,14 +74,14 @@ Route::controller(PhoneController::class)->prefix('auth/phone')->group(function 
 | Driver-Only Endpoints (Auth + Driver Role Required)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:driver', 'active.role.match:driver'])->group(function (): void {
+Route::middleware([...$sanctumStack, 'active.role.required', 'role:driver', 'active.role.match:driver'])->group(function (): void {
     Route::controller(AvailableCommutersController::class)->prefix('available-commuters')->group(function (): void {
         Route::get('/', 'getAvailableCommuters')->name('api.available-commuters.get');
         Route::post('/respond', 'respondToCommuter')->name('api.available-commuters.respond');
     });
 
     Route::controller(DriverLocationController::class)->prefix('drivers/location')->group(function (): void {
-        Route::post('/', 'updateLocation')->name('api.driver-location.update');
+        Route::post('/', 'updateLocation')->middleware('throttle:live-location-post')->name('api.driver-location.update');
         Route::get('/', 'getLocation')->name('api.driver-location.get');
     });
 
@@ -92,7 +96,7 @@ Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:
 | Commuter Endpoints (Auth Required)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:commuter', 'active.role.match:commuter'])->group(function (): void {
+Route::middleware([...$sanctumStack, 'active.role.required', 'role:commuter', 'active.role.match:commuter'])->group(function (): void {
     Route::controller(RideRequestController::class)->prefix('commuter/ride-requests')->group(function (): void {
         Route::post('/', 'createRideRequest')->name('api.commuter.ride-requests.create');
         Route::get('/', 'listRideRequests')->name('api.commuter.ride-requests.list');
@@ -110,7 +114,7 @@ Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:
 | Organization Role Endpoints
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:organization', 'active.role.match:organization'])->group(function (): void {
+Route::middleware([...$sanctumStack, 'active.role.required', 'role:organization', 'active.role.match:organization'])->group(function (): void {
     Route::controller(OrganizationOperationsController::class)->prefix('organization')->group(function (): void {
         Route::get('/terminals', 'listTerminals')->name('api.organization.terminals.list');
         Route::post('/terminals', 'createTerminal')->name('api.organization.terminals.create');
@@ -127,7 +131,7 @@ Route::middleware(['auth:sanctum', 'active.user', 'active.role.required', 'role:
 | Protected Routes (Sanctum token required)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
+Route::middleware($sanctumStack)->group(function (): void {
 
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
@@ -221,6 +225,11 @@ Route::middleware(['auth:sanctum', 'active.user'])->group(function (): void {
     Route::controller(MapExperienceController::class)->prefix('map')->middleware(['active.role.required'])->group(function (): void {
         Route::get('/experience', 'experience')->name('api.map.experience');
         Route::get('/overlays', 'overlays')->name('api.map.overlays');
+    });
+
+    Route::controller(UserLiveLocationController::class)->prefix('map')->middleware(['active.role.required'])->group(function (): void {
+        Route::post('/live-location', 'store')->middleware('throttle:live-location-post')->name('api.map.live-location.store');
+        Route::delete('/live-location', 'destroy')->name('api.map.live-location.destroy');
     });
 
     // Feedback Routes
