@@ -52,6 +52,17 @@ class AppServiceProvider extends ServiceProvider
                 ->by($request->ip());
         });
 
+        /* Pairs with Flutter LiveLocationShareService: ~1 POST / 20s or / 30 m moved — cap abuse. */
+        RateLimiter::for('live-location-post', function (Request $request) {
+            $userId = $request->user()?->id;
+
+            if ($userId === null) {
+                return Limit::perMinute(20)->by($request->ip());
+            }
+
+            return Limit::perMinute(90)->by('live_location:'.$userId);
+        });
+
         User::observe(DashboardUserObserver::class);
         Driver::observe(DashboardDriverObserver::class);
         Commuter::observe(DashboardCommuterObserver::class);

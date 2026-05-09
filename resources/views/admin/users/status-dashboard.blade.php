@@ -761,6 +761,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const button = form.querySelector('button[type="submit"]');
             const originalText = button.textContent;
 
+            if (!route || !String(route).trim()) {
+                showStatusFeedback(type, 'Error: Missing update URL — refresh the page or contact support.');
+                return;
+            }
+
             button.disabled = true;
             button.textContent = 'Updating…';
 
