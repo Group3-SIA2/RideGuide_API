@@ -12,6 +12,7 @@ use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Support\CommuterVerificationDisplay;
 use App\Support\DashboardCache;
 use App\Support\MediaStorage;
 
@@ -135,6 +136,7 @@ class DashboardController extends Controller
             return null;
         }
 
+        $vf = CommuterVerificationDisplay::forCommuter($commuter);
         $discountVerificationStatus = $commuter->discount?->verification_status;
         $discountRejectionReason = $commuter->discount?->rejection_reason;
 
@@ -143,10 +145,10 @@ class DashboardController extends Controller
             'user_id' => $commuter->user_id,
             'discount_id' => $commuter->discount_id,
             'classification_name' => $commuter->discount?->classificationType?->classification_name ?? 'Regular',
-            'verification_status' => $discountVerificationStatus,
-            'rejection_reason' => $discountRejectionReason,
-            'discount_verification_status' => $discountVerificationStatus,
-            'discount_rejection_reason' => $discountRejectionReason,
+            'verification_status' => $vf['verification_status'],
+            'rejection_reason' => $vf['rejection_reason'],
+            'discount_verification_status' => $vf['discount_verification_status'],
+            'discount_rejection_reason' => $vf['discount_rejection_reason'],
             'discount' => $commuter->discount ? [
                 'id' => $commuter->discount->id,
                 'ID_number' => $commuter->discount->ID_number,
