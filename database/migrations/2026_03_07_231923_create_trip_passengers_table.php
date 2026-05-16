@@ -29,7 +29,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->index('deleted_at');
 
-            $table->foreign('commuter_id')->references('id')->on('commuter')->onDelete('cascade');
+            $table->foreign('commuter_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');
             $table->foreign('passenger_start_id')->references('id')->on('passenger_start')->onDelete('cascade');
             $table->foreign('passenger_stop_id')->references('id')->on('passenger_stops')->onDelete('cascade');

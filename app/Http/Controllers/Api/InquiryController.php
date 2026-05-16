@@ -141,6 +141,7 @@ class InquiryController extends Controller
                         ->exists();
 
                     if (! $alreadyOnboard) {
+
                         $startLat = $commuterRequest->pickup_latitude !== null
                             ? (float) $commuterRequest->pickup_latitude
                             : (float) ($commuterRequest->terminal?->latitude ?? 0);
