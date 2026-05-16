@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('driver_locations', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('driver_id')->unique();
-            $table->decimal('latitude', 8, 6);
-            $table->decimal('longitude', 8, 6);
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
             $table->integer('heading')->nullable();
-            $table->decimal('accuracy', 5, 2)->nullable();
+            $table->decimal('accuracy', 8, 2)->nullable();
             $table->timestamp('updated_at');
 
             $table->index('updated_at');
