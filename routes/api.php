@@ -89,7 +89,7 @@ Route::middleware([...$sanctumStack, 'active.role.required', 'role:driver', 'act
 
     Route::controller(InquiryController::class)->prefix('inquiry/driver')->group(function (): void {
         Route::get('/', 'driverList')->name('api.inquiry.driver.list');
-        Route::post('/respond', 'driverRespond')->name('api.inquiry.driver.respond');
+        Route::put('/{id}', 'driverRespond')->name('api.inquiry.driver.respond');
     });
 
     Route::controller(TripController::class)->prefix('trips')->group(function (): void {

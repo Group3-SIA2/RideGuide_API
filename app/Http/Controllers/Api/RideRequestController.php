@@ -150,13 +150,16 @@ class RideRequestController extends Controller
 
         // Validate input
         $validated = $request->validate([
-            'status' => 'required|in:accepted,rejected',
+            'status' => 'required|in:accepted,rejected,cancelled',
         ]);
 
+        $updates = ['status' => $validated['status']];
+        if ($validated['status'] === 'cancelled') {
+            $updates['expires_at'] = now();
+        }
+
         // Update commuter's overall response status
-        $commuterRequest->update([
-            'status' => $validated['status'],
-        ]);
+        $commuterRequest->update($updates);
 
         return response()->json([
             'id' => $commuterRequest->id,

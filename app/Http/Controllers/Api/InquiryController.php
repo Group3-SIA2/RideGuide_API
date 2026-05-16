@@ -19,20 +19,20 @@ class InquiryController extends Controller
     public function driverList(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'latitude' => 'required|numeric|between:5.5,6.5',
-            'longitude' => 'required|numeric|between:124.7,125.7',
-            'route_id' => 'nullable|uuid|exists:routes,id',
-            'terminal_id' => 'nullable|uuid|exists:terminals,id',
+            'latitude'      => 'required|numeric|between:4,22',
+            'longitude'     => 'required|numeric|between:116,130',
+            'route_id'      => 'nullable|uuid|exists:routes,id',
+            'terminal_id'   => 'nullable|uuid|exists:terminals,id',
             'radius_meters' => 'nullable|integer|min:100|max:50000',
         ]);
-        $latitude = (float) $validated['latitude'];
+        $latitude  = (float) $validated['latitude'];
         $longitude = (float) $validated['longitude'];
-        $radiusKm = ((int) ($validated['radius_meters'] ?? 5000)) / 1000;
+        $radiusKm  = ((int) ($validated['radius_meters'] ?? 5000)) / 1000;
 
         $query = CommuterRideRequest::query()
             ->where('status', 'active')
             ->notExpired()
-            ->with('terminal');
+            ->with(['terminal', 'commuter:id,first_name,last_name']);
 
         if (isset($validated['route_id'])) {
             $query->where('route_id', $validated['route_id']);
@@ -40,18 +40,29 @@ class InquiryController extends Controller
         if (isset($validated['terminal_id'])) {
             $query->where('terminal_id', $validated['terminal_id']);
         }
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            $query->whereHas('terminal', function ($terminalQuery): void {
-                $terminalQuery->whereNotNull('latitude')->whereNotNull('longitude');
-            });
-        } else {
-            $query->whereHas('terminal', function ($terminalQuery) use ($latitude, $longitude, $radiusKm): void {
-                $terminalQuery->whereNotNull('latitude')
-                    ->whereNotNull('longitude')
-                    ->whereRaw(
-                        '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) <= ?',
-                        [$latitude, $longitude, $latitude, $radiusKm]
-                    );
+
+        // For MySQL: filter by pickup coords OR terminal coords within radius.
+        // For SQLite (dev/testing): skip geo filter — return all active requests.
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            $query->where(function ($q) use ($latitude, $longitude, $radiusKm): void {
+                // Has direct GPS pickup coords within range
+                $q->where(function ($inner) use ($latitude, $longitude, $radiusKm): void {
+                    $inner->whereNotNull('pickup_latitude')
+                        ->whereNotNull('pickup_longitude')
+                        ->whereRaw(
+                            '(6371 * acos(cos(radians(?)) * cos(radians(pickup_latitude)) * cos(radians(pickup_longitude) - radians(?)) + sin(radians(?)) * sin(radians(pickup_latitude)))) <= ?',
+                            [$latitude, $longitude, $latitude, $radiusKm]
+                        );
+                })
+                // OR has a terminal whose location is within range
+                ->orWhereHas('terminal', function ($tq) use ($latitude, $longitude, $radiusKm): void {
+                    $tq->whereNotNull('latitude')
+                        ->whereNotNull('longitude')
+                        ->whereRaw(
+                            '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) <= ?',
+                            [$latitude, $longitude, $latitude, $radiusKm]
+                        );
+                });
             });
         }
 
@@ -70,6 +81,10 @@ class InquiryController extends Controller
                 'route_id'         => $req->route_id,
                 'terminal_id'      => $req->terminal_id,
                 'wait_time_seconds'=> $req->created_at?->diffInSeconds(now()) ?? 0,
+                'commuter'         => $req->commuter ? [
+                    'first_name' => $req->commuter->first_name,
+                    'last_name'  => $req->commuter->last_name,
+                ] : null,
                 'pickup_location'  => [
                     'lat' => $pickupLat,
                     'lng' => $pickupLng,
@@ -85,16 +100,15 @@ class InquiryController extends Controller
         return response()->json(['success' => true, 'data' => $items], 200);
     }
 
-    public function driverRespond(Request $request): JsonResponse
+    public function driverRespond(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'commuter_ride_request_id' => 'required|uuid|exists:commuter_ride_requests,id',
-            'status'                   => 'required|in:accepted,rejected',
+            'status' => 'required|in:accepted,rejected',
         ]);
 
         $user = $request->user();
 
-        $commuterRequest = CommuterRideRequest::query()->with('terminal')->find($validated['commuter_ride_request_id']);
+        $commuterRequest = CommuterRideRequest::query()->with('terminal')->find($id);
         if (! $commuterRequest || $commuterRequest->status !== 'active' || $commuterRequest->expires_at <= now()) {
             return response()->json(['success' => false, 'message' => 'Request is no longer active.'], 400);
         }
@@ -224,7 +238,7 @@ class InquiryController extends Controller
     public function commuterRespond(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|in:accepted,rejected',
+            'status' => 'required|in:accepted,rejected,cancelled',
         ]);
 
         $item = CommuterRideRequest::query()->find($id);
@@ -235,7 +249,11 @@ class InquiryController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
-        $item->update(['status' => $validated['status']]);
+        $updates = ['status' => $validated['status']];
+        if ($validated['status'] === 'cancelled') {
+            $updates['expires_at'] = now();
+        }
+        $item->update($updates);
 
         return response()->json([
             'success' => true,
