@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\TripWaypoint;
 
 class Trip extends Model
 {
@@ -37,6 +38,11 @@ class Trip extends Model
     public function passengers(): HasMany
     {
         return $this->hasMany(TripPassenger::class, 'trip_id');
+    }
+
+    public function waypoints(): HasMany
+    {
+        return $this->hasMany(TripWaypoint::class, 'trip_id')->orderBy('sequence');
     }
 
     public function feedback(): HasMany
