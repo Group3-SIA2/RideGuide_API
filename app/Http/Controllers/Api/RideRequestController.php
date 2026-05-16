@@ -95,15 +95,13 @@ class RideRequestController extends Controller
         ]);
 
          $query = CommuterRideRequest::where('commuter_id', $user->id)
-             ->notExpired(); // Exclude expired requests
+             ->visibleToCommuter();
 
          if ($request->has('status')) {
              $query->where('status', $validated['status']);
          }
 
-         $requests = $query->with(['rideRequests' => function ($query) {
-             $query->with('driver:id,name'); // Eager load driver data with RideRequest
-         }])->get();
+         $requests = $query->with(['rideRequests.driver:id,first_name,last_name'])->get();
 
         return response()->json($requests->map(function ($request) {
             return [
@@ -116,6 +114,9 @@ class RideRequestController extends Controller
                 'driver_responses' => $request->rideRequests->map(function ($response) {
                     return [
                         'driver_id' => $response->driver_id,
+                        'driver_name' => $response->driver
+                            ? trim(($response->driver->first_name ?? '').' '.($response->driver->last_name ?? ''))
+                            : null,
                         'status' => $response->status,
                         'responded_at' => $response->responded_at,
                     ];

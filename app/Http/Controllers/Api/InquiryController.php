@@ -331,8 +331,8 @@ class InquiryController extends Controller
 
         $query = CommuterRideRequest::query()
             ->where('commuter_id', $request->user()?->id)
-            ->notExpired()
-            ->with('rideRequests');
+            ->visibleToCommuter()
+            ->with(['rideRequests.driver:id,first_name,last_name']);
 
         if (isset($validated['status'])) {
             $query->where('status', $validated['status']);
@@ -348,6 +348,9 @@ class InquiryController extends Controller
                 'expires_at' => $item->expires_at,
                 'driver_responses' => $item->rideRequests->map(fn (RideRequest $response) => [
                     'driver_id' => $response->driver_id,
+                    'driver_name' => $response->driver
+                        ? trim(($response->driver->first_name ?? '').' '.($response->driver->last_name ?? ''))
+                        : null,
                     'status' => $response->status,
                     'responded_at' => $response->responded_at,
                 ])->values(),

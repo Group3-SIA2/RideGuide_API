@@ -94,4 +94,15 @@ class CommuterRideRequest extends Model
     {
         return $query->where('expires_at', '>', now());
     }
+
+    /**
+     * Requests the commuter should still see (waiting or already accepted).
+     */
+    public function scopeVisibleToCommuter($query)
+    {
+        return $query->where(function ($q): void {
+            $q->where('expires_at', '>', now())
+                ->orWhereIn('status', ['accepted', 'completed']);
+        });
+    }
 }
