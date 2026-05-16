@@ -185,9 +185,11 @@ class DashboardController extends Controller
 
     private function baseResponsePayload(User $user, string $activeRole, array $roleNames): array
     {
+        $storedActiveRole = $user->active_role ? strtolower($user->active_role) : null;
+
         return [
             'user_id' => $user->id,
-            'active_role' => strtolower($activeRole),
+            'active_role' => $storedActiveRole,
             'roles' => $roleNames,
         ];
     }
