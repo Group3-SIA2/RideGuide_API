@@ -85,6 +85,7 @@ Route::middleware([...$sanctumStack, 'active.role.required', 'role:driver', 'act
     Route::controller(DriverLocationController::class)->prefix('drivers/location')->group(function (): void {
         Route::post('/', 'updateLocation')->middleware('throttle:live-location-post')->name('api.driver-location.update');
         Route::get('/', 'getLocation')->name('api.driver-location.get');
+        Route::delete('/', 'clearLocation')->name('api.driver-location.clear');
     });
 
     Route::controller(InquiryController::class)->prefix('inquiry/driver')->group(function (): void {

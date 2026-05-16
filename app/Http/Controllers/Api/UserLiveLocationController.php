@@ -19,6 +19,23 @@ class UserLiveLocationController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $activeRole = strtolower((string) ($request->attributes->get('active_role') ?? ''));
+
+        if ($activeRole === 'driver') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Drivers must use POST /api/drivers/location for live GPS sharing.',
+            ], 422);
+        }
+
+        if (! in_array($activeRole, ['commuter', 'organization'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Set your active role to commuter or organization before sharing location.',
+                'code' => 'role_selection_required',
+            ], 409);
+        }
+
         $validated = $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
@@ -70,10 +87,20 @@ class UserLiveLocationController extends Controller
      */
     public function destroy(Request $request): JsonResponse
     {
+        $activeRole = strtolower((string) ($request->attributes->get('active_role') ?? ''));
+
+        if ($activeRole === 'driver') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Drivers do not use user_live_locations. Turn off share from the driver map toggle.',
+            ], 422);
+        }
+
         UserLiveLocation::query()->where('user_id', $request->user()->id)->delete();
 
         return response()->json([
             'success' => true,
+            'message' => 'Live location sharing stopped.',
         ]);
     }
 }
