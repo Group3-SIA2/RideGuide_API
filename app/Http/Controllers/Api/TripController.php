@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\DB;
 
 class TripController extends Controller
 {
+    /** Stops closer than this (meters) are treated as duplicates. */
+    private const DUPLICATE_WAYPOINT_METERS = 80;
+
     /*
      * POST /api/trips
      * Driver starts a new trip.
@@ -64,16 +67,25 @@ class TripController extends Controller
         if ($driver->organization_id) {
             $this->seedOrganizationWaypoints($trip, $driver);
         } elseif (! empty($validated['waypoints'])) {
-            foreach ($validated['waypoints'] as $seq => $wp) {
-                $waypoint = Waypoint::create([
-                    'latitude'  => (string) $wp['latitude'],
-                    'longitude' => (string) $wp['longitude'],
+            $seq           = 0;
+            $acceptedStops = [];
+            foreach ($validated['waypoints'] as $wp) {
+                $lat = (float) $wp['latitude'];
+                $lng = (float) $wp['longitude'];
+                if ($this->coordinatesNearAny($lat, $lng, $acceptedStops)) {
+                    continue;
+                }
+                $acceptedStops[] = ['latitude' => $lat, 'longitude' => $lng];
+                $waypoint        = Waypoint::create([
+                    'latitude'  => (string) $lat,
+                    'longitude' => (string) $lng,
                 ]);
                 TripWaypoint::create([
                     'trip_id'     => $trip->id,
                     'waypoint_id' => $waypoint->id,
                     'sequence'    => $seq,
                 ]);
+                $seq++;
             }
         }
 
@@ -377,9 +389,19 @@ class TripController extends Controller
 
         $sequence = isset($validated['sequence']) ? $validated['sequence'] : ($maxSequence + 1);
 
+        $lat = (float) $validated['latitude'];
+        $lng = (float) $validated['longitude'];
+
+        if ($this->tripHasWaypointNear($trip, $lat, $lng)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This route stop is already on your trip (same or very nearby location).',
+            ], 422);
+        }
+
         $waypoint = Waypoint::create([
-            'latitude'  => (string) $validated['latitude'],
-            'longitude' => (string) $validated['longitude'],
+            'latitude'  => (string) $lat,
+            'longitude' => (string) $lng,
         ]);
 
         $tripWaypoint = TripWaypoint::create([
@@ -697,15 +719,23 @@ class TripController extends Controller
             return;
         }
 
-        $seq = 0;
+        $seq            = 0;
+        $acceptedStops  = [];
         foreach ($terminals as $terminal) {
             if ($terminal->latitude === null || $terminal->longitude === null) {
                 continue;
             }
 
+            $lat = (float) $terminal->latitude;
+            $lng = (float) $terminal->longitude;
+            if ($this->coordinatesNearAny($lat, $lng, $acceptedStops)) {
+                continue;
+            }
+            $acceptedStops[] = ['latitude' => $lat, 'longitude' => $lng];
+
             $waypoint = Waypoint::create([
-                'latitude'  => (string) $terminal->latitude,
-                'longitude' => (string) $terminal->longitude,
+                'latitude'  => (string) $lat,
+                'longitude' => (string) $lng,
             ]);
 
             TripWaypoint::create([
@@ -716,5 +746,43 @@ class TripController extends Controller
 
             $seq++;
         }
+    }
+
+    private function tripHasWaypointNear(Trip $trip, float $lat, float $lng): bool
+    {
+        $trip->loadMissing('waypoints.waypoint');
+
+        $points = [];
+        foreach ($trip->waypoints as $tripWaypoint) {
+            if ($tripWaypoint->waypoint === null) {
+                continue;
+            }
+            $points[] = [
+                'latitude'  => (float) $tripWaypoint->waypoint->latitude,
+                'longitude' => (float) $tripWaypoint->waypoint->longitude,
+            ];
+        }
+
+        return $this->coordinatesNearAny($lat, $lng, $points);
+    }
+
+    /**
+     * @param  array<int, array{latitude: float, longitude: float}>  $points
+     */
+    private function coordinatesNearAny(float $lat, float $lng, array $points): bool
+    {
+        foreach ($points as $point) {
+            if ($this->distanceMeters($lat, $lng, $point['latitude'], $point['longitude'])
+                < self::DUPLICATE_WAYPOINT_METERS) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function distanceMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        return $this->haversineKm($lat1, $lon1, $lat2, $lon2) * 1000;
     }
 }
