@@ -25,9 +25,13 @@ class RideRequestController extends Controller
 
         // Validate input
         $validated = $request->validate([
-            'route_id' => 'nullable|uuid|exists:routes,id',
-            'terminal_id' => 'nullable|uuid|exists:terminals,id',
-            'destination' => 'required_without_all:route_id,terminal_id|string|max:255',
+            'route_id'          => 'nullable|uuid|exists:routes,id',
+            'terminal_id'       => 'nullable|uuid|exists:terminals,id',
+            'destination'       => 'required_without_all:route_id,terminal_id|string|max:255',
+            'pickup_latitude'   => 'nullable|numeric|between:-90,90',
+            'pickup_longitude'  => 'nullable|numeric|between:-180,180',
+            'dropoff_latitude'  => 'nullable|numeric|between:-90,90',
+            'dropoff_longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         // Check: Commuter can only have 1 active request at a time
@@ -45,22 +49,30 @@ class RideRequestController extends Controller
 
         // Create new ride request with 10-minute expiry
         $rideRequest = CommuterRideRequest::create([
-            'commuter_id' => $user->id,
-            'route_id' => $validated['route_id'] ?? null,
-            'terminal_id' => $validated['terminal_id'] ?? null,
-            'destination' => $validated['destination'],
-            'status' => 'active',
-            'expires_at' => now()->addMinutes(10),
+            'commuter_id'       => $user->id,
+            'route_id'          => $validated['route_id'] ?? null,
+            'terminal_id'       => $validated['terminal_id'] ?? null,
+            'destination'       => $validated['destination'],
+            'pickup_latitude'   => $validated['pickup_latitude'] ?? null,
+            'pickup_longitude'  => $validated['pickup_longitude'] ?? null,
+            'dropoff_latitude'  => $validated['dropoff_latitude'] ?? null,
+            'dropoff_longitude' => $validated['dropoff_longitude'] ?? null,
+            'status'            => 'active',
+            'expires_at'        => now()->addMinutes(10),
         ]);
 
         return response()->json([
-            'id' => $rideRequest->id,
-            'commuter_id' => $rideRequest->commuter_id,
-            'route_id' => $rideRequest->route_id,
-            'terminal_id' => $rideRequest->terminal_id,
-            'destination' => $rideRequest->destination,
-            'status' => $rideRequest->status,
-            'expires_at' => $rideRequest->expires_at,
+            'id'               => $rideRequest->id,
+            'commuter_id'      => $rideRequest->commuter_id,
+            'route_id'         => $rideRequest->route_id,
+            'terminal_id'      => $rideRequest->terminal_id,
+            'destination'      => $rideRequest->destination,
+            'pickup_latitude'  => $rideRequest->pickup_latitude,
+            'pickup_longitude' => $rideRequest->pickup_longitude,
+            'dropoff_latitude' => $rideRequest->dropoff_latitude,
+            'dropoff_longitude'=> $rideRequest->dropoff_longitude,
+            'status'           => $rideRequest->status,
+            'expires_at'       => $rideRequest->expires_at,
         ], 201);
     }
 
