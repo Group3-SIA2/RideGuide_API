@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('trip_passengers', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            // User UUID — same as commuter_ride_requests.commuter_id (not commuter.id)
             $table->uuid('commuter_id')->notNull();
             $table->uuid('trip_id')->notNull();
             $table->uuid('passenger_start_id')->notNull();

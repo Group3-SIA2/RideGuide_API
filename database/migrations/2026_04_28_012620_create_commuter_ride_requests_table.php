@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('commuter_ride_requests', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            // User UUID — driver accept flow copies this into trip_passengers.commuter_id
             $table->foreignUuid('commuter_id')->constrained('users')->onDelete('cascade');
             $table->foreignUuid('route_id')->nullable()->constrained('routes')->onDelete('cascade');
             $table->foreignUuid('terminal_id')->nullable()->constrained('terminals')->onDelete('cascade');
