@@ -107,11 +107,44 @@ class InquiryController extends Controller
         ]);
 
         $user = $request->user();
+        $debugLogPath = 'C:/Users/marjo/AndroidStudioProjects/ride_guide/debug-91f1b8.log';
+        $agentLog = static function (string $hypothesisId, string $location, string $message, array $data = []) use ($debugLogPath): void {
+            // #region agent log
+            file_put_contents(
+                $debugLogPath,
+                json_encode([
+                    'sessionId' => '91f1b8',
+                    'hypothesisId' => $hypothesisId,
+                    'location' => $location,
+                    'message' => $message,
+                    'data' => $data,
+                    'timestamp' => (int) round(microtime(true) * 1000),
+                ], JSON_THROW_ON_ERROR)."\n",
+                FILE_APPEND | LOCK_EX
+            );
+            // #endregion
+        };
+
+        $agentLog('A', 'InquiryController::driverRespond', 'entry', [
+            'request_id' => $id,
+            'status' => $validated['status'],
+            'driver_user_id' => $user?->id,
+        ]);
 
         $commuterRequest = CommuterRideRequest::query()->with('terminal')->find($id);
         if (! $commuterRequest || $commuterRequest->status !== 'active' || $commuterRequest->expires_at <= now()) {
+            $agentLog('D', 'InquiryController::driverRespond', 'inactive_request', [
+                'found' => $commuterRequest !== null,
+                'status' => $commuterRequest?->status,
+                'expires_at' => $commuterRequest?->expires_at?->toIso8601String(),
+            ]);
+
             return response()->json(['success' => false, 'message' => 'Request is no longer active.'], 400);
         }
+
+        $agentLog('A', 'InquiryController::driverRespond', 'commuter_request_ok', [
+            'commuter_id' => $commuterRequest->commuter_id,
+        ]);
 
         $rideRequest = RideRequest::query()->updateOrCreate(
             [
@@ -134,6 +167,11 @@ class InquiryController extends Controller
                     ->where('driver_id', $driver->id)
                     ->first();
 
+                $agentLog('C', 'InquiryController::driverRespond', 'accept_branch', [
+                    'has_driver_profile' => true,
+                    'active_trip_id' => $activeTrip?->id,
+                ]);
+
                 if ($activeTrip) {
                     $alreadyOnboard = TripPassenger::where('trip_id', $activeTrip->id)
                         ->where('commuter_id', $commuterRequest->commuter_id)
@@ -155,29 +193,43 @@ class InquiryController extends Controller
                             ? (float) $commuterRequest->dropoff_longitude
                             : $startLng;
 
-                        $tripPassenger = DB::transaction(function () use ($commuterRequest, $activeTrip, $startLat, $startLng, $stopLat, $stopLng) {
-                            $startWaypoint = Waypoint::create([
-                                'latitude'  => (string) $startLat,
-                                'longitude' => (string) $startLng,
+                        try {
+                            $tripPassenger = DB::transaction(function () use ($commuterRequest, $activeTrip, $startLat, $startLng, $stopLat, $stopLng) {
+                                $startWaypoint = Waypoint::create([
+                                    'latitude'  => (string) $startLat,
+                                    'longitude' => (string) $startLng,
+                                ]);
+                                $passengerStart = PassengerStart::create([
+                                    'waypoint_id' => $startWaypoint->id,
+                                ]);
+                                $stopWaypoint = Waypoint::create([
+                                    'latitude'  => (string) $stopLat,
+                                    'longitude' => (string) $stopLng,
+                                ]);
+                                $passengerStop = PassengerStop::create([
+                                    'waypoint_id' => $stopWaypoint->id,
+                                ]);
+
+                                return TripPassenger::create([
+                                    'commuter_id'        => $commuterRequest->commuter_id,
+                                    'trip_id'            => $activeTrip->id,
+                                    'passenger_start_id' => $passengerStart->id,
+                                    'passenger_stop_id'  => $passengerStop->id,
+                                    'fare'               => 0,
+                                ]);
+                            });
+                        } catch (\Throwable $e) {
+                            $agentLog('A', 'InquiryController::driverRespond', 'trip_passenger_create_failed', [
+                                'error' => $e->getMessage(),
+                                'commuter_id' => $commuterRequest->commuter_id,
+                                'trip_id' => $activeTrip->id,
                             ]);
-                            $passengerStart = PassengerStart::create([
-                                'waypoint_id' => $startWaypoint->id,
-                            ]);
-                            $stopWaypoint = Waypoint::create([
-                                'latitude'  => (string) $stopLat,
-                                'longitude' => (string) $stopLng,
-                            ]);
-                            $passengerStop = PassengerStop::create([
-                                'waypoint_id' => $stopWaypoint->id,
-                            ]);
-                            return TripPassenger::create([
-                                'commuter_id'        => $commuterRequest->commuter_id,
-                                'trip_id'            => $activeTrip->id,
-                                'passenger_start_id' => $passengerStart->id,
-                                'passenger_stop_id'  => $passengerStop->id,
-                                'fare'               => 0,
-                            ]);
-                        });
+                            throw $e;
+                        }
+
+                        $agentLog('A', 'InquiryController::driverRespond', 'trip_passenger_created', [
+                            'trip_passenger_id' => $tripPassenger->id,
+                        ]);
 
                         $tripPassengerData = [
                             'id'          => $tripPassenger->id,
@@ -187,8 +239,18 @@ class InquiryController extends Controller
                         ];
                     }
                 }
+            } else {
+                $agentLog('C', 'InquiryController::driverRespond', 'accept_branch', [
+                    'has_driver_profile' => false,
+                    'active_trip_id' => null,
+                ]);
             }
         }
+
+        $agentLog('B', 'InquiryController::driverRespond', 'success_response', [
+            'ride_request_status' => $rideRequest->status,
+            'trip_passenger_created' => $tripPassengerData !== null,
+        ]);
 
         return response()->json([
             'success'       => true,

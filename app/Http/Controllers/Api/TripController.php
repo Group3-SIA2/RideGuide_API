@@ -256,7 +256,7 @@ class TripController extends Controller
         });
 
         $tripPassenger->load([
-            'commuter.user:id,first_name,last_name',
+            'commuter:id,first_name,last_name',
             'passengerStart.waypoint',
             'passengerStop.waypoint',
         ]);
@@ -532,7 +532,7 @@ class TripController extends Controller
         }
 
         $trip = Trip::with([
-            'passengers.commuter.user:id,first_name,last_name',
+            'passengers.commuter:id,first_name,last_name',
             'passengers.passengerStart.waypoint',
             'passengers.passengerStop.waypoint',
             'waypoints.waypoint',
@@ -572,10 +572,10 @@ class TripController extends Controller
         return [
             'id'          => $passenger->id,
             'commuter_id' => $passenger->commuter_id,
-            'commuter'    => $passenger->commuter?->user ? [
-                'id'         => $passenger->commuter->user->id,
-                'first_name' => $passenger->commuter->user->first_name,
-                'last_name'  => $passenger->commuter->user->last_name,
+            'commuter'    => $passenger->commuter ? [
+                'id'         => $passenger->commuter->id,
+                'first_name' => $passenger->commuter->first_name,
+                'last_name'  => $passenger->commuter->last_name,
             ] : null,
             'fare'        => (float) $passenger->fare,
             'boarded_at'  => optional($passenger->created_at)->toIso8601String(),
