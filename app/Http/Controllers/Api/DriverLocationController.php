@@ -67,6 +67,22 @@ class DriverLocationController extends Controller
     }
 
     /**
+     * DELETE /api/drivers/location
+     * Remove shared driver position when the driver turns off live sharing.
+     */
+    public function clearLocation(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        DriverLocation::query()->where('driver_id', $user->id)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Driver location sharing stopped.',
+        ]);
+    }
+
+    /**
      * GET /api/drivers/location
      * Get authenticated driver's current location
      * Authorization: Driver-only
