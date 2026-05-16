@@ -21,7 +21,9 @@ use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\MapExperienceController;
 use App\Http\Controllers\Api\UserLiveLocationController;
+use App\Http\Controllers\Api\CommuterTripController;
 use App\Http\Controllers\Api\InquiryController;
+use App\Http\Controllers\Api\TripController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -89,6 +91,15 @@ Route::middleware([...$sanctumStack, 'active.role.required', 'role:driver', 'act
         Route::get('/', 'driverList')->name('api.inquiry.driver.list');
         Route::post('/respond', 'driverRespond')->name('api.inquiry.driver.respond');
     });
+
+    Route::controller(TripController::class)->prefix('trips')->group(function (): void {
+        Route::post('/', 'startTrip')->name('api.trips.start');
+        Route::patch('/{id}/end', 'endTrip')->name('api.trips.end');
+        Route::post('/{id}/passengers', 'addPassenger')->name('api.trips.passengers.add');
+        Route::delete('/{id}/passengers/{passengerId}', 'removePassenger')->name('api.trips.passengers.remove');
+        Route::get('/', 'listTrips')->name('api.trips.list');
+        Route::get('/{id}', 'showTrip')->name('api.trips.show');
+    });
 });
 
 /*
@@ -106,6 +117,12 @@ Route::middleware([...$sanctumStack, 'active.role.required', 'role:commuter', 'a
     Route::controller(InquiryController::class)->prefix('inquiry/commuter')->group(function (): void {
         Route::get('/', 'commuterList')->name('api.inquiry.commuter.list');
         Route::put('/{id}', 'commuterRespond')->name('api.inquiry.commuter.respond');
+    });
+
+    Route::controller(CommuterTripController::class)->prefix('commuter/trips')->group(function (): void {
+        Route::get('/', 'listMyTrips')->name('api.commuter.trips.list');
+        Route::get('/current', 'getCurrentTrip')->name('api.commuter.trips.current');
+        Route::get('/{id}', 'showTrip')->name('api.commuter.trips.show');
     });
 });
 
