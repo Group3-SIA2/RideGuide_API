@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Commuter;
+use App\Models\Organization;
 use App\Models\OrganizationFareRate;
 use App\Models\PassengerStart;
 use App\Models\PassengerStop;
 use App\Models\Terminal;
 use App\Models\Trip;
 use App\Models\TripPassenger;
+use App\Models\TripWaypoint;
 use App\Models\Waypoint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,11 +48,36 @@ class TripController extends Controller
             ], 409);
         }
 
+        // Unassigned drivers may supply optional waypoints at trip start
+        $validated = $request->validate([
+            'waypoints'             => ['nullable', 'array', 'max:50'],
+            'waypoints.*.latitude'  => ['required_with:waypoints', 'numeric', 'between:-90,90'],
+            'waypoints.*.longitude' => ['required_with:waypoints', 'numeric', 'between:-180,180'],
+        ]);
+
         $trip = Trip::create([
             'driver_id'      => $driver->id,
             'departure_time' => now(),
             'return_time'    => null,
         ]);
+
+        if ($driver->organization_id) {
+            $this->seedOrganizationWaypoints($trip, $driver);
+        } elseif (! empty($validated['waypoints'])) {
+            foreach ($validated['waypoints'] as $seq => $wp) {
+                $waypoint = Waypoint::create([
+                    'latitude'  => (string) $wp['latitude'],
+                    'longitude' => (string) $wp['longitude'],
+                ]);
+                TripWaypoint::create([
+                    'trip_id'     => $trip->id,
+                    'waypoint_id' => $waypoint->id,
+                    'sequence'    => $seq,
+                ]);
+            }
+        }
+
+        $trip->load('waypoints.waypoint');
 
         return response()->json([
             'success' => true,
@@ -58,9 +85,12 @@ class TripController extends Controller
             'data'    => [
                 'id'             => $trip->id,
                 'driver_id'      => $trip->driver_id,
-                'departure_time' => $trip->departure_time,
-                'return_time'    => $trip->return_time,
-                'created_at'     => $trip->created_at,
+                'departure_time' => optional($trip->departure_time)->toIso8601String(),
+                'return_time'    => null,
+                'created_at'     => optional($trip->created_at)->toIso8601String(),
+                'waypoints'      => $trip->waypoints
+                    ->map(fn (TripWaypoint $w) => $this->formatWaypoint($w))
+                    ->values(),
             ],
         ], 201);
     }
@@ -290,6 +320,142 @@ class TripController extends Controller
     }
 
     /*
+     * POST /api/trips/{id}/waypoints
+     * Add a waypoint to an active trip (unassigned drivers only).
+     * Authorization: Driver-only
+     */
+    public function addWaypoint(Request $request, string $id): JsonResponse
+    {
+        $user = $request->user();
+
+        $driver = $user->driver;
+        if (! $driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver profile not found.',
+            ], 403);
+        }
+
+        if ($driver->organization_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Waypoints for organization-assigned drivers are managed automatically.',
+            ], 403);
+        }
+
+        $trip = Trip::find($id);
+        if (! $trip) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Trip not found.',
+            ], 404);
+        }
+
+        if ($trip->driver_id !== $driver->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. This trip does not belong to you.',
+            ], 403);
+        }
+
+        if (! is_null($trip->return_time)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot add waypoints to an ended trip.',
+            ], 409);
+        }
+
+        $validated = $request->validate([
+            'latitude'  => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'sequence'  => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $maxSequence = TripWaypoint::where('trip_id', $trip->id)
+            ->whereNull('deleted_at')
+            ->max('sequence') ?? -1;
+
+        $sequence = isset($validated['sequence']) ? $validated['sequence'] : ($maxSequence + 1);
+
+        $waypoint = Waypoint::create([
+            'latitude'  => (string) $validated['latitude'],
+            'longitude' => (string) $validated['longitude'],
+        ]);
+
+        $tripWaypoint = TripWaypoint::create([
+            'trip_id'     => $trip->id,
+            'waypoint_id' => $waypoint->id,
+            'sequence'    => $sequence,
+        ]);
+
+        $tripWaypoint->load('waypoint');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Waypoint added.',
+            'data'    => $this->formatWaypoint($tripWaypoint),
+        ], 201);
+    }
+
+    /*
+     * DELETE /api/trips/{id}/waypoints/{waypointId}
+     * Remove a waypoint from an active trip (unassigned drivers only).
+     * Authorization: Driver-only
+     */
+    public function removeWaypoint(Request $request, string $id, string $waypointId): JsonResponse
+    {
+        $user = $request->user();
+
+        $driver = $user->driver;
+        if (! $driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver profile not found.',
+            ], 403);
+        }
+
+        if ($driver->organization_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Waypoints for organization-assigned drivers are managed automatically.',
+            ], 403);
+        }
+
+        $trip = Trip::find($id);
+        if (! $trip) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Trip not found.',
+            ], 404);
+        }
+
+        if ($trip->driver_id !== $driver->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. This trip does not belong to you.',
+            ], 403);
+        }
+
+        $tripWaypoint = TripWaypoint::where('id', $waypointId)
+            ->where('trip_id', $trip->id)
+            ->first();
+
+        if (! $tripWaypoint) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Waypoint not found on this trip.',
+            ], 404);
+        }
+
+        $tripWaypoint->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Waypoint removed from trip.',
+        ]);
+    }
+
+    /*
      * GET /api/trips
      * List all trips for the authenticated driver (paginated).
      * Optional query param: ?status=active|completed
@@ -369,6 +535,7 @@ class TripController extends Controller
             'passengers.commuter.user:id,first_name,last_name',
             'passengers.passengerStart.waypoint',
             'passengers.passengerStop.waypoint',
+            'waypoints.waypoint',
         ])->find($id);
 
         if (! $trip) {
@@ -395,6 +562,7 @@ class TripController extends Controller
                 'status'         => is_null($trip->return_time) ? 'active' : 'completed',
                 'created_at'     => optional($trip->created_at)->toIso8601String(),
                 'passengers'     => $trip->passengers->map(fn (TripPassenger $p) => $this->formatPassenger($p))->values(),
+                'waypoints'      => $trip->waypoints->map(fn (TripWaypoint $w) => $this->formatWaypoint($w))->values(),
             ],
         ]);
     }
@@ -451,7 +619,7 @@ class TripController extends Controller
         $routeStandardFare = (float) $fareRate->route_standard_fare;
 
         $terminalThresholdKm = 0.3;
-        $terminals = \App\Models\Organization::find($driver->organization_id)
+        $terminals = Organization::find($driver->organization_id)
             ?->terminals()
             ->get(['latitude', 'longitude']);
 
@@ -506,5 +674,47 @@ class TripController extends Controller
             * sin($dLon / 2) ** 2;
         $c           = 2 * atan2(sqrt($a), sqrt(1 - $a));
         return $earthRadius * $c;
+    }
+
+    private function formatWaypoint(TripWaypoint $tripWaypoint): array
+    {
+        return [
+            'id'        => $tripWaypoint->id,
+            'sequence'  => $tripWaypoint->sequence,
+            'latitude'  => $tripWaypoint->waypoint ? (float) $tripWaypoint->waypoint->latitude : null,
+            'longitude' => $tripWaypoint->waypoint ? (float) $tripWaypoint->waypoint->longitude : null,
+        ];
+    }
+
+    private function seedOrganizationWaypoints(Trip $trip, $driver): void
+    {
+        $terminals = Organization::find($driver->organization_id)
+            ?->terminals()
+            ->orderBy('terminal_name')
+            ->get(['id', 'latitude', 'longitude', 'terminal_name']);
+
+        if (! $terminals || $terminals->isEmpty()) {
+            return;
+        }
+
+        $seq = 0;
+        foreach ($terminals as $terminal) {
+            if ($terminal->latitude === null || $terminal->longitude === null) {
+                continue;
+            }
+
+            $waypoint = Waypoint::create([
+                'latitude'  => (string) $terminal->latitude,
+                'longitude' => (string) $terminal->longitude,
+            ]);
+
+            TripWaypoint::create([
+                'trip_id'     => $trip->id,
+                'waypoint_id' => $waypoint->id,
+                'sequence'    => $seq,
+            ]);
+
+            $seq++;
+        }
     }
 }
