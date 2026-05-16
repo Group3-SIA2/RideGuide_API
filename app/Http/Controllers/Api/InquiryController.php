@@ -154,10 +154,7 @@ class InquiryController extends Controller
                 ->first()
             : null;
 
-        if (
-            $validated['status'] === 'accepted'
-            && ($existingRideRequest?->status === 'accepted' || $existingPassenger !== null)
-        ) {
+        if ($validated['status'] === 'accepted' && $existingPassenger !== null) {
             $agentLog('B', 'InquiryController::driverRespond', 'idempotent_accept', [
                 'ride_request_status' => $existingRideRequest?->status,
                 'trip_passenger_id' => $existingPassenger?->id,
