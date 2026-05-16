@@ -132,14 +132,63 @@ class InquiryController extends Controller
         ]);
 
         $commuterRequest = CommuterRideRequest::query()->with('terminal')->find($id);
-        if (! $commuterRequest || $commuterRequest->status !== 'active' || $commuterRequest->expires_at <= now()) {
-            $agentLog('D', 'InquiryController::driverRespond', 'inactive_request', [
-                'found' => $commuterRequest !== null,
-                'status' => $commuterRequest?->status,
-                'expires_at' => $commuterRequest?->expires_at?->toIso8601String(),
+        if (! $commuterRequest) {
+            return response()->json(['success' => false, 'message' => 'Ride request not found.'], 404);
+        }
+
+        $driver = $user?->driver;
+        $activeTrip = $driver
+            ? Trip::query()->active()->where('driver_id', $driver->id)->first()
+            : null;
+
+        $existingRideRequest = RideRequest::query()
+            ->where('driver_id', $user?->id)
+            ->where('commuter_ride_request_id', $commuterRequest->id)
+            ->first();
+
+        $existingPassenger = ($activeTrip && $commuterRequest->commuter_id)
+            ? TripPassenger::query()
+                ->where('trip_id', $activeTrip->id)
+                ->where('commuter_id', $commuterRequest->commuter_id)
+                ->whereNull('deleted_at')
+                ->first()
+            : null;
+
+        if (
+            $validated['status'] === 'accepted'
+            && ($existingRideRequest?->status === 'accepted' || $existingPassenger !== null)
+        ) {
+            $agentLog('B', 'InquiryController::driverRespond', 'idempotent_accept', [
+                'ride_request_status' => $existingRideRequest?->status,
+                'trip_passenger_id' => $existingPassenger?->id,
+                'commuter_request_status' => $commuterRequest->status,
             ]);
 
-            return response()->json(['success' => false, 'message' => 'Request is no longer active.'], 400);
+            return response()->json([
+                'success' => true,
+                'message' => $existingPassenger
+                    ? 'Passenger is already on board.'
+                    : 'You already accepted this request.',
+                'data'    => [
+                    'id'             => $existingRideRequest?->id,
+                    'status'         => $existingRideRequest?->status ?? 'accepted',
+                    'responded_at'   => $existingRideRequest?->responded_at,
+                    'trip_passenger' => $this->formatTripPassengerData($existingPassenger),
+                ],
+            ], 200);
+        }
+
+        if ($commuterRequest->status !== 'active' || $commuterRequest->expires_at <= now()) {
+            $agentLog('D', 'InquiryController::driverRespond', 'inactive_request', [
+                'found' => true,
+                'status' => $commuterRequest->status,
+                'expires_at' => $commuterRequest->expires_at?->toIso8601String(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => "Request is no longer active (status: {$commuterRequest->status}).",
+            ], 400);
         }
 
         $agentLog('A', 'InquiryController::driverRespond', 'commuter_request_ok', [
@@ -160,25 +209,27 @@ class InquiryController extends Controller
         $tripPassengerData = null;
 
         if ($validated['status'] === 'accepted') {
-            $driver = $user?->driver;
             if ($driver) {
-                $activeTrip = Trip::query()
-                    ->active()
-                    ->where('driver_id', $driver->id)
-                    ->first();
-
                 $agentLog('C', 'InquiryController::driverRespond', 'accept_branch', [
                     'has_driver_profile' => true,
                     'active_trip_id' => $activeTrip?->id,
                 ]);
 
                 if ($activeTrip) {
-                    $alreadyOnboard = TripPassenger::where('trip_id', $activeTrip->id)
-                        ->where('commuter_id', $commuterRequest->commuter_id)
-                        ->whereNull('deleted_at')
-                        ->exists();
+                    if ($existingPassenger === null) {
+                        $existingPassenger = TripPassenger::query()
+                            ->where('trip_id', $activeTrip->id)
+                            ->where('commuter_id', $commuterRequest->commuter_id)
+                            ->whereNull('deleted_at')
+                            ->first();
+                    }
 
-                    if (! $alreadyOnboard) {
+                    if ($existingPassenger !== null) {
+                        $tripPassengerData = $this->formatTripPassengerData($existingPassenger);
+                        $agentLog('C', 'InquiryController::driverRespond', 'already_onboard', [
+                            'trip_passenger_id' => $existingPassenger->id,
+                        ]);
+                    } else {
 
                         $startLat = $commuterRequest->pickup_latitude !== null
                             ? (float) $commuterRequest->pickup_latitude
@@ -231,12 +282,7 @@ class InquiryController extends Controller
                             'trip_passenger_id' => $tripPassenger->id,
                         ]);
 
-                        $tripPassengerData = [
-                            'id'          => $tripPassenger->id,
-                            'commuter_id' => $tripPassenger->commuter_id,
-                            'trip_id'     => $tripPassenger->trip_id,
-                            'fare'        => (float) $tripPassenger->fare,
-                        ];
+                        $tripPassengerData = $this->formatTripPassengerData($tripPassenger);
                     }
                 }
             } else {
@@ -245,6 +291,8 @@ class InquiryController extends Controller
                     'active_trip_id' => null,
                 ]);
             }
+
+            $commuterRequest->update(['status' => 'accepted']);
         }
 
         $agentLog('B', 'InquiryController::driverRespond', 'success_response', [
@@ -262,6 +310,20 @@ class InquiryController extends Controller
                 'trip_passenger' => $tripPassengerData,
             ],
         ], $rideRequest->wasRecentlyCreated ? 201 : 200);
+    }
+
+    private function formatTripPassengerData(?TripPassenger $tripPassenger): ?array
+    {
+        if (! $tripPassenger) {
+            return null;
+        }
+
+        return [
+            'id'          => $tripPassenger->id,
+            'commuter_id' => $tripPassenger->commuter_id,
+            'trip_id'     => $tripPassenger->trip_id,
+            'fare'        => (float) $tripPassenger->fare,
+        ];
     }
 
     public function commuterList(Request $request): JsonResponse
