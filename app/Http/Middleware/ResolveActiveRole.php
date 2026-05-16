@@ -3,10 +3,15 @@
 namespace App\Http\Middleware;
 
 use App\Support\AppRoleContext;
+use App\Support\UserMobileRoleReconciler;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Run immediately after `auth:sanctum` on API routes. Earlier in the stack, `$request->user()`
+ * is null for Bearer tokens, so active role and assigned mobile roles are never set.
+ */
 class ResolveActiveRole
 {
     public function handle(Request $request, Closure $next): Response
@@ -17,8 +22,14 @@ class ResolveActiveRole
             return $next($request);
         }
 
-        $activeRole = is_string($user->active_role) ? strtolower($user->active_role) : null;
         $assignedRoles = AppRoleContext::assignedMobileRoles($user);
+        if (count($assignedRoles) === 0) {
+            UserMobileRoleReconciler::syncFromProfiles($user);
+            $user->unsetRelation('roles');
+            $assignedRoles = AppRoleContext::assignedMobileRoles($user);
+        }
+
+        $activeRole = is_string($user->active_role) ? strtolower($user->active_role) : null;
 
         if ($activeRole !== null && !in_array($activeRole, $assignedRoles, true)) {
             $activeRole = null;

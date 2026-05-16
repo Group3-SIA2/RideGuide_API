@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CommuterRideRequest;
 use App\Models\DriverLocation;
 use App\Models\RideRequest;
+use App\Models\UserLiveLocation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -75,8 +76,14 @@ class MapExperienceController extends Controller
                 'driver_locations' => [],
                 'active_commuter_requests' => [],
                 'recent_transactions' => [],
+                '_live_map_driver_ids' => null,
             ],
         };
+
+        if (! isset($data['live_map_users'])) {
+            $data['live_map_users'] = $this->buildLiveMapUsers($limit, $data['_live_map_driver_ids'] ?? null);
+            unset($data['_live_map_driver_ids']);
+        }
 
         return response()->json([
             'success' => true,
@@ -108,6 +115,7 @@ class MapExperienceController extends Controller
             'driver_locations' => [],
             'active_commuter_requests' => $activeRequests,
             'recent_transactions' => [],
+            '_live_map_driver_ids' => null,
         ];
     }
 
@@ -128,6 +136,7 @@ class MapExperienceController extends Controller
             'driver_locations' => $locations,
             'active_commuter_requests' => [],
             'recent_transactions' => $recentTransactions,
+            '_live_map_driver_ids' => null,
         ];
     }
 
@@ -150,6 +159,7 @@ class MapExperienceController extends Controller
                 'driver_locations' => [],
                 'active_commuter_requests' => [],
                 'recent_transactions' => [],
+                '_live_map_driver_ids' => [],
             ];
         }
 
@@ -164,6 +174,7 @@ class MapExperienceController extends Controller
                 'driver_locations' => [],
                 'active_commuter_requests' => [],
                 'recent_transactions' => [],
+                '_live_map_driver_ids' => [],
             ];
         }
 
@@ -183,6 +194,69 @@ class MapExperienceController extends Controller
             'driver_locations' => $locations,
             'active_commuter_requests' => [],
             'recent_transactions' => $transactions,
+            '_live_map_driver_ids' => $driverUserIds->all(),
         ];
+    }
+
+    /**
+     * @param  array<int, string>|null  $onlyDriverUserIds  null = all drivers; array = restrict (organization org drivers)
+     * @return list<array<string, mixed>>
+     */
+    private function buildLiveMapUsers(int $limit, ?array $onlyDriverUserIds): array
+    {
+        $since = now()->subMinutes(10);
+
+        $driversQuery = DriverLocation::query()
+            ->where('updated_at', '>=', $since)
+            ->when(
+                is_array($onlyDriverUserIds),
+                fn ($q) => $q->whereIn('driver_id', $onlyDriverUserIds),
+            )
+            ->latest('updated_at')
+            ->limit($limit);
+
+        $drivers = $driversQuery->get();
+
+        $driverUserIds = $drivers->pluck('driver_id')->all();
+
+        $sharedQuery = UserLiveLocation::query()
+            ->where('updated_at', '>=', $since)
+            ->whereNotIn('user_id', $driverUserIds)
+            ->latest('updated_at')
+            ->limit($limit);
+
+        $shared = $sharedQuery->get();
+
+        $out = [];
+
+        foreach ($drivers as $d) {
+            $out[] = [
+                'kind' => 'driver',
+                'id' => $d->id,
+                'user_id' => $d->driver_id,
+                'latitude' => (float) $d->latitude,
+                'longitude' => (float) $d->longitude,
+                'heading' => $d->heading !== null ? (float) $d->heading : null,
+                'accuracy' => $d->accuracy !== null ? (float) $d->accuracy : null,
+                'label' => 'Driver',
+                'updated_at' => $d->updated_at->toIso8601String(),
+            ];
+        }
+
+        foreach ($shared as $s) {
+            $out[] = [
+                'kind' => 'shared',
+                'id' => $s->id,
+                'user_id' => $s->user_id,
+                'latitude' => (float) $s->latitude,
+                'longitude' => (float) $s->longitude,
+                'heading' => $s->heading !== null ? (float) $s->heading : null,
+                'accuracy' => $s->accuracy !== null ? (float) $s->accuracy : null,
+                'label' => 'Rider',
+                'updated_at' => $s->updated_at->toIso8601String(),
+            ];
+        }
+
+        return $out;
     }
 }

@@ -11,7 +11,7 @@ class DriverLocationController extends Controller
 {
     /**
      * POST /api/drivers/location
-     * Driver updates their current location (called every 10 seconds)
+     * Driver updates their current location. Client throttles POSTs (~20s / 30m); route uses `throttle:live-location-post`.
      * Authorization: Driver-only
      */
      public function updateLocation(Request $request): JsonResponse

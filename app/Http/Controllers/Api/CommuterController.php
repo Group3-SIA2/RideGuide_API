@@ -7,6 +7,7 @@ use App\Models\Commuter;
 use App\Models\Discount;
 use App\Models\DiscountImage;
 use App\Models\DiscountTypes;
+use App\Support\CommuterVerificationDisplay;
 use App\Support\DashboardCache;
 use App\Support\InputValidation;
 use App\Support\MediaStorage;
@@ -452,10 +453,15 @@ class CommuterController extends Controller
         $discountImage = $commuter->discount?->idImage;
         $frontPath = $discountImage?->image_front;
         $backPath = $discountImage?->image_back;
+        $vf = CommuterVerificationDisplay::forCommuter($commuter);
 
         return [
             'id' => $commuter->id,
             'user_id' => $commuter->user_id,
+            'verification_status' => $vf['verification_status'],
+            'rejection_reason' => $vf['rejection_reason'],
+            'discount_verification_status' => $vf['discount_verification_status'],
+            'discount_rejection_reason' => $vf['discount_rejection_reason'],
             'user' => $commuter->user ? [
                 'id' => $commuter->user->id,
                 'first_name' => $commuter->user->first_name,
@@ -467,6 +473,8 @@ class CommuterController extends Controller
             'discount' => $commuter->discount ? [
                 'id' => $commuter->discount->id,
                 'ID_number' => $commuter->discount->ID_number,
+                'verification_status' => $commuter->discount->verification_status,
+                'rejection_reason' => $commuter->discount->rejection_reason,
                 'images' => [
                     'front_path' => $frontPath,
                     'front_url' => $frontPath ? MediaStorage::url($frontPath) : null,
