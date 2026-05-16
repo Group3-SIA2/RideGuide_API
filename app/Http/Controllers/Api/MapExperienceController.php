@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\DB;
 
 class MapExperienceController extends Controller
 {
+    /** Only show live pins updated within this window (minutes). */
+    private const LIVE_MAP_FRESH_MINUTES = 30;
+
     public function experience(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -121,7 +124,10 @@ class MapExperienceController extends Controller
 
     private function commuterOverlayData(string $userId, int $limit): array
     {
+        $since = now()->subMinutes(self::LIVE_MAP_FRESH_MINUTES);
+
         $locations = DriverLocation::query()
+            ->where('updated_at', '>=', $since)
             ->latest('updated_at')
             ->limit($limit)
             ->get(['id', 'driver_id', 'latitude', 'longitude', 'heading', 'accuracy', 'updated_at']);
@@ -178,8 +184,11 @@ class MapExperienceController extends Controller
             ];
         }
 
+        $since = now()->subMinutes(self::LIVE_MAP_FRESH_MINUTES);
+
         $locations = DriverLocation::query()
             ->whereIn('driver_id', $driverUserIds)
+            ->where('updated_at', '>=', $since)
             ->latest('updated_at')
             ->limit($limit)
             ->get(['id', 'driver_id', 'latitude', 'longitude', 'heading', 'accuracy', 'updated_at']);
@@ -204,7 +213,7 @@ class MapExperienceController extends Controller
      */
     private function buildLiveMapUsers(int $limit, ?array $onlyDriverUserIds): array
     {
-        $since = now()->subMinutes(10);
+        $since = now()->subMinutes(self::LIVE_MAP_FRESH_MINUTES);
 
         $driversQuery = DriverLocation::query()
             ->where('updated_at', '>=', $since)
