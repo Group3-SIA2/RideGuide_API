@@ -22,12 +22,20 @@ class CommuterRideRequest extends Model
         'route_id',
         'terminal_id',
         'destination',
+        'pickup_latitude',
+        'pickup_longitude',
+        'dropoff_latitude',
+        'dropoff_longitude',
         'status',
         'expires_at',
     ];
 
     protected $casts = [
-        'expires_at' => 'datetime',
+        'expires_at'        => 'datetime',
+        'pickup_latitude'   => 'decimal:7',
+        'pickup_longitude'  => 'decimal:7',
+        'dropoff_latitude'  => 'decimal:7',
+        'dropoff_longitude' => 'decimal:7',
     ];
 
     /**
