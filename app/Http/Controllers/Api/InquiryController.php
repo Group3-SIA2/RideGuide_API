@@ -4,7 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CommuterRideRequest;
+use App\Models\PassengerStart;
+use App\Models\PassengerStop;
 use App\Models\RideRequest;
+use App\Models\Trip;
+use App\Models\TripPassenger;
+use App\Models\Waypoint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,16 +55,29 @@ class InquiryController extends Controller
             });
         }
 
-        $items = $query->latest('created_at')->limit(200)->get()->map(function (CommuterRideRequest $request) {
+        $items = $query->latest('created_at')->limit(200)->get()->map(function (CommuterRideRequest $req) {
+            $pickupLat = $req->pickup_latitude !== null
+                ? (float) $req->pickup_latitude
+                : ($req->terminal?->latitude !== null ? (float) $req->terminal->latitude : null);
+            $pickupLng = $req->pickup_longitude !== null
+                ? (float) $req->pickup_longitude
+                : ($req->terminal?->longitude !== null ? (float) $req->terminal->longitude : null);
+
             return [
-                'id' => $request->id,
-                'destination' => $request->destination,
-                'route_id' => $request->route_id,
-                'terminal_id' => $request->terminal_id,
-                'wait_time_seconds' => $request->created_at?->diffInSeconds(now()) ?? 0,
-                'current_location' => [
-                    'lat' => $request->terminal?->latitude,
-                    'lng' => $request->terminal?->longitude,
+                'id'               => $req->id,
+                'commuter_id'      => $req->commuter_id,
+                'destination'      => $req->destination,
+                'route_id'         => $req->route_id,
+                'terminal_id'      => $req->terminal_id,
+                'wait_time_seconds'=> $req->created_at?->diffInSeconds(now()) ?? 0,
+                'pickup_location'  => [
+                    'lat' => $pickupLat,
+                    'lng' => $pickupLng,
+                ],
+                'dropoff_location' => [
+                    'lat'   => $req->dropoff_latitude !== null ? (float) $req->dropoff_latitude : null,
+                    'lng'   => $req->dropoff_longitude !== null ? (float) $req->dropoff_longitude : null,
+                    'label' => $req->destination,
                 ],
             ];
         })->values();
@@ -71,34 +89,102 @@ class InquiryController extends Controller
     {
         $validated = $request->validate([
             'commuter_ride_request_id' => 'required|uuid|exists:commuter_ride_requests,id',
-            'status' => 'required|in:accepted,rejected',
+            'status'                   => 'required|in:accepted,rejected',
         ]);
 
-        $commuterRequest = CommuterRideRequest::query()->find($validated['commuter_ride_request_id']);
+        $user = $request->user();
+
+        $commuterRequest = CommuterRideRequest::query()->with('terminal')->find($validated['commuter_ride_request_id']);
         if (! $commuterRequest || $commuterRequest->status !== 'active' || $commuterRequest->expires_at <= now()) {
             return response()->json(['success' => false, 'message' => 'Request is no longer active.'], 400);
         }
 
-        $item = RideRequest::query()->updateOrCreate(
+        $rideRequest = RideRequest::query()->updateOrCreate(
             [
-                'driver_id' => $request->user()?->id,
+                'driver_id'                => $user?->id,
                 'commuter_ride_request_id' => $commuterRequest->id,
             ],
             [
-                'status' => $validated['status'],
+                'status'       => $validated['status'],
                 'responded_at' => now(),
             ]
         );
 
+        $tripPassengerData = null;
+
+        if ($validated['status'] === 'accepted') {
+            $driver = $user?->driver;
+            if ($driver) {
+                $activeTrip = Trip::query()
+                    ->active()
+                    ->where('driver_id', $driver->id)
+                    ->first();
+
+                if ($activeTrip) {
+                    $alreadyOnboard = TripPassenger::where('trip_id', $activeTrip->id)
+                        ->where('commuter_id', $commuterRequest->commuter_id)
+                        ->whereNull('deleted_at')
+                        ->exists();
+
+                    if (! $alreadyOnboard) {
+                        $startLat = $commuterRequest->pickup_latitude !== null
+                            ? (float) $commuterRequest->pickup_latitude
+                            : (float) ($commuterRequest->terminal?->latitude ?? 0);
+                        $startLng = $commuterRequest->pickup_longitude !== null
+                            ? (float) $commuterRequest->pickup_longitude
+                            : (float) ($commuterRequest->terminal?->longitude ?? 0);
+                        $stopLat = $commuterRequest->dropoff_latitude !== null
+                            ? (float) $commuterRequest->dropoff_latitude
+                            : $startLat;
+                        $stopLng = $commuterRequest->dropoff_longitude !== null
+                            ? (float) $commuterRequest->dropoff_longitude
+                            : $startLng;
+
+                        $tripPassenger = DB::transaction(function () use ($commuterRequest, $activeTrip, $startLat, $startLng, $stopLat, $stopLng) {
+                            $startWaypoint = Waypoint::create([
+                                'latitude'  => (string) $startLat,
+                                'longitude' => (string) $startLng,
+                            ]);
+                            $passengerStart = PassengerStart::create([
+                                'waypoint_id' => $startWaypoint->id,
+                            ]);
+                            $stopWaypoint = Waypoint::create([
+                                'latitude'  => (string) $stopLat,
+                                'longitude' => (string) $stopLng,
+                            ]);
+                            $passengerStop = PassengerStop::create([
+                                'waypoint_id' => $stopWaypoint->id,
+                            ]);
+                            return TripPassenger::create([
+                                'commuter_id'        => $commuterRequest->commuter_id,
+                                'trip_id'            => $activeTrip->id,
+                                'passenger_start_id' => $passengerStart->id,
+                                'passenger_stop_id'  => $passengerStop->id,
+                                'fare'               => 0,
+                            ]);
+                        });
+
+                        $tripPassengerData = [
+                            'id'          => $tripPassenger->id,
+                            'commuter_id' => $tripPassenger->commuter_id,
+                            'trip_id'     => $tripPassenger->trip_id,
+                            'fare'        => (float) $tripPassenger->fare,
+                        ];
+                    }
+                }
+            }
+        }
+
         return response()->json([
-            'success' => true,
-            'message' => 'Response submitted.',
+            'success'       => true,
+            'message'       => 'Response submitted.',
             'data' => [
-                'id' => $item->id,
-                'status' => $item->status,
-                'responded_at' => $item->responded_at,
+                'id'           => $rideRequest->id,
+                'status'       => $rideRequest->status,
+                'responded_at' => $rideRequest->responded_at,
+                'trip_passenger' => $tripPassengerData,
             ],
-        ], $item->wasRecentlyCreated ? 201 : 200);
+        ], $rideRequest->wasRecentlyCreated ? 201 : 200);
     }
 
     public function commuterList(Request $request): JsonResponse
