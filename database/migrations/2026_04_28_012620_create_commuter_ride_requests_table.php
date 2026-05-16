@@ -17,6 +17,10 @@ return new class extends Migration
             $table->foreignUuid('route_id')->nullable()->constrained('routes')->onDelete('cascade');
             $table->foreignUuid('terminal_id')->nullable()->constrained('terminals')->onDelete('cascade');
             $table->string('destination')->notNull();
+            $table->decimal('pickup_latitude',  10, 7)->nullable();
+            $table->decimal('pickup_longitude', 10, 7)->nullable();
+            $table->decimal('dropoff_latitude', 10, 7)->nullable();
+            $table->decimal('dropoff_longitude', 10, 7)->nullable();
             $table->enum('status', ['active', 'accepted', 'rejected', 'completed', 'cancelled'])->default('active');
             $table->timestamp('expires_at')->notNull();
             $table->timestamps();
