@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CancelAccountDeletionRequest;
 use App\Mail\OtpMail;
 use App\Models\Otp;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AccountDeletionService;
+use App\Support\AccountLoginStatus;
 use App\Support\InputValidation;
 use App\Support\AppRoleContext;
 use App\Support\DashboardCache;
@@ -118,11 +121,8 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if (! $user->isAccountActive()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account is not active.',
-            ], 403);
+        if ($blocked = AccountLoginStatus::blockedLoginResponse($user)) {
+            return $blocked;
         }
 
         if (! $user->isEmailVerified()) {
@@ -326,11 +326,8 @@ class AuthController extends Controller
             $user->refresh();
         }
 
-        if (! $user->isAccountActive()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account is not active.',
-            ], 403);
+        if ($blocked = AccountLoginStatus::blockedLoginResponse($user)) {
+            return $blocked;
         }
 
         $user->tokens()->delete();
@@ -380,11 +377,8 @@ class AuthController extends Controller
             ], 404);
         }
 
-        if (! $user->isAccountActive()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account is not active.',
-            ], 403);
+        if ($blocked = AccountLoginStatus::blockedLoginResponse($user)) {
+            return $blocked;
         }
 
         $otp = Otp::where('user_id', $user->id)
@@ -470,6 +464,46 @@ class AuthController extends Controller
         POST /api/logout
         Header: Authorization: Bearer {token}
     */
+    public function cancelAccountDeletion(
+        CancelAccountDeletionRequest $request,
+        AccountDeletionService $accountDeletionService,
+    ): JsonResponse {
+        $validated = $request->validated();
+
+        $user = ! empty($validated['email'])
+            ? User::where('email', $validated['email'])->first()
+            : User::where('phone_number', $validated['phone_number'])->first();
+
+        if (! $user || ! Hash::check($validated['password'], (string) $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The provided credentials are incorrect.',
+            ], 401);
+        }
+
+        if (! $user->hasPendingDeletion()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This account is not scheduled for deletion.',
+            ], 422);
+        }
+
+        $user = $accountDeletionService->cancelDeletion($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Account deletion cancelled. You can sign in again.',
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number,
+                    'status' => $user->status,
+                ],
+            ],
+        ]);
+    }
+
     public function logout(Request $request): JsonResponse
     {
         // Revoke the current access token
