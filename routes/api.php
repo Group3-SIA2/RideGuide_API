@@ -97,6 +97,8 @@ Route::middleware([...$sanctumStack, 'active.role.required', 'role:driver', 'act
         Route::patch('/{id}/end', 'endTrip')->name('api.trips.end');
         Route::post('/{id}/passengers', 'addPassenger')->name('api.trips.passengers.add');
         Route::delete('/{id}/passengers/{passengerId}', 'removePassenger')->name('api.trips.passengers.remove');
+        Route::post('/{id}/waypoints', 'addWaypoint')->name('api.trips.waypoints.add');
+        Route::delete('/{id}/waypoints/{waypointId}', 'removeWaypoint')->name('api.trips.waypoints.remove');
         Route::get('/', 'listTrips')->name('api.trips.list');
         Route::get('/{id}', 'showTrip')->name('api.trips.show');
     });
@@ -122,6 +124,7 @@ Route::middleware([...$sanctumStack, 'active.role.required', 'role:commuter', 'a
     Route::controller(CommuterTripController::class)->prefix('commuter/trips')->group(function (): void {
         Route::get('/', 'listMyTrips')->name('api.commuter.trips.list');
         Route::get('/current', 'getCurrentTrip')->name('api.commuter.trips.current');
+        Route::get('/nearby', 'findNearbyTrips')->name('api.commuter.trips.nearby');
         Route::get('/{id}', 'showTrip')->name('api.commuter.trips.show');
     });
 });
