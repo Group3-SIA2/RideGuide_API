@@ -30,12 +30,17 @@ return new class extends Migration
             $table->string('lock_reason')->nullable();
             $table->string('status_reason')->nullable();
             $table->timestamp('status_changed_at')->nullable();
+            $table->timestamp('deletion_requested_at')->nullable();
+            $table->timestamp('deletion_scheduled_at')->nullable();
+
+           
             $table->string('active_role')->nullable();
             $table->rememberToken();
             
             $table->timestamps();
             $table->softDeletes();
 
+            $table->index(['status', 'deletion_scheduled_at']);
             $table->index(['status', 'deleted_at']);
             $table->index('active_role');
 

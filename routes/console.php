@@ -14,3 +14,4 @@ Artisan::command('inspire', function () {
     daily(), weekly(), monthly(), yearly()
 */
 Schedule::command('app:backup-database')->dailyAt('23:16');
+Schedule::command('accounts:purge-scheduled-deletions')->dailyAt('02:30');
