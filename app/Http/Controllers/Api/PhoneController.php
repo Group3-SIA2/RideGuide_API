@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\AccountLoginStatus;
 use App\Models\Otp;
 use App\Models\User;
 use App\Support\InputValidation;
@@ -108,11 +109,8 @@ class PhoneController extends Controller
             ], 401);
         }
 
-        if (! $user->isAccountActive()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account is not active.',
-            ], 403);
+        if ($blocked = AccountLoginStatus::blockedLoginResponse($user)) {
+            return $blocked;
         }
 
         if (! $user->isPhoneVerified()) {
@@ -183,11 +181,8 @@ class PhoneController extends Controller
             ], 404);
         }
 
-        if (! $user->isAccountActive()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account is not active.',
-            ], 403);
+        if ($blocked = AccountLoginStatus::blockedLoginResponse($user)) {
+            return $blocked;
         }
 
         // Ensure a dispatch record exists on our side before calling iProgSMS
