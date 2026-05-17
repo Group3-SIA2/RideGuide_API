@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\RideRequestController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SetUpController;
 use App\Http\Controllers\Api\TransactionHistoryController;
+use App\Http\Controllers\Api\UserAccountController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VehicleController;
 use App\Http\Controllers\Api\FareController;
@@ -59,6 +60,7 @@ Route::controller(AuthController::class)->prefix('auth')->group(function (): voi
     Route::post('/forgot-password', 'forgotPassword')->name('api.auth.forgot-password');
     Route::post('/reset-password', 'resetPassword')->name('api.auth.reset-password');
     Route::post('/resend-otp', 'resendOtp')->name('api.auth.resend-otp');
+    Route::post('/cancel-account-deletion', 'cancelAccountDeletion')->name('api.auth.cancel-account-deletion');
 });
 
 // Phone Number Authentication — iProgSMS (Philippine format: 09XXXXXXXXX | +639XXXXXXXXX)
@@ -165,6 +167,14 @@ Route::middleware($sanctumStack)->group(function (): void {
         Route::put('/update-profile/{id}', 'updateProfile')->middleware('throttle:api-upload-auth')->name('api.drivers.update-profile');
         Route::delete('/delete-profile/{id}', 'deleteProfile')->name('api.drivers.delete-profile');
         Route::put('/restore-profile/{id}', 'restoreProfile')->name('api.drivers.restore-profile');
+    });
+
+    // Current user account (register before /users/{id} so "me" is not captured as id)
+    Route::controller(UserAccountController::class)->prefix('users/me')->group(function (): void {
+        Route::get('/', 'show')->name('api.users.me.show');
+        Route::get('/roles-status', 'rolesStatus')->name('api.users.me.roles-status');
+        Route::post('/request-deletion', 'requestDeletion')->name('api.users.me.request-deletion');
+        Route::post('/change-password', 'changePassword')->name('api.users.me.change-password');
     });
 
     // User Routes
