@@ -26,6 +26,8 @@ class User extends Authenticatable
     public const LOCK_REASON_FAILED_ATTEMPTS = 'failed_login_attempts';
     public const LOCK_REASON_ADMIN_INITIATED = 'admin_initiated';
 
+    public const STATUS_REASON_USER_DELETION = 'user_requested_deletion';
+
     // Failed login attempt threshold
     public const FAILED_LOGIN_THRESHOLD = 3;
 
@@ -52,6 +54,8 @@ class User extends Authenticatable
         'active_role',
         'locked_until',
         'lock_reason',
+        'deletion_requested_at',
+        'deletion_scheduled_at',
     ];
 
     /**
@@ -75,6 +79,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'status_changed_at' => 'datetime',
+            'deletion_requested_at' => 'datetime',
+            'deletion_scheduled_at' => 'datetime',
             'locked_until' => 'datetime',
             'password' => 'hashed',
         ];
@@ -83,6 +89,23 @@ class User extends Authenticatable
     public function isAccountActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE && !$this->trashed();
+    }
+
+    public function hasPendingDeletion(): bool
+    {
+        if ($this->status !== self::STATUS_INACTIVE) {
+            return false;
+        }
+
+        if ($this->status_reason !== self::STATUS_REASON_USER_DELETION) {
+            return false;
+        }
+
+        if ($this->deletion_scheduled_at === null) {
+            return false;
+        }
+
+        return $this->deletion_scheduled_at->isFuture();
     }
 
     /**
