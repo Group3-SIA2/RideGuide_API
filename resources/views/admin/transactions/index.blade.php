@@ -30,7 +30,7 @@
     <div class="rg-page-header">
         <div>
             <h4 class="rg-page-title">Logbook</h4>
-            <p class="rg-page-subtitle">Track system activity across modules.</p>
+            <p class="rg-page-subtitle">Track system activity, failed attempts, anonymous access, and page dwell time.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <span class="rg-badge">{{ $logs->total() }} record{{ $logs->total() !== 1 ? 's' : '' }}</span>
@@ -65,16 +65,18 @@
                     type="text"
                     name="search"
                     class="rg-search-input"
-                    placeholder="Search actor, type, module, reference..."
+                    placeholder="Search activity, reference, reason..."
                     value="{{ $filters['search'] ?? '' }}"
                 >
 
-                <select name="module" class="form-control form-control-sm mr-2" style="min-width: 160px;">
-                    <option value="">All Modules</option>
-                    @foreach(($modules ?? []) as $module)
-                        <option value="{{ $module }}" @selected(($filters['module'] ?? '') === $module)>
-                            {{ ucfirst(str_replace('_', ' ', $module)) }}
-                        </option>
+                <select name="user" class="form-control form-control-sm mr-2" style="min-width: 260px;">
+                    <option value="">All Users</option>
+                    <option value="anonymous" @selected(strtolower($filters['user'] ?? '') === 'anonymous')>Anonymous</option>
+                    @foreach(($users ?? []) as $user)
+                        @php
+                            $display = trim(($user->name ?? '') . ($user->email ? ' <' . $user->email . '>' : '')) ?: ($user->email ?? ('User ' . $user->id));
+                        @endphp
+                        <option value="{{ $user->id }}" @selected((string)($filters['user'] ?? '') === (string)$user->id)>{{ $display }}</option>
                     @endforeach
                 </select>
 

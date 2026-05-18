@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\LogAdminTransactions::class,
+            \App\Http\Middleware\InjectLogbookTracker::class,
         ]);
 
         $middleware->api(prepend: [

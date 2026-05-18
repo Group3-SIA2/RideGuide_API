@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LegalController;
 use App\Models\Role;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\Auth2faController;
 use App\Http\Controllers\Admin\LogbookController;
 use App\Http\Controllers\Admin\FareController;
+use App\Http\Controllers\LogbookActivityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,17 +27,17 @@ use App\Http\Controllers\Admin\FareController;
 */
 
 Route::get('/', function () {
-    if (!auth()->check()) {
+    if (! Auth::check()) {
         return redirect()->route('login');
     }
 
-    $user = auth()->user();
+    $user = Auth::user();
 
-    if ($user->isSuperAdmin()) {
+    if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
         return redirect()->route('super-admin.dashboard');
     }
 
-    if ($user->isOrganizationScoped()) {
+    if (method_exists($user, 'isOrganizationScoped') && $user->isOrganizationScoped()) {
         return redirect()->route('org-manager.dashboard');
     }
 
@@ -49,6 +51,7 @@ Route::get('/legal/terms-of-service',           [LegalController::class, 'termsO
 Route::get('/legal/data-deletion',              [LegalController::class, 'dataDeletionInstructions'])->name('legal.data-deletion');
 Route::post('/facebook/data-deletion/callback', [LegalController::class, 'facebookDataDeletionCallback'])->name('legal.facebook.data-deletion.callback');
 Route::get('/facebook/data-deletion/status',    [LegalController::class, 'dataDeletionStatus'])->name('legal.data-deletion.status');
+Route::post('/logbook/page-time',               [LogbookActivityController::class, 'pageTime'])->name('logbook.page-time');
 
 /*
 |--------------------------------------------------------------------------
@@ -208,7 +211,6 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
         Route::post('/backups/{filename}/restore', [BackupController::class, 'restore'])->name('backups.restore');
 
-        Route::get('/transactions', [TransactionLogController::class, 'index'])->name('transactions.index');
         Route::get('/profile',      [ProfileController::class, 'index'])->name('profile.index');
         Route::get('/logout',       [LogoutController::class, 'confirm'])->name('logout.confirm');
         Route::post('/logout',      [LogoutController::class, 'logout'])->name('logout');
