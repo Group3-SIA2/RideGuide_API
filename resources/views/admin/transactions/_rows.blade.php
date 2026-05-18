@@ -35,8 +35,13 @@
 
         $safeBefore = $redactLogData($log->before_data ?? []);
         $safeAfter = $redactLogData($log->after_data ?? []);
+        // If controller attached a merged_duration property, ensure it's visible in After Data
+        if (empty(data_get($safeAfter, 'duration_human')) && ! empty($log->merged_duration)) {
+            $safeAfter['duration_human'] = $log->merged_duration;
+        }
         $safeMetadata = $redactLogData($log->metadata ?? []);
         $actorName = data_get($safeMetadata, 'actor_name');
+        $attemptedIdentity = data_get($safeMetadata, 'attempted_identity');
         $actionSummary = data_get($safeMetadata, 'action_summary');
         $actionSummary = is_string($actionSummary) ? str_replace('/transactions', '/logbook', $actionSummary) : $actionSummary;
         $displayModule = $log->module === 'transactions' ? 'logbook' : $log->module;
@@ -50,9 +55,12 @@
 
         <td>
             <div class="d-flex flex-column">
-                <strong>{{ $actorName ?? ($log->actor_email ?? 'System') }}</strong>
+                <strong>{{ $actorName ?? ($log->actor_email ?? $attemptedIdentity ?? 'Anonymous') }}</strong>
                 @if($actorName && $log->actor_email)
                     <small class="text-muted">{{ $log->actor_email }}</small>
+                @endif
+                @if(data_get($safeMetadata, 'actor_type'))
+                    <small class="text-muted">{{ ucfirst(str_replace('_', ' ', (string) data_get($safeMetadata, 'actor_type'))) }}</small>
                 @endif
                 <small class="text-muted">{{ $log->actor_user_id ? 'User ID: ' . $log->actor_user_id : 'No actor user id' }}</small>
             </div>
@@ -66,6 +74,11 @@
             <span class="font-weight-semibold">{{ str_replace('_', ' ', $log->transaction_type) }}</span>
             @if($actionSummary)
                 <small class="d-block text-muted">{{ $actionSummary }}</small>
+            @endif
+            @if(($durationHuman = data_get($safeAfter, 'duration_human')))
+                <small class="d-block text-muted">Stayed on page for {{ $durationHuman }}</small>
+            @elseif(! empty($log->merged_duration))
+                <small class="d-block text-muted">Stayed on page for {{ $log->merged_duration }}</small>
             @endif
         </td>
 
@@ -118,7 +131,7 @@
                                     </div>
                                     <div class="col-md-6 mb-2">
                                         <small class="text-muted d-block">Actor</small>
-                                        <div>{{ $log->actor_email ?? 'System' }}</div>
+                                        <div>{{ $actorName ?? $log->actor_email ?? $attemptedIdentity ?? 'Anonymous' }}</div>
                                     </div>
                                     <div class="col-md-6 mb-2">
                                         <small class="text-muted d-block">Reference</small>
@@ -127,6 +140,14 @@
                                     <div class="col-md-6 mb-2">
                                         <small class="text-muted d-block">User ID</small>
                                         <div>{{ $log->actor_user_id ?? '-' }}</div>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <small class="text-muted d-block">Duration</small>
+                                        @php
+                                            $detailDuration = data_get($safeAfter, 'duration_human') ?? $log->merged_duration ?? data_get($safeMetadata, 'duration_human') ?? null;
+                                            $detailDurationSeconds = data_get($safeAfter, 'duration_seconds') ?? data_get($safeMetadata, 'duration_seconds') ?? null;
+                                        @endphp
+                                        <div>{{ $detailDuration ? $detailDuration : ($detailDurationSeconds ? ($detailDurationSeconds . ' seconds') : '-') }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -218,6 +239,7 @@
                                                                     'login' => 'logged in',
                                                                     'logout' => 'logged out',
                                                                     'register' => 'registered',
+                                                                    'page_time' => 'stayed on page',
                                                                     default => trim(str_replace('_', ' ', (string) $log->transaction_type)) !== ''
                                                                         ? str_replace('_', ' ', (string) $log->transaction_type)
                                                                         : $methodActionLabel,

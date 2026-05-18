@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Role;
+use App\Models\User;
 use App\Support\TransactionLogbook;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -15,24 +15,13 @@ class LogAdminTransactions
 {
 	public function handle(Request $request, Closure $next): Response
 	{
-		if ($this->shouldSkipLogging($request)) {
-			return $next($request);
-		}
-
-		$user = $request->user();
-
-		if (! $user || ! method_exists($user, 'hasRole')) {
-			return $next($request);
-		}
-
-		if (! ($user->hasRole(Role::ADMIN) || $user->hasRole(Role::SUPER_ADMIN))) {
-			return $next($request);
-		}
-
-		$actorUserId = $user?->id ? (string) $user->id : null;
-		$actorEmail = is_string($user?->email) ? $user->email : null;
-
 		$routeName = (string) optional($request->route())->getName();
+
+		if ($this->shouldSkipLogging($request, $routeName)) {
+			return $next($request);
+		}
+
+		$actor = $this->resolveActorContext($request);
 
 		$module = $this->resolveModule($routeName, $request);
 		$transactionType = $this->resolveTransactionType($routeName, $request);
@@ -57,10 +46,13 @@ class LogAdminTransactions
 				before: $before,
 				after: $after,
 				reason: $reason,
-				actorUserId: $actorUserId,
-				actorEmail: $actorEmail,
+				actorUserId: $actor['actor_user_id'],
+				actorEmail: $actor['actor_email'],
 				metadata: [
-					'actor_name' => $this->resolveActorName($user),
+					'session_key' => $request->attributes->get('logbook_session_key'),
+					'actor_name' => $actor['actor_name'],
+					'actor_type' => $actor['actor_type'],
+					'attempted_identity' => $actor['attempted_identity'],
 					'action_summary' => $actionSummary,
 					'route_name' => $routeName,
 					'panel' => $routeName !== '' ? Str::before($routeName, '.') : null,
@@ -81,10 +73,13 @@ class LogAdminTransactions
 				before: $before,
 				after: $after,
 				reason: Str::limit($e->getMessage(), 190),
-				actorUserId: $actorUserId,
-				actorEmail: $actorEmail,
+				actorUserId: $actor['actor_user_id'],
+				actorEmail: $actor['actor_email'],
 				metadata: [
-					'actor_name' => $this->resolveActorName($user),
+					'session_key' => $request->attributes->get('logbook_session_key'),
+					'actor_name' => $actor['actor_name'],
+					'actor_type' => $actor['actor_type'],
+					'attempted_identity' => $actor['attempted_identity'],
 					'action_summary' => 'Attempted ' . strtolower((string) $request->method()) . ' on /' . ltrim((string) $request->path(), '/'),
 					'route_name' => $routeName,
 					'panel' => $routeName !== '' ? Str::before($routeName, '.') : null,
@@ -95,6 +90,51 @@ class LogAdminTransactions
 
 			throw $e;
 		}
+	}
+
+	private function resolveActorContext(Request $request): array
+	{
+		$user = $request->user();
+
+		if (! $user && $request->hasSession() && $request->session()->has('2fa:user_id')) {
+			$user = User::find($request->session()->get('2fa:user_id'));
+		}
+
+		$attemptedIdentity = $this->resolveAttemptedIdentity($request);
+
+		if ($user) {
+			$hasSession = $request->hasSession();
+			$isPending2fa = $hasSession && $request->user() === null && $request->session()->has('2fa:user_id');
+
+			return [
+				'actor_user_id' => (string) $user->id,
+				'actor_email' => is_string($user->email ?? null) ? $user->email : $attemptedIdentity,
+				'actor_name' => $this->resolveActorName($user),
+				'actor_type' => $isPending2fa ? 'pending_2fa' : 'authenticated',
+				'attempted_identity' => $attemptedIdentity,
+			];
+		}
+
+		return [
+			'actor_user_id' => null,
+			'actor_email' => $attemptedIdentity,
+			'actor_name' => null,
+			'actor_type' => 'anonymous',
+			'attempted_identity' => $attemptedIdentity,
+		];
+	}
+
+	private function resolveAttemptedIdentity(Request $request): ?string
+	{
+		foreach (['email', 'phone_number', 'username'] as $key) {
+			$value = $request->input($key);
+
+			if (is_string($value) && trim($value) !== '') {
+				return trim($value);
+			}
+		}
+
+		return null;
 	}
 
 	private function safeWrite(
@@ -265,19 +305,13 @@ class LogAdminTransactions
 		return $normalized;
 	}
 
-	private function shouldSkipLogging(Request $request): bool
+	private function shouldSkipLogging(Request $request, string $routeName = ''): bool
 	{
-		$routeName = (string) optional($request->route())->getName();
-
-		if (! Str::startsWith($routeName, ['admin.', 'super-admin.'])) {
+		if ($routeName === 'logbook.page-time') {
 			return true;
 		}
 
-		if (Str::startsWith($routeName, ['api.auth.', 'api.auth.phone.'])) {
-			return true;
-		}
-
-		if (in_array($routeName, ['admin.2fa.verify', 'admin.logout', 'super-admin.logout', 'org-manager.logout'], true)) {
+		if (Str::startsWith((string) $request->path(), ['_debugbar', 'telescope'])) {
 			return true;
 		}
 
@@ -289,10 +323,6 @@ class LogAdminTransactions
 			'user-authorization.update-role',
 			'user-authorization.update-user',
 		])) {
-			return true;
-		}
-
-		if (Str::startsWith((string) $request->path(), ['_debugbar', 'telescope'])) {
 			return true;
 		}
 
